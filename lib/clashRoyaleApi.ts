@@ -34,7 +34,10 @@ export async function getPlayerInfo(playerTag: string): Promise<ClashRoyalePlaye
 export async function getPlayerBattleLog(playerTag: string): Promise<ClashRoyaleBattle[]> {
   // encodeURIComponent already converts # to %23
   const encodedTag = encodeURIComponent(playerTag);
+  console.log(playerTag)
   const data = await fetchFromApi(`/players/${encodedTag}/battlelog`);
-  return data.items || [];
+  console.log(data.items)
+  return data || [];  // modified to return data not data.items (show AI structure of games)
+  
 }
 

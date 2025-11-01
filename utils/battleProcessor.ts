@@ -25,7 +25,9 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
   try {
     // Get recent battles from API
     const battles = await getPlayerBattleLog(playerTag);
-
+    console.log("hi")
+    console.log(battles)
+    console.log(playerTag)
     // Get tracked friends
     const { data: friends, error: friendsError } = await supabase
       .from('tracked_friends')
@@ -39,13 +41,21 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
 
     const trackedTags = new Set(friends?.map(f => f.friend_player_tag) || []);
 
-    // Filter for 1v1 battles (casual or ranked ladder)
-    const oneVoneBattles = battles.filter(battle => 
-      (battle.type === 'PVP' || battle.type === 'CASUAL_1V1' || battle.type === 'PATH_OF_LEGEND') &&
-      battle.team && 
-      battle.team.length === 1
-    );
+    // Filter for 1v1 battles (casual, ranked ladder, friendly, or path of legends)
+    const oneVoneBattles = battles.filter(battle => {
+      const battleType = battle.type.toLowerCase(); // Convert to lowercase once
+      
+      return (
+        (battleType === 'pvp' || 
+         battleType === 'casual_1v1' || 
+         battleType === 'path_of_legend' || 
+         battleType === 'friendly') &&
+        battle.team && 
+        battle.team.length === 1
+      );
+    });
 
+    console.log(oneVoneBattles)
     // Process each battle
     for (const battle of oneVoneBattles) {
       try {

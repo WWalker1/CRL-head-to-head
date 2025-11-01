@@ -49,6 +49,22 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Automatic battle syncing from Clash Royale API
 - Clean, gaming-themed UI
 - User authentication with Supabase
+- Automatic detection and filtering of 1v1 battles
+- Duplicate battle prevention
+- Win percentage calculation and visual display
+
+## Testing
+
+Run the test suite:
+
+```bash
+npm test
+```
+
+The tests verify:
+- Proper filtering of 1v1 battles vs other battle types
+- Correct skipping of battles against untracked friends
+- Graceful handling of API errors
 
 ## Tech Stack
 
@@ -66,3 +82,6 @@ Deploy to Vercel:
 2. Import project in Vercel
 3. Add environment variables in Vercel dashboard
 4. Deploy!
+
+# todo
+Let's run sync automatically when people sign into the app. Or does that already happen? Also, if a player removes a friend, let's still store the record that we have for them, but we can just stop updating them? does that make sense? 
