@@ -1,6 +1,6 @@
 import { ClashRoyalePlayer, ClashRoyaleBattle } from './types';
 
-const API_BASE_URL = 'https://api.clashroyale.com/v1';
+const API_BASE_URL = 'https://proxy.royaleapi.dev/v1';
 
 async function fetchFromApi(endpoint: string) {
   const apiKey = process.env.CLASH_ROYALE_API_KEY;
