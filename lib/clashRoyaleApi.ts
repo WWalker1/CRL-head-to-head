@@ -1,5 +1,6 @@
 import { ClashRoyalePlayer, ClashRoyaleBattle } from './types';
 
+// used as proxy server to get a static IP address 
 const API_BASE_URL = 'https://proxy.royaleapi.dev/v1';
 
 async function fetchFromApi(endpoint: string) {
