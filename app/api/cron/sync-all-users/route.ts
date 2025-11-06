@@ -2,11 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { syncBattlesForUser } from '@/utils/battleProcessor';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 interface UserSyncResult {
   userId: string;
   email?: string;
@@ -47,20 +42,64 @@ export async function GET(request: NextRequest) {
     const isVercelCron = cronHeader === '1';
     const isValidSecret = expectedSecret && cronSecret === expectedSecret;
 
+    console.log('[CRON AUTH]', {
+      hasCronHeader: !!cronHeader,
+      cronHeaderValue: cronHeader,
+      isVercelCron,
+      hasCronSecret: !!cronSecret,
+      hasExpectedSecret: !!expectedSecret,
+      isValidSecret,
+    });
+
     if (!isVercelCron && !isValidSecret) {
+      console.error('[CRON AUTH] Unauthorized - missing valid auth');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    console.log('Starting daily sync for all users...');
+    console.log('[CRON AUTH] Authorization passed, starting sync...');
+    
+    // Create Supabase client with service role key inside the function
+    // to ensure env vars are available and client is fresh
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    console.log('[SUPABASE CLIENT]', {
+      hasUrl: !!supabaseUrl,
+      hasServiceRoleKey: !!serviceRoleKey,
+      serviceRoleKeyLength: serviceRoleKey?.length || 0,
+      serviceRoleKeyPrefix: serviceRoleKey?.substring(0, 10) || 'missing',
+    });
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('[SUPABASE CLIENT] Missing required environment variables');
+      return NextResponse.json(
+        { error: 'Server configuration error', details: 'Missing Supabase credentials' },
+        { status: 500 }
+      );
+    }
+
+    // Create client with service role key for admin operations
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
 
     // Fetch all users from Supabase Auth
+    console.log('[SUPABASE] Attempting to list users...');
     const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
 
     if (usersError) {
-      console.error('Error fetching users:', usersError);
+      console.error('[SUPABASE ERROR] Failed to fetch users:', {
+        message: usersError.message,
+        status: usersError.status,
+        name: usersError.name,
+        fullError: JSON.stringify(usersError, null, 2),
+      });
       return NextResponse.json(
         { error: 'Failed to fetch users', details: usersError.message },
         { status: 500 }
