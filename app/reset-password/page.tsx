@@ -20,7 +20,8 @@ export default function ResetPasswordPage() {
       const supabase = createClient();
       
       // Check for hash fragments in URL (Supabase adds these for password reset)
-      const hashParams = window.location.hash.substring(1);
+      // Only access window on client side
+      const hashParams = typeof window !== 'undefined' ? window.location.hash.substring(1) : '';
       const hasHashParams = hashParams.length > 0;
       
       // Get the current session
