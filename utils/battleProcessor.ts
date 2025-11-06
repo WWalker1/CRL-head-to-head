@@ -110,6 +110,7 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         (battleType === 'pvp' || 
          battleType === 'casual_1v1' || 
          battleType === 'path_of_legend' || 
+         battleType === 'trail' || 
          battleType === 'friendly') &&
         battle.team && 
         battle.team.length === 1
