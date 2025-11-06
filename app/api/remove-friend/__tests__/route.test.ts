@@ -83,12 +83,23 @@ describe('Remove Friend Route', () => {
         error: null,
       });
 
+      const deleteMock = jest.fn();
+      const firstEqMock = jest.fn();
+      const secondEqMock = jest.fn().mockResolvedValue({
+        data: null,
+        error: null,
+      });
+
+      deleteMock.mockReturnValue({
+        eq: firstEqMock,
+      });
+
+      firstEqMock.mockReturnValue({
+        eq: secondEqMock,
+      });
+
       mockStore.supabase.from.mockReturnValue({
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          data: null,
-          error: null,
-        }),
+        delete: deleteMock,
       });
 
       await DELETE(mockRequest);
@@ -127,19 +138,24 @@ describe('Remove Friend Route', () => {
       const friendId = 'friend-1';
       (mockRequest.json as jest.Mock).mockResolvedValue({ friendId });
 
-      const deleteMock = jest.fn().mockReturnThis();
-      const eqMock = jest.fn().mockResolvedValue({
+      const deleteMock = jest.fn();
+      const firstEqMock = jest.fn();
+      const secondEqMock = jest.fn().mockResolvedValue({
         data: null,
         error: null,
       });
 
-      mockStore.supabase.from.mockReturnValue({
-        delete: deleteMock,
-        eq: eqMock,
+      // Chain: delete() -> eq() -> eq()
+      deleteMock.mockReturnValue({
+        eq: firstEqMock,
       });
 
-      deleteMock.mockReturnValue({
-        eq: eqMock,
+      firstEqMock.mockReturnValue({
+        eq: secondEqMock,
+      });
+
+      mockStore.supabase.from.mockReturnValue({
+        delete: deleteMock,
       });
 
       const response = await DELETE(mockRequest);
@@ -148,8 +164,8 @@ describe('Remove Friend Route', () => {
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
       expect(deleteMock).toHaveBeenCalled();
-      expect(eqMock).toHaveBeenCalledWith('id', friendId);
-      expect(eqMock).toHaveBeenCalledWith('user_id', userId);
+      expect(firstEqMock).toHaveBeenCalledWith('id', friendId);
+      expect(secondEqMock).toHaveBeenCalledWith('user_id', userId);
     });
 
     it('should verify user can only remove their own friends', async () => {
@@ -157,38 +173,53 @@ describe('Remove Friend Route', () => {
       const friendId = 'friend-1';
       (mockRequest.json as jest.Mock).mockResolvedValue({ friendId });
 
-      const deleteMock = jest.fn().mockReturnThis();
-      const eqMock = jest.fn().mockResolvedValue({
+      const deleteMock = jest.fn();
+      const firstEqMock = jest.fn();
+      const secondEqMock = jest.fn().mockResolvedValue({
         data: null,
         error: null,
       });
 
-      mockStore.supabase.from.mockReturnValue({
-        delete: deleteMock,
-        eq: eqMock,
+      // Chain: delete() -> eq() -> eq()
+      deleteMock.mockReturnValue({
+        eq: firstEqMock,
       });
 
-      deleteMock.mockReturnValue({
-        eq: eqMock,
+      firstEqMock.mockReturnValue({
+        eq: secondEqMock,
+      });
+
+      mockStore.supabase.from.mockReturnValue({
+        delete: deleteMock,
       });
 
       await DELETE(mockRequest);
 
       // Verify both user_id and id are checked
-      const calls = eqMock.mock.calls;
-      expect(calls).toContainEqual(['id', friendId]);
-      expect(calls).toContainEqual(['user_id', userId]);
+      expect(firstEqMock).toHaveBeenCalledWith('id', friendId);
+      expect(secondEqMock).toHaveBeenCalledWith('user_id', userId);
     });
 
     it('should handle database errors when removing friend', async () => {
       (mockRequest.json as jest.Mock).mockResolvedValue({ friendId: 'friend-1' });
 
+      const deleteMock = jest.fn();
+      const firstEqMock = jest.fn();
+      const secondEqMock = jest.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'Database error' },
+      });
+
+      deleteMock.mockReturnValue({
+        eq: firstEqMock,
+      });
+
+      firstEqMock.mockReturnValue({
+        eq: secondEqMock,
+      });
+
       mockStore.supabase.from.mockReturnValue({
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          data: null,
-          error: { message: 'Database error' },
-        }),
+        delete: deleteMock,
       });
 
       const response = await DELETE(mockRequest);
@@ -201,9 +232,20 @@ describe('Remove Friend Route', () => {
     it('should return appropriate error for general failures', async () => {
       (mockRequest.json as jest.Mock).mockResolvedValue({ friendId: 'friend-1' });
 
+      const deleteMock = jest.fn();
+      const firstEqMock = jest.fn();
+      const secondEqMock = jest.fn().mockRejectedValue(new Error('Unexpected error'));
+
+      deleteMock.mockReturnValue({
+        eq: firstEqMock,
+      });
+
+      firstEqMock.mockReturnValue({
+        eq: secondEqMock,
+      });
+
       mockStore.supabase.from.mockReturnValue({
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockRejectedValue(new Error('Unexpected error')),
+        delete: deleteMock,
       });
 
       const response = await DELETE(mockRequest);
@@ -216,12 +258,23 @@ describe('Remove Friend Route', () => {
     it('should return success even if friend does not exist', async () => {
       (mockRequest.json as jest.Mock).mockResolvedValue({ friendId: 'non-existent' });
 
+      const deleteMock = jest.fn();
+      const firstEqMock = jest.fn();
+      const secondEqMock = jest.fn().mockResolvedValue({
+        data: null,
+        error: null, // No error, but also no rows deleted
+      });
+
+      deleteMock.mockReturnValue({
+        eq: firstEqMock,
+      });
+
+      firstEqMock.mockReturnValue({
+        eq: secondEqMock,
+      });
+
       mockStore.supabase.from.mockReturnValue({
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          data: null,
-          error: null, // No error, but also no rows deleted
-        }),
+        delete: deleteMock,
       });
 
       const response = await DELETE(mockRequest);

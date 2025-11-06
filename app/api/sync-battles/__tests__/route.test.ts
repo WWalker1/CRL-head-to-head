@@ -2,7 +2,6 @@
  * @jest-environment node
  */
 import { NextRequest } from 'next/server';
-import { syncBattlesForUser } from '@/utils/battleProcessor';
 
 // Mock the dependencies BEFORE importing the route
 jest.mock('@supabase/supabase-js', () => {
@@ -30,6 +29,7 @@ jest.mock('@/utils/battleProcessor', () => ({
 
 // Import route AFTER mocks are set up
 import { POST } from '../route';
+import { syncBattlesForUser } from '@/utils/battleProcessor';
 
 describe('Sync Battles Route', () => {
   let mockRequest: NextRequest;
@@ -259,7 +259,7 @@ describe('Sync Battles Route', () => {
     });
 
     it('should handle general errors', async () => {
-      mockSupabase.auth.getUser.mockRejectedValue(new Error('Unexpected error'));
+      mockStore.supabase.auth.getUser.mockRejectedValue(new Error('Unexpected error'));
 
       const response = await POST(mockRequest);
       const data = await response.json();

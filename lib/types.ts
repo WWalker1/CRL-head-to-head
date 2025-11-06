@@ -16,7 +16,6 @@ export interface Battle {
   battle_type: string;
   opponent_tag: string;
   result: 'win' | 'loss';
-  processed: boolean;
   created_at: string;
 }
 

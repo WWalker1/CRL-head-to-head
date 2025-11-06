@@ -59,8 +59,6 @@ describe('battleProcessor', () => {
     mockStore.supabase.from.mockImplementation((table: string) => {
       if (table === 'tracked_friends') {
         return createQueryBuilder();
-      } else if (table === 'processed_battles') {
-        return createQueryBuilder();
       } else if (table === 'battles') {
         return createQueryBuilder();
       }
@@ -167,12 +165,18 @@ describe('battleProcessor', () => {
         }),
       }));
 
-      // Mock processed_battles check - battle already processed
+      const mockBattle = createMockBattle({
+        type: 'PVP',
+        opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }],
+        team: [{ tag: playerTag, name: 'User', crowns: 3 }],
+      });
+
+      // Mock battles check - battle already exists
       mockStore.supabase.from.mockImplementationOnce(() => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
           single: jest.fn().mockResolvedValue({
-            data: { id: 'processed-1' },
+            data: { id: 'existing-battle-1' },
             error: null,
           }),
         }),
@@ -187,12 +191,6 @@ describe('battleProcessor', () => {
           error: null,
         }),
       }));
-
-      const mockBattle = createMockBattle({
-        type: 'PVP',
-        opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }],
-        team: [{ tag: playerTag, name: 'User', crowns: 3 }],
-      });
 
       (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([mockBattle]);
 
@@ -212,7 +210,13 @@ describe('battleProcessor', () => {
         }),
       }));
 
-      // Mock processed_battles check - battle not processed
+      const mockBattle = createMockBattle({
+        type: 'PVP',
+        opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }],
+        team: [{ tag: playerTag, name: 'User', crowns: 3 }],
+      });
+
+      // Mock battles check - battle not found (new battle)
       mockStore.supabase.from.mockImplementationOnce(() => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
@@ -221,11 +225,6 @@ describe('battleProcessor', () => {
             error: { code: 'PGRST116' }, // Not found
           }),
         }),
-      }));
-
-      // Mock processed_battles insert
-      mockStore.supabase.from.mockImplementationOnce(() => ({
-        insert: jest.fn().mockResolvedValue({ data: null, error: null }),
       }));
 
       // Mock battles insert
@@ -242,12 +241,6 @@ describe('battleProcessor', () => {
           error: null,
         }),
       }));
-
-      const mockBattle = createMockBattle({
-        type: 'PVP',
-        opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }],
-        team: [{ tag: playerTag, name: 'User', crowns: 3 }],
-      });
 
       (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([mockBattle]);
 
@@ -272,7 +265,14 @@ describe('battleProcessor', () => {
         }),
       }));
 
-      // Mock processed_battles check - battle not processed
+      // Loss battle (opponent has more crowns)
+      const lossBattle = createMockBattle({
+        type: 'PVP',
+        opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 3 }],
+        team: [{ tag: playerTag, name: 'User', crowns: 0 }],
+      });
+
+      // Mock battles check - battle not found (new battle)
       mockStore.supabase.from.mockImplementationOnce(() => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
@@ -281,11 +281,6 @@ describe('battleProcessor', () => {
             error: { code: 'PGRST116' },
           }),
         }),
-      }));
-
-      // Mock processed_battles insert
-      mockStore.supabase.from.mockImplementationOnce(() => ({
-        insert: jest.fn().mockResolvedValue({ data: null, error: null }),
       }));
 
       // Mock battles insert
@@ -302,13 +297,6 @@ describe('battleProcessor', () => {
           error: null,
         }),
       }));
-
-      // Loss battle (opponent has more crowns)
-      const lossBattle = createMockBattle({
-        type: 'PVP',
-        opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 3 }],
-        team: [{ tag: playerTag, name: 'User', crowns: 0 }],
-      });
 
       (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([lossBattle]);
 
@@ -365,6 +353,34 @@ describe('battleProcessor', () => {
         }),
       }));
 
+      const battles = [
+        createMockBattle({ type: 'PVP', opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }], team: [{ tag: playerTag, name: 'User', crowns: 3 }] }),
+        createMockBattle({ type: 'casual_1v1', opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }], team: [{ tag: playerTag, name: 'User', crowns: 3 }] }),
+        createMockBattle({ type: 'path_of_legend', opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }], team: [{ tag: playerTag, name: 'User', crowns: 3 }] }),
+        createMockBattle({ type: 'friendly', opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }], team: [{ tag: playerTag, name: 'User', crowns: 3 }] }),
+        createMockBattle({ type: 'PVP2v2', opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }], team: [{ tag: playerTag, name: 'User', crowns: 3 }] }),
+        createMockBattle({ type: 'clanWar', opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }], team: [{ tag: playerTag, name: 'User', crowns: 3 }] }),
+      ];
+
+      // Mock battles checks - all return not found (new battles)
+      // Should process 4 1v1 battles, so mock 4 checks and 4 inserts
+      for (let i = 0; i < 4; i++) {
+        // Mock battle existence check (not found)
+        mockStore.supabase.from.mockImplementationOnce(() => ({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: null,
+              error: { code: 'PGRST116' },
+            }),
+          }),
+        }));
+        // Mock battle insert
+        mockStore.supabase.from.mockImplementationOnce(() => ({
+          insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+        }));
+      }
+
       // Mock cleanup - no battles to delete
       mockStore.supabase.from.mockImplementationOnce(() => ({
         select: jest.fn().mockReturnThis(),
@@ -375,22 +391,13 @@ describe('battleProcessor', () => {
         }),
       }));
 
-      const battles = [
-        createMockBattle({ type: 'PVP', opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }], team: [{ tag: playerTag, name: 'User', crowns: 3 }] }),
-        createMockBattle({ type: 'casual_1v1', opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }], team: [{ tag: playerTag, name: 'User', crowns: 3 }] }),
-        createMockBattle({ type: 'path_of_legend', opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }], team: [{ tag: playerTag, name: 'User', crowns: 3 }] }),
-        createMockBattle({ type: 'friendly', opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }], team: [{ tag: playerTag, name: 'User', crowns: 3 }] }),
-        createMockBattle({ type: 'PVP2v2', opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }], team: [{ tag: playerTag, name: 'User', crowns: 3 }] }),
-        createMockBattle({ type: 'clanWar', opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }], team: [{ tag: playerTag, name: 'User', crowns: 3 }] }),
-      ];
-
       (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce(battles);
 
       const result = await syncBattlesForUser(userId, playerTag);
 
       // Should process 4 1v1 battles (PVP, casual_1v1, path_of_legend, friendly)
-      // But will be 0 because we're not mocking the processed_battles check properly
       expect(result.battlesProcessed).toBe(4);
+      expect(result.newBattles).toBe(4);
     });
 
     it('should call cleanupOldBattles after processing', async () => {

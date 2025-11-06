@@ -89,9 +89,6 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
   try {
     // Get recent battles from API
     const battles = await getPlayerBattleLog(playerTag);
-    console.log("hi")
-    console.log(battles)
-    console.log(playerTag)
     // Get tracked friends
     const { data: friends, error: friendsError } = await supabase
       .from('tracked_friends')
@@ -119,25 +116,9 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
       );
     });
 
-    console.log(oneVoneBattles)
     // Process each battle
     for (const battle of oneVoneBattles) {
       try {
-        // Generate unique battle ID from API
-        const battleId = `${battle.battleTime}_${battle.type}`;
-
-        // Check if already processed
-        const { data: processed } = await supabase
-          .from('processed_battles')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('battle_id', battleId)
-          .single();
-
-        if (processed) {
-          continue; // Skip already processed battles
-        }
-
         // Determine opponent tag
         const opponent = battle.opponent?.[0];
         if (!opponent) {
@@ -149,21 +130,26 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           continue; // Not tracking this player
         }
 
+        // Check if battle already exists (prevents duplicates via unique constraint)
+        const { data: existingBattle } = await supabase
+          .from('battles')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('battle_time', battle.battleTime)
+          .eq('battle_type', battle.type)
+          .single();
+
+        if (existingBattle) {
+          continue; // Skip already processed battles
+        }
+
         // Determine win/loss based on team crowns
         const userCrowns = battle.team?.[0]?.crowns || 0;
         const opponentCrowns = opponent.crowns || 0;
         const isWin = userCrowns > opponentCrowns;
 
-        // Mark as processed first to prevent duplicates
-        await supabase
-          .from('processed_battles')
-          .insert({
-            user_id: userId,
-            battle_id: battleId,
-          });
-
-        // Store battle record
-        await supabase
+        // Store battle record (unique constraint prevents duplicates)
+        const { error: insertError } = await supabase
           .from('battles')
           .insert({
             user_id: userId,
@@ -171,8 +157,16 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
             battle_type: battle.type,
             opponent_tag: opponent.tag,
             result: isWin ? 'win' : 'loss',
-            processed: true,
           });
+
+        // If insert failed due to unique constraint, skip (race condition handled)
+        if (insertError) {
+          // Check if it's a unique constraint violation (code 23505)
+          if (insertError.code === '23505') {
+            continue; // Battle was already inserted, skip
+          }
+          throw insertError; // Re-throw other errors
+        }
 
         // Update friend record
         if (isWin) {

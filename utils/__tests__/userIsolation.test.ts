@@ -57,7 +57,13 @@ describe('User Isolation', () => {
       };
     });
 
-    // Mock User A's processed_battles check
+    const battleA = createMockBattle({
+      type: 'PVP',
+      opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }],
+      team: [{ tag: playerTagA, name: 'UserA', crowns: 3 }],
+    });
+
+    // Mock User A's battles check - battle not found
     mockStore.supabase.from.mockImplementationOnce(() => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnValue({
@@ -68,11 +74,7 @@ describe('User Isolation', () => {
       }),
     }));
 
-    // Mock User A's inserts
-    mockStore.supabase.from.mockImplementationOnce(() => ({
-      insert: jest.fn().mockResolvedValue({ data: null, error: null }),
-    }));
-
+    // Mock User A's battle insert
     mockStore.supabase.from.mockImplementationOnce(() => ({
       insert: jest.fn().mockResolvedValue({ data: null, error: null }),
     }));
@@ -83,12 +85,6 @@ describe('User Isolation', () => {
       eq: jest.fn().mockReturnThis(),
       order: jest.fn().mockResolvedValue({ data: [], error: null }),
     }));
-
-    const battleA = createMockBattle({
-      type: 'PVP',
-      opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }],
-      team: [{ tag: playerTagA, name: 'UserA', crowns: 3 }],
-    });
 
     (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([battleA]);
 
@@ -117,7 +113,13 @@ describe('User Isolation', () => {
       };
     });
 
-    // Mock User B's processed_battles check
+    const battleB = createMockBattle({
+      type: 'PVP',
+      opponent: [{ tag: '#FRIEND3', name: 'Friend3', crowns: 0 }],
+      team: [{ tag: playerTagB, name: 'UserB', crowns: 3 }],
+    });
+
+    // Mock User B's battles check - battle not found
     mockStore.supabase.from.mockImplementationOnce(() => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnValue({
@@ -128,11 +130,7 @@ describe('User Isolation', () => {
       }),
     }));
 
-    // Mock User B's inserts
-    mockStore.supabase.from.mockImplementationOnce(() => ({
-      insert: jest.fn().mockResolvedValue({ data: null, error: null }),
-    }));
-
+    // Mock User B's battle insert
     mockStore.supabase.from.mockImplementationOnce(() => ({
       insert: jest.fn().mockResolvedValue({ data: null, error: null }),
     }));
@@ -143,12 +141,6 @@ describe('User Isolation', () => {
       eq: jest.fn().mockReturnThis(),
       order: jest.fn().mockResolvedValue({ data: [], error: null }),
     }));
-
-    const battleB = createMockBattle({
-      type: 'PVP',
-      opponent: [{ tag: '#FRIEND3', name: 'Friend3', crowns: 0 }],
-      team: [{ tag: playerTagB, name: 'UserB', crowns: 3 }],
-    });
 
     (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([battleB]);
 
@@ -184,7 +176,13 @@ describe('User Isolation', () => {
       };
     });
 
-    // Mock User A's processed_battles check
+    const battleA = createMockBattle({
+      type: 'PVP',
+      opponent: [{ tag: sharedFriendTag, name: 'SharedFriend', crowns: 0 }],
+      team: [{ tag: playerTagA, name: 'UserA', crowns: 3 }],
+    });
+
+    // Mock User A's battles check - battle not found
     mockStore.supabase.from.mockImplementationOnce(() => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnValue({
@@ -195,11 +193,7 @@ describe('User Isolation', () => {
       }),
     }));
 
-    // Mock User A's inserts
-    mockStore.supabase.from.mockImplementationOnce(() => ({
-      insert: jest.fn().mockResolvedValue({ data: null, error: null }),
-    }));
-
+    // Mock User A's battle insert
     mockStore.supabase.from.mockImplementationOnce(() => ({
       insert: jest.fn().mockResolvedValue({ data: null, error: null }),
     }));
@@ -210,12 +204,6 @@ describe('User Isolation', () => {
       eq: jest.fn().mockReturnThis(),
       order: jest.fn().mockResolvedValue({ data: [], error: null }),
     }));
-
-    const battleA = createMockBattle({
-      type: 'PVP',
-      opponent: [{ tag: sharedFriendTag, name: 'SharedFriend', crowns: 0 }],
-      team: [{ tag: playerTagA, name: 'UserA', crowns: 3 }],
-    });
 
     (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([battleA]);
 
@@ -249,7 +237,13 @@ describe('User Isolation', () => {
       };
     });
 
-    // Mock User B's processed_battles check
+    const battleB = createMockBattle({
+      type: 'PVP',
+      opponent: [{ tag: sharedFriendTag, name: 'SharedFriend', crowns: 3 }],
+      team: [{ tag: playerTagB, name: 'UserB', crowns: 0 }],
+    });
+
+    // Mock User B's battles check - battle not found
     mockStore.supabase.from.mockImplementationOnce(() => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnValue({
@@ -260,11 +254,7 @@ describe('User Isolation', () => {
       }),
     }));
 
-    // Mock User B's inserts
-    mockStore.supabase.from.mockImplementationOnce(() => ({
-      insert: jest.fn().mockResolvedValue({ data: null, error: null }),
-    }));
-
+    // Mock User B's battle insert
     mockStore.supabase.from.mockImplementationOnce(() => ({
       insert: jest.fn().mockResolvedValue({ data: null, error: null }),
     }));
@@ -275,12 +265,6 @@ describe('User Isolation', () => {
       eq: jest.fn().mockReturnThis(),
       order: jest.fn().mockResolvedValue({ data: [], error: null }),
     }));
-
-    const battleB = createMockBattle({
-      type: 'PVP',
-      opponent: [{ tag: sharedFriendTag, name: 'SharedFriend', crowns: 3 }],
-      team: [{ tag: playerTagB, name: 'UserB', crowns: 0 }],
-    });
 
     (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([battleB]);
 
@@ -313,7 +297,13 @@ describe('User Isolation', () => {
       };
     });
 
-    // Mock User A's processed_battles check
+    const battle = createMockBattle({
+      type: 'PVP',
+      opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }],
+      team: [{ tag: playerTagA, name: 'UserA', crowns: 3 }],
+    });
+
+    // Mock User A's battles check - battle not found
     mockStore.supabase.from.mockImplementationOnce(() => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnValue({
@@ -324,11 +314,7 @@ describe('User Isolation', () => {
       }),
     }));
 
-    // Mock User A's inserts
-    mockStore.supabase.from.mockImplementationOnce(() => ({
-      insert: jest.fn().mockResolvedValue({ data: null, error: null }),
-    }));
-
+    // Mock User A's battle insert
     mockStore.supabase.from.mockImplementationOnce(() => ({
       insert: jest.fn().mockResolvedValue({ data: null, error: null }),
     }));
@@ -339,12 +325,6 @@ describe('User Isolation', () => {
       eq: jest.fn().mockReturnThis(),
       order: jest.fn().mockResolvedValue({ data: [], error: null }),
     }));
-
-    const battle = createMockBattle({
-      type: 'PVP',
-      opponent: [{ tag: '#FRIEND1', name: 'Friend1', crowns: 0 }],
-      team: [{ tag: playerTagA, name: 'UserA', crowns: 3 }],
-    });
 
     (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([battle]);
 

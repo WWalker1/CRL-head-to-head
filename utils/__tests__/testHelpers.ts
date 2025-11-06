@@ -97,7 +97,6 @@ export function createMockBattleRecord(
   overrides?: Partial<{
     id: string;
     battle_type: string;
-    processed: boolean;
   }>
 ) {
   return {
@@ -107,7 +106,6 @@ export function createMockBattleRecord(
     battle_type: overrides?.battle_type || 'PVP',
     opponent_tag: opponentTag,
     result,
-    processed: overrides?.processed !== undefined ? overrides.processed : true,
     created_at: new Date().toISOString(),
   };
 }
