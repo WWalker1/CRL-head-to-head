@@ -65,5 +65,6 @@ export interface BattleResult {
   battlesProcessed: number;
   recordsUpdated: number;
   newBattles: number;
+  deletedBattles: number;
 }
 
