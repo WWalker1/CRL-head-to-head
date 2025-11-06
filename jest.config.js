@@ -12,6 +12,21 @@ const customJestConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
+  // Exclude test helper files from being treated as test files
+  testMatch: [
+    '**/__tests__/**/*.test.[jt]s?(x)',
+    '**/?(*.)+(spec|test).[jt]s?(x)'
+  ],
+  // Exclude test helper files
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/.next/',
+    'testHelpers\\.ts$'
+  ],
+  // Use node environment for API route tests
+  testEnvironmentOptions: {
+    customExportConditions: [''],
+  },
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

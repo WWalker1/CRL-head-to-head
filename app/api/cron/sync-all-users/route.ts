@@ -32,15 +32,22 @@ interface CronSyncResponse {
   errors: string[];
 }
 
+// Force dynamic execution to prevent caching
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Verify request is from Vercel Cron
+    // Vercel sends x-vercel-cron header with value "1" for cron jobs
     const cronHeader = request.headers.get('x-vercel-cron');
     const cronSecret = request.headers.get('authorization')?.replace('Bearer ', '');
     const expectedSecret = process.env.CRON_SECRET;
 
-    // Vercel automatically sends x-vercel-cron header, or we can verify CRON_SECRET
-    if (!cronHeader && (!expectedSecret || cronSecret !== expectedSecret)) {
+    // Vercel automatically sends x-vercel-cron header with value "1", or we can verify CRON_SECRET
+    const isVercelCron = cronHeader === '1';
+    const isValidSecret = expectedSecret && cronSecret === expectedSecret;
+
+    if (!isVercelCron && !isValidSecret) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
