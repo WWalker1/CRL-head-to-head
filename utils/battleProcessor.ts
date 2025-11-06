@@ -11,7 +11,70 @@ export interface SyncResult {
   battlesProcessed: number;
   recordsUpdated: number;
   newBattles: number;
+  deletedBattles: number;
   errors: string[];
+}
+
+/**
+ * Cleanup old battles, keeping only the last 25 per user
+ * This helps reduce storage costs by maintaining only recent battle history
+ */
+async function cleanupOldBattles(userId: string): Promise<number> {
+  try {
+    // Get all battles for the user, ordered by battle_time DESC (most recent first)
+    const { data: allBattles, error: fetchError } = await supabase
+      .from('battles')
+      .select('id')
+      .eq('user_id', userId)
+      .order('battle_time', { ascending: false });
+
+    if (fetchError) {
+      console.error('Error fetching battles for cleanup:', fetchError);
+      return 0;
+    }
+
+    // If we have 25 or fewer battles, no cleanup needed
+    if (!allBattles || allBattles.length <= 25) {
+      return 0;
+    }
+
+    // Get the IDs of the 25 most recent battles to keep
+    const battlesToKeep = allBattles.slice(0, 25).map(b => b.id);
+    const battlesToKeepSet = new Set(battlesToKeep);
+
+    // Get all battle IDs to delete (those not in the top 25)
+    const battlesToDelete = allBattles
+      .filter(b => !battlesToKeepSet.has(b.id))
+      .map(b => b.id);
+
+    if (battlesToDelete.length === 0) {
+      return 0;
+    }
+
+    // Delete battles in batches to avoid query size limits
+    let deletedCount = 0;
+    const batchSize = 100;
+    for (let i = 0; i < battlesToDelete.length; i += batchSize) {
+      const batch = battlesToDelete.slice(i, i + batchSize);
+      const { error: deleteError, count } = await supabase
+        .from('battles')
+        .delete()
+        .eq('user_id', userId)
+        .in('id', batch);
+
+      if (deleteError) {
+        console.error('Error deleting old battles:', deleteError);
+        continue;
+      }
+
+      deletedCount += count || 0;
+    }
+
+    return deletedCount;
+  } catch (err: any) {
+    console.error('Error in cleanupOldBattles:', err);
+    return 0;
+  }
 }
 
 export async function syncBattlesForUser(userId: string, playerTag: string): Promise<SyncResult> {
@@ -19,6 +82,7 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
     battlesProcessed: 0,
     recordsUpdated: 0,
     newBattles: 0,
+    deletedBattles: 0,
     errors: [],
   };
 
@@ -131,6 +195,9 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
     }
 
     result.battlesProcessed = oneVoneBattles.length;
+
+    // Cleanup old battles, keeping only the last 25
+    result.deletedBattles = await cleanupOldBattles(userId);
   } catch (err: any) {
     result.errors.push(`Failed to sync battles: ${err.message}`);
   }
