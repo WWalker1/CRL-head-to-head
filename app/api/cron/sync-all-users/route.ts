@@ -32,19 +32,30 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    // Log all headers for debugging
+    const allHeaders: Record<string, string> = {};
+    request.headers.forEach((value, key) => {
+      allHeaders[key] = value;
+    });
+    console.log('[ALL HEADERS]', JSON.stringify(allHeaders, null, 2));
+
     // Verify request is from Vercel Cron
     // Vercel sends x-vercel-cron header with value "1" for cron jobs
-    const cronHeader = request.headers.get('x-vercel-cron');
+    // OR we can check User-Agent: vercel-cron/1.0 as fallback
+    const cronHeader = request.headers.get('x-vercel-cron') || request.headers.get('X-Vercel-Cron');
+    const userAgent = request.headers.get('user-agent') || request.headers.get('User-Agent') || '';
     const cronSecret = request.headers.get('authorization')?.replace('Bearer ', '');
     const expectedSecret = process.env.CRON_SECRET;
 
-    // Vercel automatically sends x-vercel-cron header with value "1", or we can verify CRON_SECRET
-    const isVercelCron = cronHeader === '1';
+    // Check multiple ways Vercel might identify cron jobs
+    // User-Agent contains 'vercel-cron' is a reliable indicator
+    const isVercelCron = cronHeader === '1' || userAgent.includes('vercel-cron');
     const isValidSecret = expectedSecret && cronSecret === expectedSecret;
 
     console.log('[CRON AUTH]', {
       hasCronHeader: !!cronHeader,
       cronHeaderValue: cronHeader,
+      userAgent,
       isVercelCron,
       hasCronSecret: !!cronSecret,
       hasExpectedSecret: !!expectedSecret,
@@ -191,4 +202,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
