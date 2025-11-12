@@ -5,6 +5,7 @@ export interface TrackedFriend {
   friend_name: string;
   total_wins: number;
   total_losses: number;
+  elo_rating: number;
   created_at: string;
   updated_at: string;
 }

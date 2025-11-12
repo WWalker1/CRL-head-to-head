@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getPlayerInfo } from '@/lib/clashRoyaleApi';
 
+const DEFAULT_ELO = 1500;
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -50,12 +52,21 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         friend_player_tag: friendInfo.tag,
         friend_name: friendInfo.name,
+        elo_rating: DEFAULT_ELO,
       })
       .select()
       .single();
 
     if (error) {
       return NextResponse.json({ error: 'Failed to add friend' }, { status: 500 });
+    }
+
+    const { error: ratingUpsertError } = await supabase
+      .from('user_ratings')
+      .upsert({ user_id: user.id, elo_rating: DEFAULT_ELO }, { onConflict: 'user_id' });
+
+    if (ratingUpsertError) {
+      console.error('Failed to initialize user rating:', ratingUpsertError);
     }
 
     return NextResponse.json(data);

@@ -15,6 +15,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userTag, setUserTag] = useState('');
+  const [userElo, setUserElo] = useState(1500);
 
   useEffect(() => {
     fetchFriends();
@@ -41,6 +42,22 @@ export default function DashboardPage() {
         console.error('Error fetching friends:', error);
       } else {
         setFriends(data || []);
+      }
+
+      const { data: ratingData, error: ratingError } = await supabase
+        .from('user_ratings')
+        .select('elo_rating')
+        .eq('user_id', user.id)
+        .single();
+
+      if (ratingError) {
+        if (ratingError.code === 'PGRST116') {
+          setUserElo(1500);
+        } else {
+          console.error('Error fetching user rating:', ratingError);
+        }
+      } else {
+        setUserElo(ratingData?.elo_rating ?? 1500);
       }
     } catch (error) {
       console.error('Error fetching friends:', error);
@@ -167,6 +184,7 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-4xl font-bold text-white">CRL Tracker</h1>
             <p className="text-blue-100 mt-1">Tag: {userTag}</p>
+            <p className="text-blue-100 mt-1">Elo: {userElo}</p>
           </div>
           <button
             onClick={handleLogout}

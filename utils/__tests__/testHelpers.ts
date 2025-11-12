@@ -72,6 +72,7 @@ export function createMockTrackedFriend(
     friend_name: string;
     total_wins: number;
     total_losses: number;
+    elo_rating: number;
   }>
 ) {
   return {
@@ -81,6 +82,7 @@ export function createMockTrackedFriend(
     friend_name: overrides?.friend_name || `Friend ${friendTag}`,
     total_wins: overrides?.total_wins || 0,
     total_losses: overrides?.total_losses || 0,
+    elo_rating: overrides?.elo_rating ?? 1500,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -137,6 +139,7 @@ export function createMockQueryBuilder(mockData: any = null, mockError: any = nu
     order: jest.fn().mockReturnThis(),
     insert: jest.fn().mockResolvedValue({ data: mockData, error: mockError }),
     update: jest.fn().mockReturnThis(),
+    upsert: jest.fn().mockReturnThis(),
     delete: jest.fn().mockReturnThis(),
     single: jest.fn().mockResolvedValue({ data: mockData, error: mockError }),
     in: jest.fn().mockResolvedValue({ data: mockData, error: mockError, count: 0 }),
