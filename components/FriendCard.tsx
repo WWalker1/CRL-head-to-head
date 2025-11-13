@@ -1,4 +1,5 @@
 import { TrackedFriend } from '@/lib/types';
+import EloDisplay from './EloDisplay';
 
 interface FriendCardProps {
   friend: TrackedFriend;
@@ -17,7 +18,10 @@ export default function FriendCard({ friend, onRemove }: FriendCardProps) {
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-900">{friend.friend_name}</h3>
           <p className="text-sm text-gray-500">{friend.friend_player_tag}</p>
-          <p className="text-sm text-gray-500 mt-1">Elo: {friend.elo_rating}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-sm text-gray-500">Elo:</span>
+            <EloDisplay elo={friend.elo_rating ?? 1500} size="md" />
+          </div>
           
           <div className="mt-4">
             <div className="flex items-baseline gap-4">

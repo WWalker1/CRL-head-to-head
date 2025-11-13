@@ -72,7 +72,7 @@ export function createMockTrackedFriend(
     friend_name: string;
     total_wins: number;
     total_losses: number;
-    elo_rating: number;
+    elo_rating?: number;
   }>
 ) {
   return {
@@ -82,7 +82,7 @@ export function createMockTrackedFriend(
     friend_name: overrides?.friend_name || `Friend ${friendTag}`,
     total_wins: overrides?.total_wins || 0,
     total_losses: overrides?.total_losses || 0,
-    elo_rating: overrides?.elo_rating ?? 1500,
+    elo_rating: overrides?.elo_rating,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
