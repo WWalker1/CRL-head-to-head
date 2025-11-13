@@ -64,42 +64,80 @@ interface UserRatingData {
   updated_at: string | null;
 }
 
-// literally just gets user rating from the elo table but has to check to see if they exist first 
+// Gets user rating data - if player_tag exists, use that rating (shared across all users with same tag)
+// Otherwise create a new entry for this user_id
 async function getUserRatingData(userId: string, playerTag?: string): Promise<UserRatingData> {
-  const { data, error } = await supabase
+  // First, check if this user already has a rating entry
+  const { data: existingUserData, error: userError } = await supabase
     .from('user_ratings')
     .select('elo_rating, player_tag, num_ranked_games, updated_at')
     .eq('user_id', userId)
     .single();
 
-  if (error && error.code !== 'PGRST116') {
-    throw error;
+  if (userError && userError.code !== 'PGRST116') {
+    throw userError;
   }
 
-  // if the player already has an elo just return what they cur have
-  if (data) {
-    // Update player_tag if it's missing or different
-    if (playerTag && data.player_tag !== playerTag) {
+  // If user has existing entry, return it (update player_tag if needed)
+  if (existingUserData) {
+    if (playerTag && existingUserData.player_tag !== playerTag) {
       await supabase
         .from('user_ratings')
         .update({ player_tag: playerTag })
         .eq('user_id', userId);
     }
     return {
-      elo_rating: data.elo_rating ?? DEFAULT_ELO,
-      num_ranked_games: data.num_ranked_games ?? 0,
-      updated_at: data.updated_at,
+      elo_rating: existingUserData.elo_rating ?? DEFAULT_ELO,
+      num_ranked_games: existingUserData.num_ranked_games ?? 0,
+      updated_at: existingUserData.updated_at,
     };
   }
 
+  // User doesn't have an entry yet
+  // If player_tag is provided, check if any entry exists for this player_tag
+  // (Multiple users can have the same player_tag, so we use the first one's rating)
+  if (playerTag) {
+    const { data: existingTagData } = await supabase
+      .from('user_ratings')
+      .select('elo_rating, num_ranked_games, updated_at')
+      .eq('player_tag', playerTag)
+      .limit(1)
+      .single();
+
+    if (existingTagData) {
+      // Player_tag already exists - create entry for this user with same rating values
+      const { data: newData, error: insertError } = await supabase
+        .from('user_ratings')
+        .insert({
+          user_id: userId,
+          elo_rating: existingTagData.elo_rating ?? DEFAULT_ELO,
+          player_tag: playerTag,
+          num_ranked_games: existingTagData.num_ranked_games ?? 0,
+        })
+        .select('elo_rating, num_ranked_games, updated_at')
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      return {
+        elo_rating: newData?.elo_rating ?? DEFAULT_ELO,
+        num_ranked_games: newData?.num_ranked_games ?? 0,
+        updated_at: newData?.updated_at ?? null,
+      };
+    }
+  }
+
+  // No existing entry for this player_tag - create new one
   const { data: upsertData, error: upsertError } = await supabase
     .from('user_ratings')
-    .upsert({ 
+    .insert({ 
       user_id: userId, 
       elo_rating: DEFAULT_ELO,
       player_tag: playerTag || null,
       num_ranked_games: 0,
-    }, { onConflict: 'user_id' })
+    })
     .select('elo_rating, num_ranked_games, updated_at')
     .single();
 
@@ -317,14 +355,17 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           : 0;
 
         // Check if opponent has an account and get their rating from user_ratings
-        const { data: opponentUserRating } = await supabase
+        // Multiple users can have the same player_tag, so get the first one (they should all have same rating)
+        const { data: opponentRatingData } = await supabase
           .from('user_ratings')
-          .select('user_id, elo_rating')
+          .select('elo_rating, num_ranked_games, updated_at')
           .eq('player_tag', opponent.tag)
+          .limit(1)
           .single();
 
         // Get opponent's rating from user_ratings (actual current rating, not cached in tracked_friends)
-        const opponentRating = opponentUserRating?.elo_rating ?? DEFAULT_ELO;
+        const opponentRating = opponentRatingData?.elo_rating ?? DEFAULT_ELO;
+        const opponentHasAccount = !!opponentRatingData;
 
         // Calculate Elo change for current user
         const newUserRating = calculateEloChange(
@@ -336,25 +377,47 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         );
 
         // Update current user's rating and increment game count
-        const { error: userRatingUpdateError } = await supabase
-          .from('user_ratings')
-          .update({ 
-            elo_rating: newUserRating,
-            player_tag: playerTag,
-            num_ranked_games: userNumRankedGames + 1
-          })
-          .eq('user_id', userId)
-          .select('elo_rating, num_ranked_games')
-          .single();
+        // Elo rating is shared across all users with same player_tag, but num_ranked_games is per-user
+        if (playerTag) {
+          // Update elo_rating for all entries with this player_tag (keep them in sync)
+          const { error: eloUpdateError } = await supabase
+            .from('user_ratings')
+            .update({ elo_rating: newUserRating })
+            .eq('player_tag', playerTag);
 
-        if (userRatingUpdateError) {
-          console.error('Error updating user rating:', userRatingUpdateError);
-          result.errors.push('Failed to update player rating');
+          // Update num_ranked_games only for this specific user
+          const { error: gamesUpdateError } = await supabase
+            .from('user_ratings')
+            .update({ num_ranked_games: userNumRankedGames + 1 })
+            .eq('user_id', userId);
+
+          if (eloUpdateError || gamesUpdateError) {
+            console.error('Error updating user rating:', eloUpdateError || gamesUpdateError);
+            result.errors.push('Failed to update player rating');
+          } else {
+            userRating = newUserRating;
+            userNumRankedGames = userNumRankedGames + 1;
+            // Update updated_at for next battle calculation (use battle time, not current time)
+            userRatingData.updated_at = battle.battleTime;
+          }
         } else {
-          userRating = newUserRating;
-          userNumRankedGames = userNumRankedGames + 1;
-          // Update updated_at for next battle calculation (use battle time, not current time)
-          userRatingData.updated_at = battle.battleTime;
+          // No player_tag, just update by user_id
+          const { error: userRatingUpdateError } = await supabase
+            .from('user_ratings')
+            .update({ 
+              elo_rating: newUserRating,
+              num_ranked_games: userNumRankedGames + 1
+            })
+            .eq('user_id', userId);
+
+          if (userRatingUpdateError) {
+            console.error('Error updating user rating:', userRatingUpdateError);
+            result.errors.push('Failed to update player rating');
+          } else {
+            userRating = newUserRating;
+            userNumRankedGames = userNumRankedGames + 1;
+            userRatingData.updated_at = battle.battleTime;
+          }
         }
 
         // Update tracked_friends record with new rating
@@ -380,51 +443,35 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         }
 
         // If opponent has an account, update their Elo rating too
-        if (opponentUserRating) {
-          // Get opponent's rating data
-          const { data: oppData } = await supabase
+        // Update ALL records with this player_tag to keep them in sync
+        if (opponentHasAccount && opponentRatingData) {
+          const opponentDaysSinceLastBattle = opponentRatingData.updated_at
+            ? Math.floor((battleTime - new Date(opponentRatingData.updated_at).getTime()) / (1000 * 60 * 60 * 24))
+            : 0;
+
+          // Calculate Elo change for opponent
+          const newOpponentRating = calculateEloChange(
+            opponentRatingData.elo_rating,
+            userRating,
+            isWin ? 0 : 1,
+            opponentRatingData.num_ranked_games ?? 0,
+            opponentDaysSinceLastBattle
+          );
+
+          // Update ALL user_ratings records with this player_tag to keep elo_rating in sync
+          // Note: We don't update opponent's num_ranked_games here - they'll do that when they sync
+          // We don't update opponent's tracked_friends record here either - they'll do that when they sync
+          // This prevents double-counting battles while still allowing double Elo changes
+          const { error: opponentRatingUpdateError } = await supabase
             .from('user_ratings')
-            .select('elo_rating, num_ranked_games, updated_at')
-            .eq('user_id', opponentUserRating.user_id)
-            .single();
+            .update({ 
+              elo_rating: newOpponentRating
+            })
+            .eq('player_tag', opponent.tag);
 
-          if (oppData) {
-            const opponentRatingData: UserRatingData = {
-              elo_rating: oppData.elo_rating ?? DEFAULT_ELO,
-              num_ranked_games: oppData.num_ranked_games ?? 0,
-              updated_at: oppData.updated_at,
-            };
-
-            const opponentDaysSinceLastBattle = opponentRatingData.updated_at
-              ? Math.floor((battleTime - new Date(opponentRatingData.updated_at).getTime()) / (1000 * 60 * 60 * 24))
-              : 0;
-
-            // Calculate Elo change for opponent
-            const newOpponentRating = calculateEloChange(
-              opponentRatingData.elo_rating,
-              userRating,
-              isWin ? 0 : 1,
-              opponentRatingData.num_ranked_games,
-              opponentDaysSinceLastBattle
-            );
-
-            // Update opponent's Elo rating
-            // Note: We don't update opponent's tracked_friends record here - they'll do that when they sync
-            // This prevents double-counting battles while still allowing double Elo changes
-            const { error: opponentRatingUpdateError } = await supabase
-              .from('user_ratings')
-              .update({ 
-                elo_rating: newOpponentRating,
-                num_ranked_games: opponentRatingData.num_ranked_games + 1
-              })
-              .eq('user_id', opponentUserRating.user_id)
-              .select('elo_rating, num_ranked_games')
-              .single();
-
-            if (opponentRatingUpdateError) {
-              console.error('Error updating opponent rating:', opponentRatingUpdateError);
-              result.errors.push(`Failed to update opponent rating for ${opponent.tag}`);
-            }
+          if (opponentRatingUpdateError) {
+            console.error('Error updating opponent rating:', opponentRatingUpdateError);
+            result.errors.push(`Failed to update opponent rating for ${opponent.tag}`);
           }
         }
       } catch (err: any) {
