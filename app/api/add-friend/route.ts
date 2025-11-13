@@ -52,7 +52,6 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         friend_player_tag: friendInfo.tag,
         friend_name: friendInfo.name,
-        elo_rating: DEFAULT_ELO,
       })
       .select()
       .single();

@@ -7,6 +7,7 @@ import { TrackedFriend } from '@/lib/types';
 import FriendCard from '@/components/FriendCard';
 import AddFriendModal from '@/components/AddFriendModal';
 import SyncButton from '@/components/SyncButton';
+import EloDisplay from '@/components/EloDisplay';
 import toast from 'react-hot-toast';
 
 export default function DashboardPage() {
@@ -16,6 +17,7 @@ export default function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userTag, setUserTag] = useState('');
   const [userElo, setUserElo] = useState(1500);
+  const [averageElo, setAverageElo] = useState<number | null>(null);
 
   useEffect(() => {
     fetchFriends();
@@ -32,6 +34,7 @@ export default function DashboardPage() {
         return;
       }
 
+      // Fetch tracked friends
       const { data, error } = await supabase
         .from('tracked_friends')
         .select('*')
@@ -40,10 +43,75 @@ export default function DashboardPage() {
 
       if (error) {
         console.error('Error fetching friends:', error);
+        setFriends([]);
       } else {
-        setFriends(data || []);
+        const friendsData = data || [];
+        
+        // Fetch ELO ratings from user_ratings table for each friend via API endpoint
+        const friendTags = friendsData.map(f => f.friend_player_tag);
+        
+        if (friendTags.length > 0) {
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (session) {
+            try {
+              const response = await fetch('/api/friend-ratings', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ playerTags: friendTags }),
+              });
+
+              if (!response.ok) {
+                throw new Error('Failed to fetch friend ratings');
+              }
+
+              const { ratings } = await response.json();
+
+              // Update friends with ELOs from user_ratings, default to 1500 if not found
+              const friendsWithRatings = friendsData.map(friend => ({
+                ...friend,
+                elo_rating: ratings[friend.friend_player_tag] ?? 1500,
+              }));
+
+              setFriends(friendsWithRatings);
+
+              // Calculate average ELO
+              const elos = friendsWithRatings.map(f => f.elo_rating ?? 1500);
+              if (elos.length > 0) {
+                const avg = Math.round(elos.reduce((sum, elo) => sum + elo, 0) / elos.length);
+                setAverageElo(avg);
+              } else {
+                setAverageElo(null);
+              }
+            } catch (error) {
+              console.error('Error fetching friend ratings:', error);
+              // If ratings fetch fails, set friends with default ELOs
+              const friendsWithDefaultRatings = friendsData.map(friend => ({
+                ...friend,
+                elo_rating: 1500,
+              }));
+              setFriends(friendsWithDefaultRatings);
+              setAverageElo(1500);
+            }
+          } else {
+            // No session, set friends with default ELOs
+            const friendsWithDefaultRatings = friendsData.map(friend => ({
+              ...friend,
+              elo_rating: 1500,
+            }));
+            setFriends(friendsWithDefaultRatings);
+            setAverageElo(1500);
+          }
+        } else {
+          setFriends(friendsData);
+          setAverageElo(null);
+        }
       }
 
+      // Fetch user's own ELO rating
       const { data: ratingData, error: ratingError } = await supabase
         .from('user_ratings')
         .select('elo_rating')
@@ -184,7 +252,16 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-4xl font-bold text-white">CRL Tracker</h1>
             <p className="text-blue-100 mt-1">Tag: {userTag}</p>
-            <p className="text-blue-100 mt-1">Elo: {userElo}</p>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-blue-100">Elo:</span>
+              <EloDisplay elo={userElo} size="lg" />
+            </div>
+            {averageElo !== null && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-blue-100">Average Friend Elo:</span>
+                <EloDisplay elo={averageElo} size="md" />
+              </div>
+            )}
           </div>
           <button
             onClick={handleLogout}
