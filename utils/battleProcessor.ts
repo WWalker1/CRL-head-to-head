@@ -10,10 +10,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// simple win probability calculation
 function calculateExpectedScore(playerRating: number, opponentRating: number) {
   return 1 / (1 + Math.pow(10, (opponentRating - playerRating) / 400));
 }
 
+// uses time since last battle, num ranked battles played, and exp_res to calculate ELO change
 function calculateEloChange(
   playerRating: number, 
   opponentRating: number, 
@@ -73,6 +75,7 @@ async function getUserRatingData(userId: string, playerTag?: string): Promise<Us
     throw error;
   }
 
+  // if the player already has an elo just return what they cur have
   if (data) {
     // Update player_tag if it's missing or different
     if (playerTag && data.player_tag !== playerTag) {
@@ -289,57 +292,6 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           throw insertError; // Re-throw other errors
         }
 
-        // Check if opponent has an account
-        const { data: opponentUserRating } = await supabase
-          .from('user_ratings')
-          .select('user_id, elo_rating')
-          .eq('player_tag', opponent.tag)
-          .single();
-
-        // Track whether we inserted the battle for the opponent (to know if we should update their rating)
-        let insertedOpponentBattle = false;
-
-        // Insert battle into opponent's battles table (if they have an account)
-        // This ensures both players have the battle record, preventing double-processing
-        if (opponentUserRating) {
-          // Check if opponent already has this battle (they might have processed it first)
-          const { data: opponentBattle } = await supabase
-            .from('battles')
-            .select('id')
-            .eq('user_id', opponentUserRating.user_id)
-            .eq('battle_time', battle.battleTime)
-            .eq('battle_type', battle.type)
-            .single();
-
-          if (!opponentBattle) {
-            // Insert battle from opponent's perspective
-            await supabase
-              .from('battles')
-              .insert({
-                user_id: opponentUserRating.user_id,
-                battle_time: battle.battleTime,
-                battle_type: battle.type,
-                opponent_tag: playerTag,
-                result: isWin ? 'loss' : 'win', // Opposite result from opponent's perspective
-              });
-
-            insertedOpponentBattle = true;
-
-            // Update opponent's tracked_friends record (if they're tracking this user)
-            if (isWin) {
-              await supabase.rpc('increment_loss', {
-                p_user_id: opponentUserRating.user_id,
-                p_friend_tag: playerTag,
-              });
-            } else {
-              await supabase.rpc('increment_win', {
-                p_user_id: opponentUserRating.user_id,
-                p_friend_tag: playerTag,
-              });
-            }
-          }
-        }
-
         // Update current user's friend record
         if (isWin) {
           await supabase.rpc('increment_win', {
@@ -363,49 +315,23 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           ? Math.floor((battleTime - new Date(userRatingData.updated_at).getTime()) / (1000 * 60 * 60 * 24))
           : 0;
 
-        // Get opponent's rating data if they have an account
-        let opponentRatingData: UserRatingData | null = null;
-        if (opponentUserRating) {
-          try {
-            const { data: oppData } = await supabase
-              .from('user_ratings')
-              .select('elo_rating, num_ranked_games, updated_at')
-              .eq('user_id', opponentUserRating.user_id)
-              .single();
-            
-            if (oppData) {
-              opponentRatingData = {
-                elo_rating: oppData.elo_rating ?? DEFAULT_ELO,
-                num_ranked_games: oppData.num_ranked_games ?? 0,
-                updated_at: oppData.updated_at,
-              };
-            }
-          } catch (err) {
-            // Opponent might not have rating data yet, use default
-            opponentRatingData = null;
-          }
-        }
+        // Get opponent's rating from tracked_friends (current user's view)
+        const opponentRating = friendRatings.get(opponent.tag) ?? DEFAULT_ELO;
 
-        const opponentRating = opponentRatingData?.elo_rating ?? friendRatings.get(opponent.tag) ?? DEFAULT_ELO;
-        const opponentNumRankedGames = opponentRatingData?.num_ranked_games ?? 0;
-        const opponentDaysSinceLastBattle = opponentRatingData?.updated_at
-          ? Math.floor((battleTime - new Date(opponentRatingData.updated_at).getTime()) / (1000 * 60 * 60 * 24))
-          : 0;
+        // Check if opponent has an account
+        const { data: opponentUserRating } = await supabase
+          .from('user_ratings')
+          .select('user_id')
+          .eq('player_tag', opponent.tag)
+          .single();
 
-        // Calculate new ratings with adjusted K-factor
+        // Calculate Elo change for current user
         const newUserRating = calculateEloChange(
           userRating, 
           opponentRating, 
           isWin ? 1 : 0,
           userNumRankedGames,
           daysSinceLastBattle
-        );
-        const newFriendRating = calculateEloChange(
-          opponentRating, 
-          userRating, 
-          isWin ? 0 : 1,
-          opponentNumRankedGames,
-          opponentDaysSinceLastBattle
         );
 
         // Update current user's rating and increment game count
@@ -430,6 +356,15 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           userRatingData.updated_at = battle.battleTime;
         }
 
+        // Update tracked_friends record with new rating
+        const newFriendRating = calculateEloChange(
+          opponentRating, 
+          userRating, 
+          isWin ? 0 : 1,
+          0, // We don't track opponent's game count in tracked_friends
+          0  // We don't track opponent's recency in tracked_friends
+        );
+
         const { error: friendRatingUpdateError } = await supabase
           .from('tracked_friends')
           .update({ elo_rating: newFriendRating })
@@ -445,22 +380,74 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           friendRatings.set(opponent.tag, newFriendRating);
         }
 
-        // Update opponent's user_ratings Elo (only if we just inserted their battle)
-        // If they already had the battle, they processed it first and already updated their rating
-        if (opponentUserRating && insertedOpponentBattle && opponentRatingData) {
-          const { error: opponentRatingUpdateError } = await supabase
+        // If opponent has an account, update their Elo rating too
+        if (opponentUserRating) {
+          // Get opponent's rating data
+          const { data: oppData } = await supabase
             .from('user_ratings')
-            .update({ 
-              elo_rating: newFriendRating,
-              num_ranked_games: opponentNumRankedGames + 1
-            })
+            .select('elo_rating, num_ranked_games, updated_at')
             .eq('user_id', opponentUserRating.user_id)
-            .select('elo_rating, num_ranked_games')
             .single();
 
-          if (opponentRatingUpdateError) {
-            console.error('Error updating opponent rating:', opponentRatingUpdateError);
-            result.errors.push(`Failed to update opponent rating for ${opponent.tag}`);
+          if (oppData) {
+            const opponentRatingData: UserRatingData = {
+              elo_rating: oppData.elo_rating ?? DEFAULT_ELO,
+              num_ranked_games: oppData.num_ranked_games ?? 0,
+              updated_at: oppData.updated_at,
+            };
+
+            const opponentDaysSinceLastBattle = opponentRatingData.updated_at
+              ? Math.floor((battleTime - new Date(opponentRatingData.updated_at).getTime()) / (1000 * 60 * 60 * 24))
+              : 0;
+
+            // Calculate Elo change for opponent
+            const newOpponentRating = calculateEloChange(
+              opponentRatingData.elo_rating,
+              userRating,
+              isWin ? 0 : 1,
+              opponentRatingData.num_ranked_games,
+              opponentDaysSinceLastBattle
+            );
+
+            // Insert battle into opponent's battles table
+            await supabase
+              .from('battles')
+              .insert({
+                user_id: opponentUserRating.user_id,
+                battle_time: battle.battleTime,
+                battle_type: battle.type,
+                opponent_tag: playerTag,
+                result: isWin ? 'loss' : 'win', // Opposite result from opponent's perspective
+              });
+
+            // Update opponent's tracked_friends record
+            if (isWin) {
+              await supabase.rpc('increment_loss', {
+                p_user_id: opponentUserRating.user_id,
+                p_friend_tag: playerTag,
+              });
+            } else {
+              await supabase.rpc('increment_win', {
+                p_user_id: opponentUserRating.user_id,
+                p_friend_tag: playerTag,
+              });
+            }
+
+            // Update opponent's Elo rating
+            const { error: opponentRatingUpdateError } = await supabase
+              .from('user_ratings')
+              .update({ 
+                elo_rating: newOpponentRating,
+                num_ranked_games: opponentRatingData.num_ranked_games + 1
+              })
+              .eq('user_id', opponentUserRating.user_id)
+              .select('elo_rating, num_ranked_games')
+              .single();
+
+            if (opponentRatingUpdateError) {
+              console.error('Error updating opponent rating:', opponentRatingUpdateError);
+              result.errors.push(`Failed to update opponent rating for ${opponent.tag}`);
+            }
           }
         }
       } catch (err: any) {
