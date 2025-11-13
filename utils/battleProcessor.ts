@@ -64,6 +64,7 @@ interface UserRatingData {
   updated_at: string | null;
 }
 
+// literally just gets user rating from the elo table but has to check to see if they exist first 
 async function getUserRatingData(userId: string, playerTag?: string): Promise<UserRatingData> {
   const { data, error } = await supabase
     .from('user_ratings')
@@ -183,6 +184,8 @@ async function cleanupOldBattles(userId: string): Promise<number> {
   }
 }
 
+
+// the code that does the stuff for all the things
 export async function syncBattlesForUser(userId: string, playerTag: string): Promise<SyncResult> {
   const result: SyncResult = {
     battlesProcessed: 0,
@@ -195,10 +198,11 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
   try {
     // Get recent battles from API
     const battles = await getPlayerBattleLog(playerTag);
-    // Get tracked friends
+
+    // Get tracked friends (just for the tags, not for Elo ratings)
     const { data: friends, error: friendsError } = await supabase
       .from('tracked_friends')
-      .select('friend_player_tag, elo_rating')
+      .select('friend_player_tag')
       .eq('user_id', userId);
 
     if (friendsError) {
@@ -207,11 +211,8 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
     }
 
     const trackedTags = new Set(friends?.map(f => f.friend_player_tag) || []);
-    const friendRatings = new Map<string, number>();
-    friends?.forEach(friend => {
-      friendRatings.set(friend.friend_player_tag, friend.elo_rating ?? DEFAULT_ELO);
-    });
 
+    // gets your own rating data
     let userRatingData: UserRatingData;
     try {
       userRatingData = await getUserRatingData(userId, playerTag);
@@ -315,15 +316,15 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           ? Math.floor((battleTime - new Date(userRatingData.updated_at).getTime()) / (1000 * 60 * 60 * 24))
           : 0;
 
-        // Get opponent's rating from tracked_friends (current user's view)
-        const opponentRating = friendRatings.get(opponent.tag) ?? DEFAULT_ELO;
-
-        // Check if opponent has an account
+        // Check if opponent has an account and get their rating from user_ratings
         const { data: opponentUserRating } = await supabase
           .from('user_ratings')
-          .select('user_id')
+          .select('user_id, elo_rating')
           .eq('player_tag', opponent.tag)
           .single();
+
+        // Get opponent's rating from user_ratings (actual current rating, not cached in tracked_friends)
+        const opponentRating = opponentUserRating?.elo_rating ?? DEFAULT_ELO;
 
         // Calculate Elo change for current user
         const newUserRating = calculateEloChange(
@@ -376,8 +377,6 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         if (friendRatingUpdateError) {
           console.error('Error updating friend rating:', friendRatingUpdateError);
           result.errors.push(`Failed to update rating for ${opponent.tag}`);
-        } else {
-          friendRatings.set(opponent.tag, newFriendRating);
         }
 
         // If opponent has an account, update their Elo rating too
@@ -409,31 +408,9 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
               opponentDaysSinceLastBattle
             );
 
-            // Insert battle into opponent's battles table
-            await supabase
-              .from('battles')
-              .insert({
-                user_id: opponentUserRating.user_id,
-                battle_time: battle.battleTime,
-                battle_type: battle.type,
-                opponent_tag: playerTag,
-                result: isWin ? 'loss' : 'win', // Opposite result from opponent's perspective
-              });
-
-            // Update opponent's tracked_friends record
-            if (isWin) {
-              await supabase.rpc('increment_loss', {
-                p_user_id: opponentUserRating.user_id,
-                p_friend_tag: playerTag,
-              });
-            } else {
-              await supabase.rpc('increment_win', {
-                p_user_id: opponentUserRating.user_id,
-                p_friend_tag: playerTag,
-              });
-            }
-
             // Update opponent's Elo rating
+            // Note: We don't update opponent's tracked_friends record here - they'll do that when they sync
+            // This prevents double-counting battles while still allowing double Elo changes
             const { error: opponentRatingUpdateError } = await supabase
               .from('user_ratings')
               .update({ 
