@@ -306,8 +306,14 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           continue; // Skip already processed battles
         }
 
-        // If multiple users have the same player_tag, check if any of them already processed this battle
-        // This prevents duplicate battles when the cron job runs for multiple users with the same tag
+        // Determine win/loss based on team crowns
+        const userCrowns = battle.team?.[0]?.crowns || 0;
+        const opponentCrowns = opponent.crowns || 0;
+        const isWin = userCrowns > opponentCrowns;
+
+        // Check if another user with the same player_tag already processed this battle
+        // If so, we'll still insert the battle for this user but skip Elo/win-loss updates
+        let alreadyProcessedBySameTag = false;
         if (playerTag) {
           // Get all user_ids with the same player_tag
           const { data: sameTagUsers } = await supabase
@@ -316,30 +322,27 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
             .eq('player_tag', playerTag);
 
           if (sameTagUsers && sameTagUsers.length > 0) {
-            const sameTagUserIds = sameTagUsers.map(u => u.user_id);
+            const sameTagUserIds = sameTagUsers.map(u => u.user_id).filter(id => id !== userId);
             
-            // Check if any of these users already processed this battle
-            const { data: existingBattleForTag } = await supabase
-              .from('battles')
-              .select('id')
-              .in('user_id', sameTagUserIds)
-              .eq('battle_time', battle.battleTime)
-              .eq('battle_type', battle.type)
-              .limit(1)
-              .single();
+            if (sameTagUserIds.length > 0) {
+              // Check if any OTHER user with the same player_tag already processed this battle
+              const { data: existingBattleForTag } = await supabase
+                .from('battles')
+                .select('id')
+                .in('user_id', sameTagUserIds)
+                .eq('battle_time', battle.battleTime)
+                .eq('battle_type', battle.type)
+                .limit(1)
+                .single();
 
-            if (existingBattleForTag) {
-              continue; // Another user with the same player_tag already processed this battle
+              if (existingBattleForTag) {
+                alreadyProcessedBySameTag = true;
+              }
             }
           }
         }
 
-        // Determine win/loss based on team crowns
-        const userCrowns = battle.team?.[0]?.crowns || 0;
-        const opponentCrowns = opponent.crowns || 0;
-        const isWin = userCrowns > opponentCrowns;
-
-        // Store battle record for current user (unique constraint prevents duplicates)
+        // Store battle record for current user (always insert, even if another user with same tag processed it)
         const { error: insertError } = await supabase
           .from('battles')
           .insert({
@@ -354,12 +357,20 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         if (insertError) {
           // Check if it's a unique constraint violation (code 23505)
           if (insertError.code === '23505') {
-            continue; // Battle was already inserted, skip
+            continue; // Battle was already inserted for this user_id, skip
           }
           throw insertError; // Re-throw other errors
         }
 
-        // Update current user's friend record
+        result.newBattles++;
+
+        // If another user with the same player_tag already processed this battle,
+        // skip Elo updates and win/loss increments (they were already done)
+        if (alreadyProcessedBySameTag) {
+          continue; // Skip to next battle - Elo and win/loss were already updated
+        }
+
+        // Update current user's friend record (only if we're the first to process)
         if (isWin) {
           await supabase.rpc('increment_win', {
             p_user_id: userId,
@@ -372,7 +383,6 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           });
         }
 
-        result.newBattles++;
         result.recordsUpdated++;
 
         // Calculate days since last battle for current user
