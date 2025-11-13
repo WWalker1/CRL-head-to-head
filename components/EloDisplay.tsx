@@ -8,24 +8,24 @@ export default function EloDisplay({ elo, size = 'md' }: EloDisplayProps) {
   const getEloTier = (elo: number) => {
     if (elo < 1000) {
       return {
-        className: 'text-gray-600 font-bold',
-        sizeClass: size === 'lg' ? 'text-3xl' : size === 'sm' ? 'text-lg' : 'text-2xl',
+        className: 'text-gray-500 font-semibold elo-pulse',
+        sizeClass: size === 'lg' ? 'text-lg' : size === 'sm' ? 'text-sm' : 'text-base',
       };
     } else if (elo < 1500) {
       return {
-        className: 'text-blue-600 font-bold drop-shadow-sm',
-        sizeClass: size === 'lg' ? 'text-3xl' : size === 'sm' ? 'text-lg' : 'text-2xl',
+        className: 'text-cyan-500 font-bold elo-pulse',
+        sizeClass: size === 'lg' ? 'text-lg' : size === 'sm' ? 'text-sm' : 'text-base',
       };
     } else if (elo < 1750) {
       return {
-        className: 'text-purple-600 font-extrabold drop-shadow-md',
-        sizeClass: size === 'lg' ? 'text-4xl' : size === 'sm' ? 'text-xl' : 'text-3xl',
+        className: 'text-purple-500 font-bold elo-pulse',
+        sizeClass: size === 'lg' ? 'text-lg' : size === 'sm' ? 'text-sm' : 'text-base',
       };
     } else {
-      // 1750+ - gradient and very bold with shadow for extra impact
+      // 1750+ - vibrant gradient with pulsating effect
       return {
-        className: 'font-black bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 bg-clip-text text-transparent drop-shadow-lg',
-        sizeClass: size === 'lg' ? 'text-5xl' : size === 'sm' ? 'text-2xl' : 'text-4xl',
+        className: 'font-bold bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent elo-pulse',
+        sizeClass: size === 'lg' ? 'text-lg' : size === 'sm' ? 'text-sm' : 'text-base',
       };
     }
   };
