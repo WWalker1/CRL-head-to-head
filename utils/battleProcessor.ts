@@ -1,11 +1,156 @@
 import { ClashRoyaleBattle } from '@/lib/types';
 import { createClient } from '@supabase/supabase-js';
-import { getPlayerInfo, getPlayerBattleLog } from '@/lib/clashRoyaleApi';
+import { getPlayerBattleLog } from '@/lib/clashRoyaleApi';
+
+const DEFAULT_ELO = 1500;
+const K_FACTOR = Number(process.env.ELO_K_FACTOR ?? 32);
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+// simple win probability calculation
+function calculateExpectedScore(playerRating: number, opponentRating: number) {
+  return 1 / (1 + Math.pow(10, (opponentRating - playerRating) / 400));
+}
+
+// uses time since last battle, num ranked battles played, and exp_res to calculate ELO change
+function calculateEloChange(
+  playerRating: number, 
+  opponentRating: number, 
+  score: 0 | 1,
+  numRankedGames: number = 0,
+  daysSinceLastBattle: number = 0
+) {
+  const expected = calculateExpectedScore(playerRating, opponentRating);
+  
+  // Adjust K-factor based on experience and recency
+  // New players (fewer games) get higher K-factor for faster convergence
+  // Players who haven't played in a while get higher K-factor to reflect skill changes
+  let adjustedKFactor = K_FACTOR;
+  
+  // Reduce K-factor as player gains experience (more games = more stable rating)
+  // After 30 games, use standard K-factor
+  if (numRankedGames < 30) {
+    // New players: K-factor starts high and decreases
+    // 0 games: 2x K-factor, 30 games: 1x K-factor
+    const experienceMultiplier = 2 - (numRankedGames / 30);
+    adjustedKFactor = K_FACTOR * experienceMultiplier;
+  }
+  
+  // Increase K-factor if player hasn't played in a while
+  // More than 30 days = 1.5x multiplier, more than 90 days = 2x multiplier
+  if (daysSinceLastBattle > 0) {
+    if (daysSinceLastBattle > 90) {
+      adjustedKFactor *= 2.0;
+    } else if (daysSinceLastBattle > 30) {
+      // Linear interpolation between 30 and 90 days
+      const recencyMultiplier = 1.5 + (0.5 * (daysSinceLastBattle - 30) / 60);
+      adjustedKFactor *= recencyMultiplier;
+    } else if (daysSinceLastBattle > 7) {
+      // Small boost for 7-30 days
+      const recencyMultiplier = 1.0 + (0.5 * (daysSinceLastBattle - 7) / 23);
+      adjustedKFactor *= recencyMultiplier;
+    }
+  }
+  
+  return Math.round(playerRating + adjustedKFactor * (score - expected));
+}
+
+interface UserRatingData {
+  elo_rating: number;
+  num_ranked_games: number;
+  updated_at: string | null;
+}
+
+// Gets user rating data - if player_tag exists, use that rating (shared across all users with same tag)
+// Otherwise create a new entry for this user_id
+async function getUserRatingData(userId: string, playerTag?: string): Promise<UserRatingData> {
+  // First, check if this user already has a rating entry
+  const { data: existingUserData, error: userError } = await supabase
+    .from('user_ratings')
+    .select('elo_rating, player_tag, num_ranked_games, updated_at')
+    .eq('user_id', userId)
+    .single();
+
+  if (userError && userError.code !== 'PGRST116') {
+    throw userError;
+  }
+
+  // If user has existing entry, return it (update player_tag if needed)
+  if (existingUserData) {
+    if (playerTag && existingUserData.player_tag !== playerTag) {
+      await supabase
+        .from('user_ratings')
+        .update({ player_tag: playerTag })
+        .eq('user_id', userId);
+    }
+    return {
+      elo_rating: existingUserData.elo_rating ?? DEFAULT_ELO,
+      num_ranked_games: existingUserData.num_ranked_games ?? 0,
+      updated_at: existingUserData.updated_at,
+    };
+  }
+
+  // User doesn't have an entry yet
+  // If player_tag is provided, check if any entry exists for this player_tag
+  // (Multiple users can have the same player_tag, so we use the first one's rating)
+  if (playerTag) {
+    const { data: existingTagData } = await supabase
+      .from('user_ratings')
+      .select('elo_rating, num_ranked_games, updated_at')
+      .eq('player_tag', playerTag)
+      .limit(1)
+      .single();
+
+    if (existingTagData) {
+      // Player_tag already exists - create entry for this user with same rating values
+      const { data: newData, error: insertError } = await supabase
+        .from('user_ratings')
+        .insert({
+          user_id: userId,
+          elo_rating: existingTagData.elo_rating ?? DEFAULT_ELO,
+          player_tag: playerTag,
+          num_ranked_games: existingTagData.num_ranked_games ?? 0,
+        })
+        .select('elo_rating, num_ranked_games, updated_at')
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      return {
+        elo_rating: newData?.elo_rating ?? DEFAULT_ELO,
+        num_ranked_games: newData?.num_ranked_games ?? 0,
+        updated_at: newData?.updated_at ?? null,
+      };
+    }
+  }
+
+  // No existing entry for this player_tag - create new one
+  const { data: upsertData, error: upsertError } = await supabase
+    .from('user_ratings')
+    .insert({ 
+      user_id: userId, 
+      elo_rating: DEFAULT_ELO,
+      player_tag: playerTag || null,
+      num_ranked_games: 0,
+    })
+    .select('elo_rating, num_ranked_games, updated_at')
+    .single();
+
+  if (upsertError) {
+    throw upsertError;
+  }
+
+  return {
+    elo_rating: upsertData?.elo_rating ?? DEFAULT_ELO,
+    num_ranked_games: upsertData?.num_ranked_games ?? 0,
+    updated_at: upsertData?.updated_at ?? null,
+  };
+}
 
 export interface SyncResult {
   battlesProcessed: number;
@@ -29,17 +174,14 @@ async function cleanupOldBattles(userId: string): Promise<number> {
       .order('battle_time', { ascending: false });
 
     if (fetchError) {
-      console.error(`[DEBUG] User ${userId}: Error fetching battles for cleanup:`, fetchError);
+      console.error('Error fetching battles for cleanup:', fetchError);
       return 0;
     }
 
     // If we have 25 or fewer battles, no cleanup needed
     if (!allBattles || allBattles.length <= 50) {
-      console.log(`[DEBUG] User ${userId}: No cleanup needed - ${allBattles?.length || 0} battles (keeping last 25)`);
       return 0;
     }
-    
-    console.log(`[DEBUG] User ${userId}: Found ${allBattles.length} battles, will keep 25 and delete ${allBattles.length - 25}`);
 
     // Get the IDs of the 25 most recent battles to keep
     const battlesToKeep = allBattles.slice(0, 50).map(b => b.id);
@@ -73,14 +215,15 @@ async function cleanupOldBattles(userId: string): Promise<number> {
       deletedCount += count || 0;
     }
 
-    console.log(`[DEBUG] User ${userId}: Cleanup complete - deleted ${deletedCount} old battles`);
     return deletedCount;
   } catch (err: any) {
-    console.error(`[DEBUG] User ${userId}: Error in cleanupOldBattles:`, err);
+    console.error('Error in cleanupOldBattles:', err);
     return 0;
   }
 }
 
+
+// the code that does the stuff for all the things
 export async function syncBattlesForUser(userId: string, playerTag: string): Promise<SyncResult> {
   const result: SyncResult = {
     battlesProcessed: 0,
@@ -93,9 +236,8 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
   try {
     // Get recent battles from API
     const battles = await getPlayerBattleLog(playerTag);
-    console.log(`[DEBUG] User ${userId} (${playerTag}): Fetched ${battles.length} total battles from API`);
-    
-    // Get tracked friends
+
+    // Get tracked friends (just for the tags, not for Elo ratings)
     const { data: friends, error: friendsError } = await supabase
       .from('tracked_friends')
       .select('friend_player_tag')
@@ -107,7 +249,19 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
     }
 
     const trackedTags = new Set(friends?.map(f => f.friend_player_tag) || []);
-    console.log(`[DEBUG] User ${userId} (${playerTag}): Tracking ${trackedTags.size} friends:`, Array.from(trackedTags));
+
+    // gets your own rating data
+    let userRatingData: UserRatingData;
+    try {
+      userRatingData = await getUserRatingData(userId, playerTag);
+    } catch (ratingError: any) {
+      console.error('Error fetching user rating:', ratingError);
+      result.errors.push('Failed to fetch player rating');
+      return result;
+    }
+    
+    let userRating = userRatingData.elo_rating;
+    let userNumRankedGames = userRatingData.num_ranked_games;
 
     // Filter for 1v1 battles (casual, ranked ladder, friendly, or path of legends)
     const oneVoneBattles = battles.filter(battle => {
@@ -124,7 +278,6 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         battle.team.length === 1
       );
     });
-    console.log(`[DEBUG] User ${userId} (${playerTag}): Filtered to ${oneVoneBattles.length} 1v1 battles`);
 
     // Process each battle
     for (const battle of oneVoneBattles) {
@@ -132,19 +285,15 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         // Determine opponent tag
         const opponent = battle.opponent?.[0];
         if (!opponent) {
-          console.log(`[DEBUG] User ${userId} (${playerTag}): Skipping battle ${battle.battleTime} - no opponent data`);
           continue; // Skip battles without opponent data
         }
 
         // Check if opponent is a tracked friend
         if (!trackedTags.has(opponent.tag)) {
-          console.log(`[DEBUG] User ${userId} (${playerTag}): Skipping battle ${battle.battleTime} vs ${opponent.tag} - not a tracked friend`);
           continue; // Not tracking this player
         }
 
-        console.log(`[DEBUG] User ${userId} (${playerTag}): Processing battle ${battle.battleTime} vs ${opponent.tag} (type: ${battle.type})`);
-
-        // Check if battle already exists (prevents duplicates via unique constraint)
+        // Check if battle already exists for this user_id (prevents duplicates)
         const { data: existingBattle } = await supabase
           .from('battles')
           .select('id')
@@ -154,7 +303,6 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           .single();
 
         if (existingBattle) {
-          console.log(`[DEBUG] User ${userId} (${playerTag}): Skipping battle ${battle.battleTime} vs ${opponent.tag} - already exists in DB (id: ${existingBattle.id})`);
           continue; // Skip already processed battles
         }
 
@@ -163,9 +311,38 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         const opponentCrowns = opponent.crowns || 0;
         const isWin = userCrowns > opponentCrowns;
 
-        console.log(`[DEBUG] User ${userId} (${playerTag}): Inserting battle ${battle.battleTime} vs ${opponent.tag} - Result: ${isWin ? 'WIN' : 'LOSS'} (${userCrowns}-${opponentCrowns})`);
+        // Check if another user with the same player_tag already processed this battle
+        // If so, we'll still insert the battle for this user but skip Elo/win-loss updates
+        let alreadyProcessedBySameTag = false;
+        if (playerTag) {
+          // Get all user_ids with the same player_tag
+          const { data: sameTagUsers } = await supabase
+            .from('user_ratings')
+            .select('user_id')
+            .eq('player_tag', playerTag);
 
-        // Store battle record (unique constraint prevents duplicates)
+          if (sameTagUsers && sameTagUsers.length > 0) {
+            const sameTagUserIds = sameTagUsers.map(u => u.user_id).filter(id => id !== userId);
+            
+            if (sameTagUserIds.length > 0) {
+              // Check if any OTHER user with the same player_tag already processed this battle
+              const { data: existingBattleForTag } = await supabase
+                .from('battles')
+                .select('id')
+                .in('user_id', sameTagUserIds)
+                .eq('battle_time', battle.battleTime)
+                .eq('battle_type', battle.type)
+                .limit(1)
+                .single();
+
+              if (existingBattleForTag) {
+                alreadyProcessedBySameTag = true;
+              }
+            }
+          }
+        }
+
+        // Store battle record for current user (always insert, even if another user with same tag processed it)
         const { error: insertError } = await supabase
           .from('battles')
           .insert({
@@ -180,16 +357,20 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         if (insertError) {
           // Check if it's a unique constraint violation (code 23505)
           if (insertError.code === '23505') {
-            console.log(`[DEBUG] User ${userId} (${playerTag}): Battle ${battle.battleTime} vs ${opponent.tag} - insert failed (unique constraint violation - already exists)`);
-            continue; // Battle was already inserted, skip
+            continue; // Battle was already inserted for this user_id, skip
           }
-          console.error(`[DEBUG] User ${userId} (${playerTag}): Battle ${battle.battleTime} vs ${opponent.tag} - insert error:`, insertError);
           throw insertError; // Re-throw other errors
         }
 
-        console.log(`[DEBUG] User ${userId} (${playerTag}): Successfully inserted battle ${battle.battleTime} vs ${opponent.tag}`);
+        result.newBattles++;
 
-        // Update friend record
+        // If another user with the same player_tag already processed this battle,
+        // skip Elo updates and win/loss increments (they were already done)
+        if (alreadyProcessedBySameTag) {
+          continue; // Skip to next battle - Elo and win/loss were already updated
+        }
+
+        // Update current user's friend record (only if we're the first to process)
         if (isWin) {
           await supabase.rpc('increment_win', {
             p_user_id: userId,
@@ -202,9 +383,135 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           });
         }
 
-        result.newBattles++;
         result.recordsUpdated++;
-        console.log(`[DEBUG] User ${userId} (${playerTag}): Updated friend record for ${opponent.tag} - New battles: ${result.newBattles}, Records updated: ${result.recordsUpdated}`);
+
+        // Calculate days since last battle for current user
+        // Use battle time, not current time, to calculate how long since their last battle
+        const battleTime = new Date(battle.battleTime).getTime();
+        const daysSinceLastBattle = userRatingData.updated_at
+          ? Math.floor((battleTime - new Date(userRatingData.updated_at).getTime()) / (1000 * 60 * 60 * 24))
+          : 0;
+
+        // Check if opponent has an account and get their rating from user_ratings
+        // Multiple users can have the same player_tag, so get the first one (they should all have same rating)
+        const { data: opponentRatingData } = await supabase
+          .from('user_ratings')
+          .select('elo_rating, num_ranked_games, updated_at')
+          .eq('player_tag', opponent.tag)
+          .limit(1)
+          .single();
+
+        // Get opponent's rating from user_ratings (actual current rating, not cached in tracked_friends)
+        const opponentRating = opponentRatingData?.elo_rating ?? DEFAULT_ELO;
+        const opponentHasAccount = !!opponentRatingData;
+
+        // Calculate Elo change for current user
+        const newUserRating = calculateEloChange(
+          userRating, 
+          opponentRating, 
+          isWin ? 1 : 0,
+          userNumRankedGames,
+          daysSinceLastBattle
+        );
+
+        // Update current user's rating and increment game count
+        // Elo rating is shared across all users with same player_tag, but num_ranked_games is per-user
+        if (playerTag) {
+          // Update elo_rating for all entries with this player_tag (keep them in sync)
+          const { error: eloUpdateError } = await supabase
+            .from('user_ratings')
+            .update({ elo_rating: newUserRating })
+            .eq('player_tag', playerTag);
+
+          // Update num_ranked_games only for this specific user
+          const { error: gamesUpdateError } = await supabase
+            .from('user_ratings')
+            .update({ num_ranked_games: userNumRankedGames + 1 })
+            .eq('user_id', userId);
+
+          if (eloUpdateError || gamesUpdateError) {
+            console.error('Error updating user rating:', eloUpdateError || gamesUpdateError);
+            result.errors.push('Failed to update player rating');
+          } else {
+            userRating = newUserRating;
+            userNumRankedGames = userNumRankedGames + 1;
+            // Update updated_at for next battle calculation (use battle time, not current time)
+            userRatingData.updated_at = battle.battleTime;
+          }
+        } else {
+          // No player_tag, just update by user_id
+          const { error: userRatingUpdateError } = await supabase
+            .from('user_ratings')
+            .update({ 
+              elo_rating: newUserRating,
+              num_ranked_games: userNumRankedGames + 1
+            })
+            .eq('user_id', userId);
+
+          if (userRatingUpdateError) {
+            console.error('Error updating user rating:', userRatingUpdateError);
+            result.errors.push('Failed to update player rating');
+          } else {
+            userRating = newUserRating;
+            userNumRankedGames = userNumRankedGames + 1;
+            userRatingData.updated_at = battle.battleTime;
+          }
+        }
+
+        // Update tracked_friends record with new rating
+        const newFriendRating = calculateEloChange(
+          opponentRating, 
+          userRating, 
+          isWin ? 0 : 1,
+          0, // We don't track opponent's game count in tracked_friends
+          0  // We don't track opponent's recency in tracked_friends
+        );
+
+        const { error: friendRatingUpdateError } = await supabase
+          .from('tracked_friends')
+          .update({ elo_rating: newFriendRating })
+          .eq('user_id', userId)
+          .eq('friend_player_tag', opponent.tag)
+          .select('elo_rating')
+          .single();
+
+        if (friendRatingUpdateError) {
+          console.error('Error updating friend rating:', friendRatingUpdateError);
+          result.errors.push(`Failed to update rating for ${opponent.tag}`);
+        }
+
+        // If opponent has an account, update their Elo rating too
+        // Update ALL records with this player_tag to keep them in sync
+        if (opponentHasAccount && opponentRatingData) {
+          const opponentDaysSinceLastBattle = opponentRatingData.updated_at
+            ? Math.floor((battleTime - new Date(opponentRatingData.updated_at).getTime()) / (1000 * 60 * 60 * 24))
+            : 0;
+
+          // Calculate Elo change for opponent
+          const newOpponentRating = calculateEloChange(
+            opponentRatingData.elo_rating,
+            userRating,
+            isWin ? 0 : 1,
+            opponentRatingData.num_ranked_games ?? 0,
+            opponentDaysSinceLastBattle
+          );
+
+          // Update ALL user_ratings records with this player_tag to keep elo_rating in sync
+          // Note: We don't update opponent's num_ranked_games here - they'll do that when they sync
+          // We don't update opponent's tracked_friends record here either - they'll do that when they sync
+          // This prevents double-counting battles while still allowing double Elo changes
+          const { error: opponentRatingUpdateError } = await supabase
+            .from('user_ratings')
+            .update({ 
+              elo_rating: newOpponentRating
+            })
+            .eq('player_tag', opponent.tag);
+
+          if (opponentRatingUpdateError) {
+            console.error('Error updating opponent rating:', opponentRatingUpdateError);
+            result.errors.push(`Failed to update opponent rating for ${opponent.tag}`);
+          }
+        }
       } catch (err: any) {
         result.errors.push(`Failed to process battle: ${err.message}`);
       }
@@ -214,10 +521,7 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
 
     // Cleanup old battles, keeping only the last 25
     result.deletedBattles = await cleanupOldBattles(userId);
-    
-    console.log(`[DEBUG] User ${userId} (${playerTag}): Sync complete - Processed: ${result.battlesProcessed}, New: ${result.newBattles}, Updated: ${result.recordsUpdated}, Deleted: ${result.deletedBattles}, Errors: ${result.errors.length}`);
   } catch (err: any) {
-    console.error(`[DEBUG] User ${userId} (${playerTag}): Sync failed with error:`, err);
     result.errors.push(`Failed to sync battles: ${err.message}`);
   }
 
