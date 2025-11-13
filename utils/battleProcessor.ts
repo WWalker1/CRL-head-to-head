@@ -29,14 +29,17 @@ async function cleanupOldBattles(userId: string): Promise<number> {
       .order('battle_time', { ascending: false });
 
     if (fetchError) {
-      console.error('Error fetching battles for cleanup:', fetchError);
+      console.error(`[DEBUG] User ${userId}: Error fetching battles for cleanup:`, fetchError);
       return 0;
     }
 
     // If we have 25 or fewer battles, no cleanup needed
     if (!allBattles || allBattles.length <= 25) {
+      console.log(`[DEBUG] User ${userId}: No cleanup needed - ${allBattles?.length || 0} battles (keeping last 25)`);
       return 0;
     }
+    
+    console.log(`[DEBUG] User ${userId}: Found ${allBattles.length} battles, will keep 25 and delete ${allBattles.length - 25}`);
 
     // Get the IDs of the 25 most recent battles to keep
     const battlesToKeep = allBattles.slice(0, 25).map(b => b.id);
@@ -70,9 +73,10 @@ async function cleanupOldBattles(userId: string): Promise<number> {
       deletedCount += count || 0;
     }
 
+    console.log(`[DEBUG] User ${userId}: Cleanup complete - deleted ${deletedCount} old battles`);
     return deletedCount;
   } catch (err: any) {
-    console.error('Error in cleanupOldBattles:', err);
+    console.error(`[DEBUG] User ${userId}: Error in cleanupOldBattles:`, err);
     return 0;
   }
 }
@@ -89,6 +93,8 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
   try {
     // Get recent battles from API
     const battles = await getPlayerBattleLog(playerTag);
+    console.log(`[DEBUG] User ${userId} (${playerTag}): Fetched ${battles.length} total battles from API`);
+    
     // Get tracked friends
     const { data: friends, error: friendsError } = await supabase
       .from('tracked_friends')
@@ -101,6 +107,7 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
     }
 
     const trackedTags = new Set(friends?.map(f => f.friend_player_tag) || []);
+    console.log(`[DEBUG] User ${userId} (${playerTag}): Tracking ${trackedTags.size} friends:`, Array.from(trackedTags));
 
     // Filter for 1v1 battles (casual, ranked ladder, friendly, or path of legends)
     const oneVoneBattles = battles.filter(battle => {
@@ -117,6 +124,7 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         battle.team.length === 1
       );
     });
+    console.log(`[DEBUG] User ${userId} (${playerTag}): Filtered to ${oneVoneBattles.length} 1v1 battles`);
 
     // Process each battle
     for (const battle of oneVoneBattles) {
@@ -124,13 +132,17 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         // Determine opponent tag
         const opponent = battle.opponent?.[0];
         if (!opponent) {
+          console.log(`[DEBUG] User ${userId} (${playerTag}): Skipping battle ${battle.battleTime} - no opponent data`);
           continue; // Skip battles without opponent data
         }
 
         // Check if opponent is a tracked friend
         if (!trackedTags.has(opponent.tag)) {
+          console.log(`[DEBUG] User ${userId} (${playerTag}): Skipping battle ${battle.battleTime} vs ${opponent.tag} - not a tracked friend`);
           continue; // Not tracking this player
         }
+
+        console.log(`[DEBUG] User ${userId} (${playerTag}): Processing battle ${battle.battleTime} vs ${opponent.tag} (type: ${battle.type})`);
 
         // Check if battle already exists (prevents duplicates via unique constraint)
         const { data: existingBattle } = await supabase
@@ -142,6 +154,7 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           .single();
 
         if (existingBattle) {
+          console.log(`[DEBUG] User ${userId} (${playerTag}): Skipping battle ${battle.battleTime} vs ${opponent.tag} - already exists in DB (id: ${existingBattle.id})`);
           continue; // Skip already processed battles
         }
 
@@ -149,6 +162,8 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         const userCrowns = battle.team?.[0]?.crowns || 0;
         const opponentCrowns = opponent.crowns || 0;
         const isWin = userCrowns > opponentCrowns;
+
+        console.log(`[DEBUG] User ${userId} (${playerTag}): Inserting battle ${battle.battleTime} vs ${opponent.tag} - Result: ${isWin ? 'WIN' : 'LOSS'} (${userCrowns}-${opponentCrowns})`);
 
         // Store battle record (unique constraint prevents duplicates)
         const { error: insertError } = await supabase
@@ -165,10 +180,14 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         if (insertError) {
           // Check if it's a unique constraint violation (code 23505)
           if (insertError.code === '23505') {
+            console.log(`[DEBUG] User ${userId} (${playerTag}): Battle ${battle.battleTime} vs ${opponent.tag} - insert failed (unique constraint violation - already exists)`);
             continue; // Battle was already inserted, skip
           }
+          console.error(`[DEBUG] User ${userId} (${playerTag}): Battle ${battle.battleTime} vs ${opponent.tag} - insert error:`, insertError);
           throw insertError; // Re-throw other errors
         }
+
+        console.log(`[DEBUG] User ${userId} (${playerTag}): Successfully inserted battle ${battle.battleTime} vs ${opponent.tag}`);
 
         // Update friend record
         if (isWin) {
@@ -185,6 +204,7 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
 
         result.newBattles++;
         result.recordsUpdated++;
+        console.log(`[DEBUG] User ${userId} (${playerTag}): Updated friend record for ${opponent.tag} - New battles: ${result.newBattles}, Records updated: ${result.recordsUpdated}`);
       } catch (err: any) {
         result.errors.push(`Failed to process battle: ${err.message}`);
       }
@@ -194,7 +214,10 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
 
     // Cleanup old battles, keeping only the last 25
     result.deletedBattles = await cleanupOldBattles(userId);
+    
+    console.log(`[DEBUG] User ${userId} (${playerTag}): Sync complete - Processed: ${result.battlesProcessed}, New: ${result.newBattles}, Updated: ${result.recordsUpdated}, Deleted: ${result.deletedBattles}, Errors: ${result.errors.length}`);
   } catch (err: any) {
+    console.error(`[DEBUG] User ${userId} (${playerTag}): Sync failed with error:`, err);
     result.errors.push(`Failed to sync battles: ${err.message}`);
   }
 
