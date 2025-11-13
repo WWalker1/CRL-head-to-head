@@ -2,15 +2,21 @@ import { getPlayerBattleLog } from '@/lib/clashRoyaleApi';
 import { createMockBattle, createMockBattles, createMockBattleRecord } from './testHelpers';
 
 // Setup a mock query builder factory
-const createQueryBuilder = () => ({
-  select: jest.fn().mockReturnThis(),
-  eq: jest.fn().mockReturnThis(),
-  insert: jest.fn().mockResolvedValue({ data: null, error: null }),
-  single: jest.fn(),
-  order: jest.fn().mockReturnThis(),
-  in: jest.fn().mockResolvedValue({ data: null, error: null, count: 0 }),
-  delete: jest.fn().mockReturnThis(),
-});
+const createQueryBuilder = (overrides: Partial<any> = {}) => {
+  const builder: any = {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+    update: jest.fn().mockReturnThis(),
+    upsert: jest.fn().mockReturnThis(),
+    delete: jest.fn().mockReturnThis(),
+    order: jest.fn().mockReturnThis(),
+    single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    in: jest.fn().mockResolvedValue({ data: null, error: null, count: 0 }),
+  };
+
+  return Object.assign(builder, overrides);
+};
 
 // Mock the dependencies BEFORE importing battleProcessor
 jest.mock('@/lib/clashRoyaleApi', () => ({
@@ -44,6 +50,23 @@ jest.mock('@supabase/supabase-js', () => {
 // Access mock store after mocks are set up
 const mockStore = (globalThis as any).__mockStore || {};
 
+const createUserRatingSelectMock = (
+  elo: number = 1500,
+  error: any = null
+) => {
+  const builder = createQueryBuilder();
+  builder.single.mockResolvedValue({
+    data: error ? null : { elo_rating: elo },
+    error,
+  });
+  builder.select.mockReturnValue(builder);
+  builder.eq.mockReturnValue(builder);
+  builder.update.mockReturnValue(builder);
+  builder.upsert.mockReturnValue(builder);
+
+  return builder;
+};
+
 // Import battleProcessor AFTER mocks are set up
 import { syncBattlesForUser } from '../battleProcessor';
 
@@ -61,7 +84,9 @@ describe('battleProcessor', () => {
         return createQueryBuilder();
       } else if (table === 'battles') {
         return createQueryBuilder();
-      }
+      } else if (table === 'user_ratings') {
+        return createUserRatingSelectMock();
+      } 
       return createQueryBuilder();
     });
     mockStore.supabase.rpc.mockResolvedValue(null);

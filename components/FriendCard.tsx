@@ -17,6 +17,7 @@ export default function FriendCard({ friend, onRemove }: FriendCardProps) {
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-900">{friend.friend_name}</h3>
           <p className="text-sm text-gray-500">{friend.friend_player_tag}</p>
+          <p className="text-sm text-gray-500 mt-1">Elo: {friend.elo_rating}</p>
           
           <div className="mt-4">
             <div className="flex items-baseline gap-4">
