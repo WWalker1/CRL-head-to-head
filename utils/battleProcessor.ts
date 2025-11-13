@@ -34,7 +34,7 @@ async function cleanupOldBattles(userId: string): Promise<number> {
     }
 
     // If we have 25 or fewer battles, no cleanup needed
-    if (!allBattles || allBattles.length <= 25) {
+    if (!allBattles || allBattles.length <= 50) {
       console.log(`[DEBUG] User ${userId}: No cleanup needed - ${allBattles?.length || 0} battles (keeping last 25)`);
       return 0;
     }
@@ -42,7 +42,7 @@ async function cleanupOldBattles(userId: string): Promise<number> {
     console.log(`[DEBUG] User ${userId}: Found ${allBattles.length} battles, will keep 25 and delete ${allBattles.length - 25}`);
 
     // Get the IDs of the 25 most recent battles to keep
-    const battlesToKeep = allBattles.slice(0, 25).map(b => b.id);
+    const battlesToKeep = allBattles.slice(0, 50).map(b => b.id);
     const battlesToKeepSet = new Set(battlesToKeep);
 
     // Get all battle IDs to delete (those not in the top 25)
