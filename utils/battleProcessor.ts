@@ -293,7 +293,7 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           continue; // Not tracking this player
         }
 
-        // Check if battle already exists (prevents duplicates via unique constraint)
+        // Check if battle already exists for this user_id (prevents duplicates)
         const { data: existingBattle } = await supabase
           .from('battles')
           .select('id')
@@ -304,6 +304,34 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
 
         if (existingBattle) {
           continue; // Skip already processed battles
+        }
+
+        // If multiple users have the same player_tag, check if any of them already processed this battle
+        // This prevents duplicate battles when the cron job runs for multiple users with the same tag
+        if (playerTag) {
+          // Get all user_ids with the same player_tag
+          const { data: sameTagUsers } = await supabase
+            .from('user_ratings')
+            .select('user_id')
+            .eq('player_tag', playerTag);
+
+          if (sameTagUsers && sameTagUsers.length > 0) {
+            const sameTagUserIds = sameTagUsers.map(u => u.user_id);
+            
+            // Check if any of these users already processed this battle
+            const { data: existingBattleForTag } = await supabase
+              .from('battles')
+              .select('id')
+              .in('user_id', sameTagUserIds)
+              .eq('battle_time', battle.battleTime)
+              .eq('battle_type', battle.type)
+              .limit(1)
+              .single();
+
+            if (existingBattleForTag) {
+              continue; // Another user with the same player_tag already processed this battle
+            }
+          }
         }
 
         // Determine win/loss based on team crowns
