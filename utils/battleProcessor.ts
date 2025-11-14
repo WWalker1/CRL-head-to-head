@@ -458,28 +458,6 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           }
         }
 
-        // Update tracked_friends record with new rating
-        const newFriendRating = calculateEloChange(
-          opponentRating, 
-          userRating, 
-          isWin ? 0 : 1,
-          0, // We don't track opponent's game count in tracked_friends
-          0  // We don't track opponent's recency in tracked_friends
-        );
-
-        const { error: friendRatingUpdateError } = await supabase
-          .from('tracked_friends')
-          .update({ elo_rating: newFriendRating })
-          .eq('user_id', userId)
-          .eq('friend_player_tag', opponent.tag)
-          .select('elo_rating')
-          .single();
-
-        if (friendRatingUpdateError) {
-          console.error('Error updating friend rating:', friendRatingUpdateError);
-          result.errors.push(`Failed to update rating for ${opponent.tag}`);
-        }
-
         // If opponent has an account, update their Elo rating too
         // Update ALL records with this player_tag to keep them in sync
         if (opponentHasAccount && opponentRatingData) {
