@@ -143,42 +143,128 @@ export async function GET(request: NextRequest) {
     let usersSucceeded = 0;
     let usersFailed = 0;
 
-    // Process users sequentially to avoid API rate limits
-    for (const user of usersWithPlayerTag) {
-      const playerTag = user.user_metadata.player_tag;
+    // Helper function to check if error is a 429 rate limit error
+    const isRateLimitError = (error: any): boolean => {
+      const errorMessage = error?.message || '';
+      return errorMessage.includes('429') || errorMessage.includes('rate limit') || errorMessage.includes('Too Many Requests');
+    };
+
+    // Helper function to sync a single user with retry on 429
+    const syncUserWithRetry = async (userId: string, playerTag: string): Promise<UserSyncResult> => {
       const userResult: UserSyncResult = {
-        userId: user.id,
-        email: user.email,
+        userId,
         playerTag,
         success: false,
       };
 
       try {
-        console.log(`Syncing battles for user ${user.id} (${playerTag})...`);
-        const syncResult = await syncBattlesForUser(user.id, playerTag);
-        
+        const syncResult = await syncBattlesForUser(userId, playerTag);
         userResult.success = true;
         userResult.result = syncResult;
-        usersSucceeded++;
-        
-        console.log(
-          `Successfully synced for user ${user.id}: ${syncResult.newBattles} new battles, ${syncResult.errors.length} errors`
-        );
+        return userResult;
       } catch (error: any) {
-        console.error(`Error syncing battles for user ${user.id}:`, error);
-        userResult.success = false;
-        userResult.error = error.message || 'Unknown error';
-        usersFailed++;
+        // If it's a 429 error, wait 0.25s and retry once
+        if (isRateLimitError(error)) {
+          console.log(`Rate limit (429) encountered for user ${userId}, waiting 0.25s and retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 250)); // Wait 0.25 seconds
+          
+          try {
+            const syncResult = await syncBattlesForUser(userId, playerTag);
+            userResult.success = true;
+            userResult.result = syncResult;
+            console.log(`Retry succeeded for user ${userId}`);
+            return userResult;
+          } catch (retryError: any) {
+            console.error(`Retry failed for user ${userId}:`, retryError);
+            userResult.error = retryError.message || 'Unknown error';
+            return userResult;
+          }
+        } else {
+          // Non-429 error, just return the error
+          userResult.error = error.message || 'Unknown error';
+          return userResult;
+        }
+      }
+    };
+
+    // Batch processing: 15 users per batch, 0.5s between batches, 4.5 minute timeout
+    const BATCH_SIZE = 15;
+    const BATCH_INTERVAL_MS = 500; // 0.5 seconds
+    const MAX_DURATION_MS = 270000; // 4.5 minutes (270 seconds)
+    
+    const startTime = Date.now();
+    let batchCount = 0;
+    let usersProcessed = 0;
+
+    console.log(`Starting async batch processing: ${usersWithPlayerTag.length} users to process`);
+
+    // Process users in batches
+    for (let i = 0; i < usersWithPlayerTag.length; i += BATCH_SIZE) {
+      // Check if we've exceeded the time limit
+      const elapsed = Date.now() - startTime;
+      if (elapsed >= MAX_DURATION_MS) {
+        console.log(`Time limit reached (${elapsed}ms elapsed), stopping batch processing`);
+        break;
       }
 
-      results.push(userResult);
+      const batch = usersWithPlayerTag.slice(i, i + BATCH_SIZE);
+      batchCount++;
+      
+      const batchStartTime = Date.now();
+      console.log(`\n=== Starting batch ${batchCount} at ${(elapsed / 1000).toFixed(2)}s (${batch.length} users) ===`);
+
+      // Process batch concurrently
+      const batchResults = await Promise.all(
+        batch.map(async (user) => {
+          const playerTag = user.user_metadata.player_tag;
+          const result = await syncUserWithRetry(user.id, playerTag);
+          
+          // Set email and playerTag if not already set
+          if (!result.email) result.email = user.email;
+          if (!result.playerTag) result.playerTag = playerTag;
+          
+          if (result.success) {
+            usersSucceeded++;
+            console.log(
+              `✓ Successfully synced for user ${user.id}: ${result.result?.newBattles || 0} new battles`
+            );
+          } else {
+            usersFailed++;
+            console.error(`✗ Failed to sync user ${user.id}: ${result.error}`);
+          }
+          
+          return result;
+        })
+      );
+
+      results.push(...batchResults);
+      usersProcessed += batch.length;
+
+      const batchElapsed = Date.now() - batchStartTime;
+      console.log(`Batch ${batchCount} completed in ${batchElapsed}ms`);
+
+      // Ensure at least BATCH_INTERVAL_MS between batches (unless this is the last batch)
+      if (i + BATCH_SIZE < usersWithPlayerTag.length && elapsed < MAX_DURATION_MS) {
+        const remainingTime = BATCH_INTERVAL_MS - batchElapsed;
+        if (remainingTime > 0) {
+          await new Promise(resolve => setTimeout(resolve, remainingTime));
+        }
+      }
     }
+
+    const totalElapsed = Date.now() - startTime;
+    console.log(`\n=== Batch Processing Complete ===`);
+    console.log(`Total time: ${(totalElapsed / 1000).toFixed(2)} seconds`);
+    console.log(`Batches processed: ${batchCount}`);
+    console.log(`Users processed: ${usersProcessed} of ${usersWithPlayerTag.length}`);
+    console.log(`Users succeeded: ${usersSucceeded}`);
+    console.log(`Users failed: ${usersFailed}`);
 
     const response: CronSyncResponse = {
       success: true,
       totalUsers: users.length,
       usersWithPlayerTag: usersWithPlayerTag.length,
-      usersProcessed: usersWithPlayerTag.length,
+      usersProcessed: usersProcessed, // Report actual count processed (may be less than total if time limit reached)
       usersSucceeded,
       usersFailed,
       results,
@@ -186,7 +272,7 @@ export async function GET(request: NextRequest) {
     };
 
     console.log(
-      `Daily sync completed: ${usersSucceeded} succeeded, ${usersFailed} failed`
+      `Daily sync completed: ${usersProcessed} processed, ${usersSucceeded} succeeded, ${usersFailed} failed`
     );
 
     return NextResponse.json(response);
