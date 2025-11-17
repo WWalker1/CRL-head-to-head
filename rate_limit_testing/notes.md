@@ -19,4 +19,5 @@
 1. When rate limited, only "too many requests is returned" meaning we can't reliably wait for a specific amt of time
 2. it seems to handle 30 requests a second extremely well. My estimate of the fastest speed would be around 150 reqs a second 
 but that is much quicker than we currently need 
-3. 
+3. processing 50 users takes approx 5 seconds which is approx 12 times faster than before. 
+    I expect the multiple to grow with more users 
