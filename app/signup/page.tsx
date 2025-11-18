@@ -11,6 +11,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [playerTag, setPlayerTag] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -29,11 +30,12 @@ export default function SignupPage() {
       if (!validateResponse.ok) {
         const errorData = await validateResponse.json();
         setError(errorData.error || 'Invalid player tag. Please check and try again.');
+        setLoading(false);
         return;
       }
 
       const supabase = createClient();
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -46,8 +48,15 @@ export default function SignupPage() {
       if (signUpError) {
         setError(signUpError.message);
       } else {
-        router.push('/dashboard');
-        router.refresh();
+        // Check if email confirmation is required
+        // If user is null, it means they need to confirm their email
+        if (!data.user || !data.session) {
+          setSuccess(true);
+        } else {
+          // User is already confirmed (shouldn't happen in production with email confirmation enabled)
+          router.push('/dashboard');
+          router.refresh();
+        }
       }
     } catch (err: any) {
       console.error('Signup error:', err);
@@ -71,6 +80,18 @@ export default function SignupPage() {
               {error}
             </div>
           )}
+          {success && (
+            <div className="rounded-md bg-green-50 p-4 text-sm text-green-800">
+              <p className="font-semibold">Account created successfully!</p>
+              <p className="mt-2">
+                Please check your email ({email}) to confirm your account. 
+                Click the confirmation link in the email to activate your account.
+              </p>
+              <p className="mt-2 text-xs">
+                If you don't see the email, check your spam folder.
+              </p>
+            </div>
+          )}
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
               <label htmlFor="email" className="sr-only">
@@ -86,6 +107,7 @@ export default function SignupPage() {
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={success}
               />
             </div>
             <div>
@@ -102,6 +124,7 @@ export default function SignupPage() {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={success}
               />
             </div>
             <div>
@@ -117,6 +140,7 @@ export default function SignupPage() {
                 placeholder="Clash Royale Player Tag (e.g. #ABC123)"
                 value={playerTag}
                 onChange={(e) => setPlayerTag(e.target.value)}
+                disabled={success}
               />
             </div>
           </div>
@@ -124,7 +148,7 @@ export default function SignupPage() {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || success}
               className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
             >
               {loading ? 'Creating account...' : 'Sign up'}
@@ -132,9 +156,15 @@ export default function SignupPage() {
           </div>
 
           <div className="text-center text-sm">
-            <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Already have an account? Sign in
-            </Link>
+            {success ? (
+              <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                After confirming your email, sign in here
+              </Link>
+            ) : (
+              <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                Already have an account? Sign in
+              </Link>
+            )}
           </div>
         </form>
       </div>
