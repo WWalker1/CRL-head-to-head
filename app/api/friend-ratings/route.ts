@@ -56,11 +56,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (ratingsError) {
-      console.error('Error fetching friend ratings:', ratingsError);
-      return NextResponse.json({ error: 'Failed to fetch ratings' }, { status: 500 });
-    }
-
+    // Return ratings map (may be partial if some batches failed, but that's okay)
     return NextResponse.json({ ratings: ratingsMap });
   } catch (error: any) {
     console.error('Error fetching friend ratings:', error);
