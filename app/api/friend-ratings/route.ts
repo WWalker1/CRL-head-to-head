@@ -27,24 +27,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ratings: [] });
     }
 
-    // Fetch ELO ratings from user_ratings table using service role key (bypasses RLS)
-    const { data: ratingsData, error: ratingsError } = await supabase
-      .from('user_ratings')
-      .select('player_tag, elo_rating')
-      .in('player_tag', playerTags);
+    // PostgreSQL has limits on IN clause size (typically 1000-10000 items)
+    // Batch the queries to avoid hitting limits
+    const BATCH_SIZE = 500; // Safe batch size for IN clauses
+    const ratingsMap: Record<string, number> = {};
+    
+    // Process playerTags in batches
+    for (let i = 0; i < playerTags.length; i += BATCH_SIZE) {
+      const batch = playerTags.slice(i, i + BATCH_SIZE);
+      
+      // Fetch ELO ratings from user_ratings table using service role key (bypasses RLS)
+      const { data: ratingsData, error: ratingsError } = await supabase
+        .from('user_ratings')
+        .select('player_tag, elo_rating')
+        .in('player_tag', batch);
+
+      if (ratingsError) {
+        console.error('Error fetching friend ratings:', ratingsError);
+        // Continue with other batches even if one fails
+        continue;
+      }
+
+      // Add to ratings map
+      (ratingsData || []).forEach(r => {
+        if (r.player_tag && r.elo_rating !== undefined) {
+          ratingsMap[r.player_tag] = r.elo_rating;
+        }
+      });
+    }
 
     if (ratingsError) {
       console.error('Error fetching friend ratings:', ratingsError);
       return NextResponse.json({ error: 'Failed to fetch ratings' }, { status: 500 });
     }
-
-    // Return map of player_tag to elo_rating
-    const ratingsMap: Record<string, number> = {};
-    (ratingsData || []).forEach(r => {
-      if (r.player_tag && r.elo_rating !== undefined) {
-        ratingsMap[r.player_tag] = r.elo_rating;
-      }
-    });
 
     return NextResponse.json({ ratings: ratingsMap });
   } catch (error: any) {

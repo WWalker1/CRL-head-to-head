@@ -166,28 +166,35 @@ export interface SyncResult {
  */
 async function cleanupOldBattles(userId: string): Promise<number> {
   try {
-    // Get all battles for the user, ordered by battle_time DESC (most recent first)
+    // We only need to keep the last 50 battles, so fetch a bit more to be safe
+    // Using pagination to avoid fetching thousands of battles
+    const KEEP_COUNT = 50;
+    const FETCH_LIMIT = 200; // Fetch up to 200 to find what to delete
+    
+    // Get battles for the user, ordered by battle_time DESC (most recent first)
+    // Limit to FETCH_LIMIT to avoid pagination issues with users who have thousands of battles
     const { data: allBattles, error: fetchError } = await supabase
       .from('battles')
       .select('id')
       .eq('user_id', userId)
-      .order('battle_time', { ascending: false });
+      .order('battle_time', { ascending: false })
+      .limit(FETCH_LIMIT);
 
     if (fetchError) {
       console.error('Error fetching battles for cleanup:', fetchError);
       return 0;
     }
 
-    // If we have 25 or fewer battles, no cleanup needed
-    if (!allBattles || allBattles.length <= 50) {
+    // If we have KEEP_COUNT or fewer battles, no cleanup needed
+    if (!allBattles || allBattles.length <= KEEP_COUNT) {
       return 0;
     }
 
-    // Get the IDs of the 25 most recent battles to keep
-    const battlesToKeep = allBattles.slice(0, 50).map(b => b.id);
+    // Get the IDs of the KEEP_COUNT most recent battles to keep
+    const battlesToKeep = allBattles.slice(0, KEEP_COUNT).map(b => b.id);
     const battlesToKeepSet = new Set(battlesToKeep);
 
-    // Get all battle IDs to delete (those not in the top 25)
+    // Get all battle IDs to delete (those not in the top KEEP_COUNT)
     const battlesToDelete = allBattles
       .filter(b => !battlesToKeepSet.has(b.id))
       .map(b => b.id);
@@ -315,11 +322,13 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         // If so, we'll still insert the battle for this user but skip Elo/win-loss updates
         let alreadyProcessedBySameTag = false;
         if (playerTag) {
-          // Get all user_ids with the same player_tag
+          // Get all user_ids with the same player_tag (limit to reasonable number)
+          // Most player_tags will have 1-2 users, but limit to prevent issues
           const { data: sameTagUsers } = await supabase
             .from('user_ratings')
             .select('user_id')
-            .eq('player_tag', playerTag);
+            .eq('player_tag', playerTag)
+            .limit(100); // Reasonable limit - if more than 100 users share a tag, something's wrong
 
           if (sameTagUsers && sameTagUsers.length > 0) {
             const sameTagUserIds = sameTagUsers.map(u => u.user_id).filter(id => id !== userId);

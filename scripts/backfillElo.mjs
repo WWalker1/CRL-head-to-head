@@ -61,11 +61,39 @@ async function backfillForUser(userId) {
 
   let userRating = DEFAULT_ELO;
 
-  const { data: battles, error: battlesError } = await supabase
-    .from('battles')
-    .select('battle_time, opponent_tag, result')
-    .eq('user_id', userId)
-    .order('battle_time', { ascending: true });
+  // Fetch battles with pagination to handle users with many battles
+  // Process battles in chronological order for accurate Elo calculation
+  let allBattles = [];
+  let page = 0;
+  const pageSize = 1000; // Supabase default limit is 1000
+  
+  while (true) {
+    const { data: battles, error: battlesError } = await supabase
+      .from('battles')
+      .select('battle_time, opponent_tag, result')
+      .eq('user_id', userId)
+      .order('battle_time', { ascending: true })
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+    
+    if (battlesError) {
+      throw new Error(`Failed to fetch battles for ${userId}: ${battlesError.message}`);
+    }
+    
+    if (!battles || battles.length === 0) {
+      break; // No more battles
+    }
+    
+    allBattles = allBattles.concat(battles);
+    
+    // If we got fewer than pageSize, we've reached the end
+    if (battles.length < pageSize) {
+      break;
+    }
+    
+    page++;
+  }
+  
+  const battles = allBattles;
 
   if (battlesError) {
     throw new Error(`Failed to fetch battles for ${userId}: ${battlesError.message}`);
