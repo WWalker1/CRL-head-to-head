@@ -100,22 +100,118 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Fetch all users from Supabase Auth
-    console.log('[SUPABASE] Attempting to list users...');
-    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
+    // Fetch all users from Supabase Auth with pagination
+    // listUsers() defaults to 50 users per page, so we need to paginate to get all users
+    console.log('[SUPABASE] Attempting to list users (with pagination)...');
+    const perPage = 1000; // Max per page (Supabase allows up to 1000)
+    
+    // First, fetch page 1 to determine total number of pages needed
+    const firstPageResult = await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage,
+    });
 
-    if (usersError) {
+    if (firstPageResult.error) {
       console.error('[SUPABASE ERROR] Failed to fetch users:', {
-        message: usersError.message,
-        status: usersError.status,
-        name: usersError.name,
-        fullError: JSON.stringify(usersError, null, 2),
+        message: firstPageResult.error.message,
+        status: firstPageResult.error.status,
+        name: firstPageResult.error.name,
+        fullError: JSON.stringify(firstPageResult.error, null, 2),
       });
       return NextResponse.json(
-        { error: 'Failed to fetch users', details: usersError.message },
+        { error: 'Failed to fetch users', details: firstPageResult.error.message },
         { status: 500 }
       );
     }
+
+    if (!firstPageResult.data?.users || firstPageResult.data.users.length === 0) {
+      return NextResponse.json({
+        success: true,
+        totalUsers: 0,
+        usersWithPlayerTag: 0,
+        usersProcessed: 0,
+        usersSucceeded: 0,
+        usersFailed: 0,
+        results: [],
+        errors: [],
+      });
+    }
+
+    const firstPageUsers = firstPageResult.data.users;
+    const totalUsersFromFirstPage = firstPageUsers.length;
+    
+    // If first page is full, we need to fetch more pages
+    // Estimate total pages: if first page has 1000 users, there might be more
+    // We'll fetch pages in parallel batches for better performance
+    let allUsers = [...firstPageUsers];
+    const fetchStartTime = Date.now();
+    
+    if (totalUsersFromFirstPage === perPage) {
+      // First page is full, likely more pages exist
+      // Fetch pages 2-10 in parallel first to see how many total pages we need
+      const initialParallelPages = 10;
+      const pagePromises: Promise<any>[] = [];
+      
+      for (let page = 2; page <= initialParallelPages; page++) {
+        pagePromises.push(
+          supabase.auth.admin.listUsers({ page, perPage })
+            .then(result => ({ page, result }))
+        );
+      }
+      
+      const pageResults = await Promise.all(pagePromises);
+      
+      for (const { page, result } of pageResults) {
+        if (result.error) {
+          console.error(`[SUPABASE ERROR] Failed to fetch page ${page}:`, result.error.message);
+          // Continue with other pages even if one fails
+          continue;
+        }
+        
+        if (result.data?.users && result.data.users.length > 0) {
+          allUsers = allUsers.concat(result.data.users);
+          console.log(`[SUPABASE] Fetched page ${page}: ${result.data.users.length} users (total so far: ${allUsers.length})`);
+          
+          // If this page is not full, we've reached the end
+          if (result.data.users.length < perPage) {
+            break;
+          }
+        }
+      }
+      
+      // If we got full pages, continue fetching sequentially (to avoid overwhelming the API)
+      // This handles cases where there are more than 10 pages
+      let currentPage = initialParallelPages + 1;
+      while (allUsers.length % perPage === 0 && allUsers.length > 0) {
+        const { data: { users }, error } = await supabase.auth.admin.listUsers({
+          page: currentPage,
+          perPage,
+        });
+        
+        if (error) {
+          console.error(`[SUPABASE ERROR] Failed to fetch page ${currentPage}:`, error.message);
+          break;
+        }
+        
+        if (!users || users.length === 0) {
+          break;
+        }
+        
+        allUsers = allUsers.concat(users);
+        console.log(`[SUPABASE] Fetched page ${currentPage}: ${users.length} users (total so far: ${allUsers.length})`);
+        
+        if (users.length < perPage) {
+          break;
+        }
+        
+        currentPage++;
+      }
+    }
+
+    const fetchTime = Date.now() - fetchStartTime;
+    console.log(`[SUPABASE] Total users fetched: ${allUsers.length} in ${(fetchTime / 1000).toFixed(2)}s`);
+    
+    const users = allUsers;
 
     if (!users || users.length === 0) {
       return NextResponse.json({
@@ -129,6 +225,8 @@ export async function GET(request: NextRequest) {
         errors: [],
       });
     }
+
+    console.log(`[SUPABASE] Total users fetched: ${users.length}`);
 
     // Filter users with player_tag in metadata
     const usersWithPlayerTag = users.filter(

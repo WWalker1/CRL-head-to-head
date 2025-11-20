@@ -25,6 +25,11 @@ if not SUPABASE_SERVICE_ROLE_KEY:
 # The correct signature for create_client is: create_client(url: str, key: str) -> Client
 supabase: Client = create_client(URL, SUPABASE_SERVICE_ROLE_KEY)
 
-supabase.auth.admin.delete_user(
-    "5902983b-27bc-4edc-9b22-e14467c9275a"
-)
+#supabase.auth.admin.delete_user(
+#    "e62acac9-90a3-4ff2-ac95-de6005ef0bbf"
+#)
+
+x = 1 
+y = 1
+
+print(x is y)
