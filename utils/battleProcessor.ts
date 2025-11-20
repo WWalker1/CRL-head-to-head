@@ -275,12 +275,12 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
       const battleType = battle.type.toLowerCase(); // Convert to lowercase once
       
       return (
-        (battleType === 'PvP' || 
+        (battleType === 'pvp' || 
          battleType === 'casual_1v1' || 
          battleType === 'path_of_legend' || 
          battleType === 'trail' || 
          battleType === 'friendly') ||
-         battleType === 'clanMate' && 
+         battleType === 'clanmate' && 
         battle.team && 
         battle.team.length === 1
       );
