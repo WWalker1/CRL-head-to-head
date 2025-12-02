@@ -296,7 +296,10 @@ export async function GET(request: NextRequest) {
 
     console.log(`Starting async batch processing: ${usersWithPlayerTag.length} users to process`);
 
-    // Process users in batches
+    // Process users in batches - batches can overlap if they take longer than 0.5s
+    let lastBatchStartTime: number | null = null;
+    const batchPromises: Array<Promise<UserSyncResult[]>> = [];
+    
     for (let i = 0; i < usersWithPlayerTag.length; i += BATCH_SIZE) {
       // Check if we've exceeded the time limit
       const elapsed = Date.now() - startTime;
@@ -305,14 +308,24 @@ export async function GET(request: NextRequest) {
         break;
       }
 
+      // If this isn't the first batch, ensure at least BATCH_INTERVAL_MS has passed since last batch started
+      if (lastBatchStartTime !== null) {
+        const timeSinceLastBatchStart = Date.now() - lastBatchStartTime;
+        if (timeSinceLastBatchStart < BATCH_INTERVAL_MS) {
+          const waitTime = BATCH_INTERVAL_MS - timeSinceLastBatchStart;
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+
       const batch = usersWithPlayerTag.slice(i, i + BATCH_SIZE);
       batchCount++;
       
       const batchStartTime = Date.now();
-      console.log(`\n=== Starting batch ${batchCount} at ${(elapsed / 1000).toFixed(2)}s (${batch.length} users) ===`);
+      lastBatchStartTime = batchStartTime;
+      console.log(`\n=== Starting batch ${batchCount} at ${((Date.now() - startTime) / 1000).toFixed(2)}s (${batch.length} users) ===`);
 
-      // Process batch concurrently
-      const batchResults = await Promise.all(
+      // Process batch concurrently - don't await, allow batches to overlap
+      const batchPromise = Promise.all(
         batch.map(async (user) => {
           const playerTag = user.user_metadata.player_tag;
           const result = await syncUserWithRetry(user.id, playerTag);
@@ -333,21 +346,23 @@ export async function GET(request: NextRequest) {
           
           return result;
         })
-      );
+      ).then((batchResults) => {
+        const batchElapsed = Date.now() - batchStartTime;
+        console.log(`Batch ${batchCount} completed in ${batchElapsed}ms`);
+        return batchResults;
+      });
 
-      results.push(...batchResults);
+      batchPromises.push(batchPromise);
       usersProcessed += batch.length;
+    }
 
-      const batchElapsed = Date.now() - batchStartTime;
-      console.log(`Batch ${batchCount} completed in ${batchElapsed}ms`);
-
-      // Ensure at least BATCH_INTERVAL_MS between batches (unless this is the last batch)
-      if (i + BATCH_SIZE < usersWithPlayerTag.length && elapsed < MAX_DURATION_MS) {
-        const remainingTime = BATCH_INTERVAL_MS - batchElapsed;
-        if (remainingTime > 0) {
-          await new Promise(resolve => setTimeout(resolve, remainingTime));
-        }
-      }
+    // Wait for all batches to complete
+    console.log(`\nWaiting for ${batchPromises.length} batches to complete...`);
+    const allBatchResults = await Promise.all(batchPromises);
+    
+    // Flatten results from all batches
+    for (const batchResults of allBatchResults) {
+      results.push(...batchResults);
     }
 
     const totalElapsed = Date.now() - startTime;
