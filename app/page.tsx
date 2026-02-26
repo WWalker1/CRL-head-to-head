@@ -82,15 +82,13 @@ export default async function Home() {
         {/* Hero Section */}
         <AnimatedSection>
           <div className="text-center mb-8 md:mb-16">
-            <div className="inline-block bg-black/30 backdrop-blur-sm rounded-2xl px-6 py-4 md:px-10 md:py-6">
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-3 md:mb-4 drop-shadow-lg">
-                CRL Head-to-Head Tracker
-              </h1>
-              <p className="text-base md:text-xl lg:text-2xl text-blue-100 max-w-2xl mx-auto px-2">
-                Track your win/loss records against your Clash Royale friends. 
-                See who comes out on top in your battles! 🏆
-              </p>
-            </div>
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-3 md:mb-4 drop-shadow-lg">
+              CRL Head-to-Head Tracker
+            </h1>
+            <p className="text-base md:text-xl lg:text-2xl text-blue-100 max-w-2xl mx-auto mb-4 md:mb-6 px-2">
+              Track your win/loss records against your Clash Royale friends. 
+              See who comes out on top in your battles! 🏆
+            </p>
           </div>
         </AnimatedSection>
 
@@ -151,20 +149,18 @@ export default async function Home() {
         {/* CTA Section - always visible */}
         <AnimatedSection delay={800}>
           <div className="text-center mb-6 md:mb-0">
-            <div className="inline-block bg-black/30 backdrop-blur-sm rounded-2xl px-6 py-4 md:px-10 md:py-6">
-              <Link
-                href="/signup"
-                className="inline-block px-6 md:px-10 py-3 md:py-5 bg-orange-600 text-white text-lg md:text-xl font-bold rounded-xl hover:bg-orange-700 transition-all shadow-2xl hover:shadow-orange-500/50 transform hover:scale-105 transition-transform duration-200"
-              >
-                Get Started 🚀
+            <Link
+              href="/signup"
+              className="inline-block px-6 md:px-10 py-3 md:py-5 bg-orange-600 text-white text-lg md:text-xl font-bold rounded-xl hover:bg-orange-700 transition-all shadow-2xl hover:shadow-orange-500/50 transform hover:scale-105 transition-transform duration-200"
+            >
+              Get Started 🚀
+            </Link>
+            <p className="mt-4 md:mt-6 text-blue-100 text-sm md:text-lg">
+              Already have an account?{' '}
+              <Link href="/login" className="text-white font-semibold hover:underline hover:text-orange-200 transition-colors">
+                Sign in
               </Link>
-              <p className="mt-4 md:mt-6 text-blue-100 text-sm md:text-lg">
-                Already have an account?{' '}
-                <Link href="/login" className="text-white font-semibold hover:underline hover:text-orange-200 transition-colors">
-                  Sign in
-                </Link>
-              </p>
-            </div>
+            </p>
           </div>
         </AnimatedSection>
       </div>
