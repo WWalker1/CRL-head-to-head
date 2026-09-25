@@ -1,5 +1,6 @@
 import { TrackedFriend } from '@/lib/types';
 import EloDisplay from './EloDisplay';
+import FriendInsights from './FriendInsights';
 
 interface FriendCardProps {
   friend: TrackedFriend;
@@ -56,6 +57,7 @@ export default function FriendCard({ friend, onRemove }: FriendCardProps) {
           </svg>
         </button>
       </div>
+      {process.env.NEXT_PUBLIC_MODEL_TOOLS_ENABLED === '1' && <FriendInsights friendId={friend.id} friendTag={friend.friend_player_tag} friendName={friend.friend_name} />}
     </div>
   );
 }

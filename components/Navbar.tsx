@@ -2,10 +2,8 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase-server';
 
 export default async function Navbar() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const configured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const user = configured ? (await (await createClient()).auth.getUser()).data.user : null;
 
   return (
     <nav className="bg-blue-900/80 backdrop-blur-md border-b border-white/20 sticky top-0 z-50">
@@ -18,7 +16,8 @@ export default async function Navbar() {
             🏆 CRL Tracker
           </Link>
           
-          <div className="flex items-center gap-4 md:gap-6">
+          <div className="flex flex-wrap justify-end items-center gap-3 md:gap-6">
+            {process.env.MODEL_TOOLS_ENABLED === '1' && <Link href="/deck-builder" className="text-white hover:text-orange-200 text-sm font-medium">Deck tools</Link>}
             <Link 
               href="/info" 
               className="text-white hover:text-orange-200 transition-colors text-sm md:text-base font-medium"

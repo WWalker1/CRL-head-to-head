@@ -156,3 +156,8 @@ Tests verify:
 ## License
 
 ISC
+
+
+## Model product beta
+
+Start with [AGENT_HANDOFF.md](AGENT_HANDOFF.md) for implementation status, plans, artifact requirements and outstanding tasks. See [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md) to run locally.

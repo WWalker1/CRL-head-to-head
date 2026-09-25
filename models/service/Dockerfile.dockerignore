@@ -1,0 +1,8 @@
+**
+!models
+!models/service
+!models/service/**
+!models/data
+!models/data/bundle
+!models/data/bundle/**
+**/__pycache__/**

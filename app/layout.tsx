@@ -8,6 +8,7 @@ const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://your-domain.com');
 
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl),
   title: {
     default: "CRL Head to Head Tracker - Track Clash Royale Wins Against Friends",
     template: "%s | CRL Head to Head Tracker"

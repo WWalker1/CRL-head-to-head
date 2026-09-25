@@ -8,6 +8,10 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    if (request.nextUrl.pathname.startsWith('/dashboard')) return NextResponse.redirect(new URL('/deck-builder', request.url));
+    return response;
+  }
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

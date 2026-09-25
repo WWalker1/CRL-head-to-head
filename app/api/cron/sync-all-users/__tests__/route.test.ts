@@ -38,6 +38,9 @@ describe('Cron Sync All Users Route', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    delete process.env.CRON_SECRET;
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost:54321';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-only-key';
 
     // Create a mock request
     mockRequest = {
@@ -46,7 +49,7 @@ describe('Cron Sync All Users Route', () => {
   });
 
   describe('Authentication', () => {
-    it('should require x-vercel-cron header or CRON_SECRET', async () => {
+    it('should require CRON_SECRET', async () => {
       // No headers
       const response = await GET(mockRequest);
       const data = await response.json();
@@ -55,7 +58,7 @@ describe('Cron Sync All Users Route', () => {
       expect(data.error).toBe('Unauthorized');
     });
 
-    it('should accept x-vercel-cron header with value "1"', async () => {
+    it('should reject a spoofed cron header', async () => {
       // Vercel sends x-vercel-cron with value "1"
       mockRequest.headers.set('x-vercel-cron', '1');
 
@@ -66,8 +69,8 @@ describe('Cron Sync All Users Route', () => {
 
       const response = await GET(mockRequest);
 
-      expect(response.status).toBe(200);
-      expect(mockStore.auth.admin.listUsers).toHaveBeenCalled();
+      expect(response.status).toBe(401);
+      expect(mockStore.auth.admin.listUsers).not.toHaveBeenCalled();
     });
 
     it('should accept CRON_SECRET in authorization header', async () => {
@@ -103,7 +106,8 @@ describe('Cron Sync All Users Route', () => {
 
   describe('User Processing', () => {
     beforeEach(() => {
-      mockRequest.headers.set('x-vercel-cron', '1');
+      process.env.CRON_SECRET = 'test-secret';
+      mockRequest.headers.set('authorization', 'Bearer test-secret');
     });
 
     it('should process all users with player_tag', async () => {
