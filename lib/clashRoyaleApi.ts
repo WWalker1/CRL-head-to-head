@@ -11,6 +11,7 @@ async function fetchFromApi(endpoint: string) {
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    signal: AbortSignal.timeout(10000),
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',

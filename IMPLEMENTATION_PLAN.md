@@ -4,6 +4,8 @@ Plan date: 2026-09-23. Updated: 2026-09-25. Status: friend deck and counter flow
 
 ## 1. Authorization, purpose, and workspace
 
+September 25 follow-up: migration 009 adds the account owner's persistent normalized history and versioned matchup predictions. Manual and existing daily sync capture eligible player/friend logs when MATCH_HISTORY_ENABLED=1. Recent most-played decks and model-relative skill use a latest-100 window while archival rows remain stored. A provisional skill score compares actual decisive Ranked wins to supported, post-training-cutoff deck expectations; tough-matchup record uses p < 0.40. See DEPLOYMENT_SETUP.md for formula, exclusions, and setup. No live migration has been applied.
+
 The user approved moving the experimental matchup predictor into a product beta: friend deck analysis, counter decks, iterative deck building, and shareable rivalry cards. They explicitly requested an isolated worktree and a detailed plan before implementation so another agent can continue. Their main concern is searching the enormous deck space quickly. Do not attempt exhaustive enumeration or promise a globally optimal counter.
 
 Worktree: `C:\Users\22wes\.codex\worktrees\rival-model-product\head-to-head-royale`

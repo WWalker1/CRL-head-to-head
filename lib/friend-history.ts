@@ -8,6 +8,12 @@ export type EligibleMode = (typeof ELIGIBLE_MODES)[number];
 
 export interface DeckCard { id: string; name?: string | null; form?: string | null; level?: number | null }
 export interface FriendHistoryLog {
+  player_tag?: string;
+  opponent_tag?: string;
+  player_crowns?: number;
+  opponent_crowns?: number;
+  battle_type?: string;
+  game_mode_id?: number;
   physical_match_id: string;
   battle_time: string;
   mode: string;
@@ -95,8 +101,9 @@ export function normalizeBattle(battle: any, friendTag: string): FriendHistoryLo
   if (Number.isNaN(parsedTime.getTime())) return null;
   const mapDeck = (player: any) => canonicalDeck({ cards: player.cards.map((card: any) => ({ id: String(card.id), name: card.name || null, form: String(card.evolutionLevel ?? 0), level: card.level + offsets[card.rarity] })), tower: String(player.supportCards[0].id), towerLevel: player.supportCards[0].level + offsets[player.supportCards[0].rarity] });
   const participants = [battle.team[0].tag, battle.opponent[0].tag];
-  const friendCrowns = Number(friendSide.crowns || 0); const opponentCrowns = Number(opponentSide.crowns || 0);
-  return { physical_match_id: physicalMatchId(battle.battleTime, participants, battle.type, modeId), battle_time: parsedTime.toISOString(), mode: modeId === 72000006 ? 'ladder' : 'ranked', friend_result: friendCrowns === opponentCrowns ? 'draw' : friendCrowns > opponentCrowns ? 'win' : 'loss', friend_deck: mapDeck(friendSide), opponent_deck: mapDeck(opponentSide) };
+  const friendCrowns = friendSide.crowns; const opponentCrowns = opponentSide.crowns;
+  if (![friendCrowns, opponentCrowns].every(value => Number.isInteger(value) && value >= 0 && value <= 3)) return null;
+  return { player_tag: friendTag, opponent_tag: opponentSide.tag, player_crowns: friendCrowns, opponent_crowns: opponentCrowns, battle_type: battle.type, game_mode_id: modeId, physical_match_id: physicalMatchId(battle.battleTime, participants, battle.type, modeId), battle_time: parsedTime.toISOString(), mode: modeId === 72000006 ? 'ladder' : 'ranked', friend_result: friendCrowns === opponentCrowns ? 'draw' : friendCrowns > opponentCrowns ? 'win' : 'loss', friend_deck: mapDeck(friendSide), opponent_deck: mapDeck(opponentSide) };
 }
 
 export function normalizeLog(input: any): FriendHistoryLog | null {

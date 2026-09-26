@@ -200,7 +200,7 @@ export default function InfoPage() {
                 <li>Aggregated win/loss statistics</li>
               </ul>
               <p className="text-gray-700">
-                The tracker stores win and loss totals. If deck insights are enabled, it also stores up to 100 recorded eligible matches per tracked friend, including deck compositions. Game credentials are never stored.
+                The tracker stores win and loss totals. When history collection is enabled, it retains eligible recorded 1v1 matches for you and your tracked friends, including both decks, levels, tower troops, and outcomes. Deck and skill summaries use the latest 100 records. Game credentials are never stored.
               </p>
             </section>
 

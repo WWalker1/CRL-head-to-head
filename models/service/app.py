@@ -7,7 +7,7 @@ import os
 import threading
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 from .model import Runtime
 from .search import DeckSearch
 
@@ -34,6 +34,22 @@ app = FastAPI(title='Rival Royale Model Service', version='1', lifespan=lifespan
 class PredictRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     decks: list[dict] = Field(min_length=2, max_length=2)
+
+class HistoryMatch(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    id: str = Field(min_length=1, max_length=128)
+    decks: list[dict] = Field(min_length=2, max_length=2)
+
+class ScoreHistoryRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    matches: list[HistoryMatch] = Field(min_length=1, max_length=100)
+
+    @model_validator(mode='after')
+    def unique_ids(self):
+        ids = [match.id for match in self.matches]
+        if len(ids) != len(set(ids)):
+            raise ValueError('Match IDs must be unique.')
+        return self
 
 class WeightedOpponent(BaseModel):
     deck: dict
@@ -73,7 +89,7 @@ def health(): return {'status': 'ok'}
 @app.get('/ready')
 def ready():
     if runtime is None: raise HTTPException(503, 'Model is not loaded')
-    return {'ready': True, 'model_version': runtime.manifest['model_id']}
+    return {'ready': True, 'model_version': runtime.manifest['model_id'], 'training_cutoff': runtime.manifest.get('training_cutoff')}
 
 @app.get('/catalog')
 def catalog(): return runtime.catalog
@@ -90,6 +106,34 @@ def guarded(operation):
 
 @app.post('/predict')
 def predict(body: PredictRequest): return guarded(lambda: runtime.predict(body.decks))
+
+@app.post('/score-history')
+def score_history(body: ScoreHistoryRequest):
+    def operation():
+        valid = []
+        skipped = []
+        for match in body.matches:
+            try:
+                _, _, warnings = runtime.tensorize(match.decks)
+            except (ValueError, TypeError, KeyError, AttributeError) as error:
+                message = str(error)
+                if 'no training support' in message or 'supported tower troop' in message:
+                    skipped.append(match.id)
+                    continue
+                raise
+            if warnings:
+                skipped.append(match.id)
+                continue
+            valid.append(match)
+
+        probabilities = runtime.predict_batch([match.decks for match in valid]) if valid else []
+        return {
+            'model_version': runtime.manifest['model_id'],
+            'training_cutoff': runtime.manifest.get('training_cutoff'),
+            'scores': [{'id': match.id, 'probability': probability} for match, probability in zip(valid, probabilities)],
+            'skipped': skipped,
+        }
+    return guarded(operation)
 
 @app.post('/counter')
 def counter(body: CounterRequest):

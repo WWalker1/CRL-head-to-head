@@ -4,7 +4,7 @@ The code is ready for configuration. No Supabase migration or Railway deployment
 
 ## 1. Supabase
 
-Create a development Supabase project first. In its **SQL Editor**, apply the existing migrations in `supabase/migrations` in numeric order, ending with `007_friend_history_and_rivalry_shares.sql` and `008_model_quotas.sql`. Review and test the development project before applying those two new migrations to production.
+Create a development Supabase project first. In its **SQL Editor**, apply the existing migrations in `supabase/migrations` in numeric order through `009_player_history_and_matchup_skill.sql`. Review and test the development project before applying new migrations to production.
 
 In the Supabase project dashboard, copy the **Project URL**, **anon / publishable key**, and **service role / secret key**. Put them in the web app's server environment settings as `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. The service role key must remain server-side. Set the Supabase Auth site URL and redirect allow list to your web domain.
 
@@ -22,6 +22,14 @@ For local signed-in testing, place the same variables in ignored `.env.local` an
 
 ## 4. Check the flow
 
-Sign in on a phone-sized browser, add a friend, hover on desktop or tap the deck control on mobile, and refresh history if needed. Open the full deck page, wait for the counter, and tap **Export to Clash Royale** on a phone with the game installed. The deck link imports base cards; verify Evolution, Hero, tower and levels in game. Verify that another account cannot open this friend's private deck page. Existing API logs may contain fewer than 100 eligible matches; the history grows only as it is refreshed or a future scheduled accumulator is added.
+Sign in on a phone-sized browser, add a friend, hover on desktop or tap the deck control on mobile, and refresh history if needed. Open the full deck page, wait for the counter, and tap **Export to Clash Royale** on a phone with the game installed. The deck link imports base cards; verify Evolution, Hero, tower and levels in game. Verify that another account cannot open this friend's private deck page. Existing API logs may contain fewer than 100 eligible matches; enable history capture as described below to accumulate available logs over time.
 
 The deck builder is tabled. Its prior beta route remains in the branch but is removed from primary navigation and the sitemap. The counter flow uses complete recorded friend decks.
+
+## 5. Persistent history and matchup skill
+
+Also apply `009_player_history_and_matchup_skill.sql` after 007/008, first in development. Set `MATCH_HISTORY_ENABLED=1` on the web host after migration. Manual **Sync Battles** and the existing daily sync now archive the account owner's eligible matches and fetch each tracked friend's recent log. Rows are deduplicated and retained; the latest 100 is a summary window, not an archive deletion rule. Deleting an account deletes its archive; removing a friend deletes that tracked relationship's history. Unknown/modified modes, draft, 2v2 and malformed records are not part of this normalized 1v1 archive. The short API log cannot reconstruct older games already missing before capture. Daily capture may miss active players' games; increase the scheduler frequency within the host's limits if more complete coverage is needed, and measure API/database load.
+
+Redeploy the Railway service for `/score-history` and the extended `/ready` metadata. The website scores recent decisive Ranked records after the model's training cutoff, excluding unsupported/low-support decks and draws. Stored predictions include model version and cutoff; versions are not mixed. No outcome is sent to the predictor. The current score uses the latest 100 captured records: `50 + 50 × (actualWins − expectedWins) / (scoredMatches + 20)`, bounded to 0–100. A score of 50 means performance matches deck-model expectations. The 20-match neutral prior reduces small-sample swings. Fewer than 30 scored games is provisional. Tough-matchup wins are wins with model probability below 40%.
+
+This is a model-relative performance measure, not a pure causal skill rating. It does not account for opponent skill, matchup familiarity, or future balance changes, and it leaves the existing Elo rating intact. Supabase RLS and real signed-in integration still need verification on the development project; no live migration has been applied here.

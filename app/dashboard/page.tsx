@@ -8,6 +8,7 @@ import FriendCard from '@/components/FriendCard';
 import AddFriendModal from '@/components/AddFriendModal';
 import SyncButton from '@/components/SyncButton';
 import EloDisplay from '@/components/EloDisplay';
+import PlayerHistoryInsights from '@/components/PlayerHistoryInsights';
 import toast from 'react-hot-toast';
 
 export default function DashboardPage() {
@@ -18,6 +19,7 @@ export default function DashboardPage() {
   const [userTag, setUserTag] = useState('');
   const [userElo, setUserElo] = useState(1500);
   const [averageElo, setAverageElo] = useState<number | null>(null);
+  const [historyRevision, setHistoryRevision] = useState(0);
 
   useEffect(() => {
     fetchFriends();
@@ -171,6 +173,7 @@ export default function DashboardPage() {
     
     // Refresh friends list after sync
     await fetchFriends();
+    setHistoryRevision(value => value + 1);
     
     return result;
   };
@@ -277,6 +280,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Friends List */}
+        {process.env.NEXT_PUBLIC_MODEL_TOOLS_ENABLED === '1' && <PlayerHistoryInsights revision={historyRevision} />}
         <div className="mb-8">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-2xl font-bold text-white">Your Friends</h2>

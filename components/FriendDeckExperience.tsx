@@ -6,6 +6,8 @@ import type { DeckUsage, FriendHistorySummary } from '@/lib/friend-history';
 import { buildClashDeckLink, CLASH_DECK_IMPORT_NOTICE } from '@/lib/clash-deck-link';
 import { counter, fetchCatalog } from './model-tools/api';
 import type { CatalogVariant, Deck, ModelResult } from './model-tools/types';
+import MatchupSkill from './MatchupSkill';
+import type { MatchupSkillSummary } from '@/lib/matchup-skill';
 
 function toModelDeck(usage: DeckUsage): Deck | null {
   if (usage.cards.length !== 8) return null;
@@ -21,6 +23,8 @@ function Cards({ deck, variants }: { deck: Deck; variants: CatalogVariant[] }) {
 
 export default function FriendDeckExperience({ friendId, friendName, friendTag, compact = false }: { friendId: string; friendName?: string; friendTag?: string; compact?: boolean }) {
   const [summary, setSummary] = useState<FriendHistorySummary | null>(null);
+  const [skill, setSkill] = useState<MatchupSkillSummary | null>(null);
+  const [skillStatus, setSkillStatus] = useState('');
   const [name, setName] = useState(friendName ?? 'Friend');
   const [variants, setVariants] = useState<CatalogVariant[]>([]);
   const [selected, setSelected] = useState(0);
@@ -37,7 +41,7 @@ export default function FriendDeckExperience({ friendId, friendName, friendTag, 
       const latest = await fetch('/api/friend-decks', { method: 'POST', signal, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ friendId }) });
       if (latest.ok) payload = await latest.json();
     }
-    setSummary(payload.summary); setName(payload.friend?.friend_name || friendName || 'Friend'); setSelected(0); setResult(null);
+    setSummary(payload.summary); setSkill(payload.skill ?? null); setSkillStatus(payload.skillStatus ?? ''); setName(payload.friend?.friend_name || friendName || 'Friend'); setSelected(0); setResult(null);
   };
 
   useEffect(() => {
@@ -69,6 +73,7 @@ export default function FriendDeckExperience({ friendId, friendName, friendTag, 
     <div className="flex flex-wrap items-start justify-between gap-2"><div><h2 className={`${compact ? 'text-base' : 'text-2xl'} font-bold`}>{name}&apos;s deck</h2><p className="text-xs text-gray-500">{friendTag || 'Recent recorded 1v1 matches'}</p></div><button type="button" onClick={refresh} disabled={loading} className="min-h-11 rounded-lg border border-blue-200 px-3 text-xs font-semibold text-blue-700 disabled:opacity-50">Refresh history</button></div>
     {loading && <p role="status" className="text-sm text-gray-600">Loading recorded decks…</p>}
     {error && <p role="alert" className="rounded-lg bg-orange-50 p-2 text-sm text-orange-800">{error}</p>}
+    {!loading && skill && <MatchupSkill skill={skill} status={skillStatus} />}
     {!loading && summary && <><p className="text-xs text-gray-600">{summary.recordedMatches} eligible recorded matches · shown decks cover {Math.round(summary.coverage * 100)}%. Recent API logs may contain fewer than 100 matches.</p>{summary.topDecks.length === 0 ? <p className="text-sm text-gray-600">No eligible deck history yet. Refresh after your friend plays a standard 1v1 match.</p> : <>
       {summary.topDecks.length > 1 && <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Played decks">{summary.topDecks.map((deck, index) => <button type="button" key={deck.key} onClick={() => { setSelected(index); setError(''); }} aria-pressed={selected === index} className={`min-h-11 shrink-0 rounded-lg px-3 text-xs font-semibold ${selected === index ? 'bg-blue-700 text-white' : 'bg-blue-50 text-blue-800'}`}>Deck {index + 1} · {deck.count} games</button>)}</div>}
       {target ? <Cards deck={target} variants={variants} /> : <p className="text-sm text-orange-700">This deck has a form the model cannot score yet.</p>}
