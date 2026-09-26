@@ -49,7 +49,7 @@ export default function FriendCard({ friend, onRemove }: FriendCardProps) {
         
         <button
           onClick={() => onRemove(friend.id)}
-          className="ml-4 text-gray-400 hover:text-red-600 transition-colors"
+          className="ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
           aria-label="Remove friend"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -3,7 +3,7 @@ WORKDIR /app
 COPY models/service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY models/service /app/service
-COPY models/data/bundle /app/data/bundle
+COPY models/release-bundle /app/data/bundle
 ENV MODEL_BUNDLE=/app/data/bundle
 EXPOSE 8768
 CMD ["python", "-m", "service"]

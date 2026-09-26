@@ -248,9 +248,9 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-700 to-orange-600">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-white">CRL Tracker</h1>
+            <h1 className="text-3xl font-bold text-white sm:text-4xl">CRL Tracker</h1>
             <p className="text-blue-100 mt-1">Tag: {userTag}</p>
             <div className="mt-1 flex items-center gap-2">
               <span className="text-blue-100">Elo:</span>
@@ -278,11 +278,11 @@ export default function DashboardPage() {
 
         {/* Friends List */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-2xl font-bold text-white">Your Friends</h2>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-4 py-2 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition-colors shadow-lg"
+              className="min-h-11 px-4 py-2 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition-colors shadow-lg"
             >
               + Add Friend
             </button>

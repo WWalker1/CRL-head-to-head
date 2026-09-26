@@ -4,8 +4,8 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import Navbar from "@/components/Navbar";
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://your-domain.com');
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -33,7 +33,6 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: baseUrl,
     siteName: "CRL Head to Head Tracker",
     title: "CRL Head to Head Tracker - Track Clash Royale Wins Against Friends",
     description: "Track your Clash Royale wins and losses against friends. Free head-to-head battle tracker with automatic sync from the Clash Royale API.",
@@ -62,9 +61,6 @@ export const metadata: Metadata = {
       "max-image-preview": "large",
       "max-snippet": -1,
     },
-  },
-  alternates: {
-    canonical: baseUrl,
   },
 };
 

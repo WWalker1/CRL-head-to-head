@@ -2,7 +2,6 @@
 !models
 !models/service
 !models/service/**
-!models/data
-!models/data/bundle
-!models/data/bundle/**
+!models/release-bundle
+!models/release-bundle/**
 **/__pycache__/**

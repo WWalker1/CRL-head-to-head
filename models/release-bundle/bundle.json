@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "model_id": "20260921T223438Z",
+  "training_cutoff": "2026-09-21T07:55:34+00:00",
+  "architecture": "MatchupAttention",
+  "temperature": 1.205894458199703,
+  "rules_version": "2026-03-deck-slots",
+  "rules_source": "https://supercell.com/en/games/clashroyale/blog/news/mid-march-update/",
+  "supported_rules": {
+    "evolutions_max": 2,
+    "heroes_or_champions_max": 2,
+    "special_slots_max": 3
+  },
+  "files": {
+    "attention.pt": "b4a26705f40323f963b96a536df543ad22c358cab857da4284e1f76f2e618044",
+    "card-catalog.json": "e941ccc1be8c3ebdaf66952a023d69b3aeda97df7ed3f9b81a0b24e57a2e9408",
+    "examples.json": "c78eb7a2f1d49967f6599f02fb2bc913308f10e958540bd50b516ea11a52c664",
+    "search-seeds.json": "db71dc1f4fd6e99e95659c360539c51db1d13031a04f7fd1667b1e95e0430e93",
+    "metrics.json": "4b6a118e1e188bbb4987e84bc9eb69a5e09e40c84a3399c36d6ad64c748c8601"
+  },
+  "training_schema_version": 2
+}

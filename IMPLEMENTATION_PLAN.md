@@ -1,6 +1,6 @@
 # Rival Royale: model-powered product implementation and agent handoff
 
-Plan date: 2026-09-23. Updated: 2026-09-25. Status: local beta implemented; production integration and deployment pending. Read AGENT_HANDOFF.md and IMPLEMENTATION_REPORT.md for current completion status. The sections below retain the full design plan, not a claim that every planned feature is complete.
+Plan date: 2026-09-23. Updated: 2026-09-25. Status: friend deck and counter flow implemented locally; Supabase integration and Railway deployment pending. The iterative deck builder is tabled at the user's request. Its beta route remains in the code but is removed from primary navigation and the sitemap. Read DEPLOYMENT_SETUP.md and IMPLEMENTATION_REPORT.md for current status. The sections below retain the full design plan, not a claim that every planned feature is complete.
 
 ## 1. Authorization, purpose, and workspace
 

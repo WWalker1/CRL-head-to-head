@@ -8,11 +8,7 @@ export const metadata: Metadata = {
     title: "How to Track Clash Royale Battles Against Friends - Complete Guide",
     description: "Complete guide on how to track your Clash Royale wins and losses against friends using the free battle tracker.",
   },
-  alternates: {
-    canonical: process.env.NEXT_PUBLIC_SITE_URL 
-      ? `${process.env.NEXT_PUBLIC_SITE_URL}/info`
-      : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}/info` : 'https://your-domain.com/info'),
-  },
+  alternates: { canonical: '/info' },
 };
 
 export default function InfoPage() {
@@ -30,7 +26,7 @@ export default function InfoPage() {
       "name": "CRL Tracker"
     },
     "datePublished": "2024-01-01",
-    "dateModified": new Date().toISOString().split('T')[0],
+    "dateModified": "2026-09-25",
   };
 
   return (
@@ -204,8 +200,7 @@ export default function InfoPage() {
                 <li>Aggregated win/loss statistics</li>
               </ul>
               <p className="text-gray-700">
-                We don't store full battle logs, deck compositions, or any sensitive game credentials. 
-                The tracker uses a minimal data approach while still providing full functionality.
+                The tracker stores win and loss totals. If deck insights are enabled, it also stores up to 100 recorded eligible matches per tracked friend, including deck compositions. Game credentials are never stored.
               </p>
             </section>
 

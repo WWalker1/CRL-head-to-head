@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: "How to Track Clash Royale Wins Against Friends - Free Battle Tracker",
   description: "Learn how to track your Clash Royale wins and losses against friends. Free head-to-head battle tracker that automatically syncs from the Clash Royale API. See detailed statistics and win/loss records.",
+  alternates: { canonical: '/' },
   openGraph: {
     title: "How to Track Clash Royale Wins Against Friends - Free Battle Tracker",
     description: "Learn how to track your Clash Royale wins and losses against friends. Free head-to-head battle tracker with automatic sync.",
@@ -24,9 +25,6 @@ export default async function Home() {
     redirect('/dashboard');
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://your-domain.com');
-
   const faqStructuredData = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -36,15 +34,15 @@ export default async function Home() {
         "name": "How can I track Clash Royale wins against friends?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "You can track your Clash Royale wins against friends using CRL Head to Head Tracker. Simply sign up with your Clash Royale player tag, add your friends' tags, and the app will automatically sync and track all your 1v1 battles. The tracker shows win/loss records, win percentages, and detailed statistics for each friend."
+          "text": "Sign up with your player tag and add your friends' player tags. The tracker syncs recent 1v1 battles from the Clash Royale API and shows your win/loss record and win percentage for each friend."
         }
       },
       {
         "@type": "Question",
-        "name": "Does the tracker automatically sync battles?",
+        "name": "Is the battle tracking automatic?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes! The tracker automatically syncs battles from the Clash Royale API. Battles are synced daily via automated cron jobs, and you can also manually trigger a sync at any time using the 'Sync Battles' button on your dashboard."
+          "text": "Battles are synced daily from the Clash Royale API. You can also manually sync using the Sync Battles button on your dashboard. Recent API logs may omit older battles."
         }
       },
       {
@@ -52,15 +50,15 @@ export default async function Home() {
         "name": "What types of battles are tracked?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "The tracker only tracks head-to-head 1v1 battles to keep your statistics clean and accurate. 2v2 battles, challenges, and other game modes are automatically filtered out."
+          "text": "Only eligible head-to-head 1v1 battles are tracked. 2v2 battles and other game modes are filtered out."
         }
       },
       {
         "@type": "Question",
-        "name": "How do I find my Clash Royale player tag?",
+        "name": "Is this tracker free to use?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "To find your player tag, open Clash Royale and tap on your player name at the top of the screen. Your player tag will be displayed below your name (e.g., #COG20PR2). Tap the 'Copy Tag' button to copy it to your clipboard."
+          "text": "Yes. Sign up with your Clash Royale player tag and track your battles against friends for free."
         }
       }
     ]
@@ -184,7 +182,7 @@ function FAQSection() {
             <p className="text-gray-600 text-sm md:text-base">
               Tracking your Clash Royale wins against friends is easy with CRL Head to Head Tracker. 
               After signing up with your player tag, simply add your friends' player tags. The app 
-              automatically syncs all your 1v1 battles from the Clash Royale API and displays your 
+              syncs recent 1v1 battles from the Clash Royale API and displays your
               win/loss record, win percentage, and detailed statistics for each friend.
             </p>
           </div>
@@ -194,7 +192,7 @@ function FAQSection() {
             </h3>
             <p className="text-gray-600 text-sm md:text-base">
               Yes! Battles are automatically synced daily from the Clash Royale API. You can also 
-              manually sync battles at any time using the "Sync Battles" button on your dashboard.
+              manually sync battles at any time using the "Sync Battles" button on your dashboard. Recent API logs may omit older battles.
             </p>
           </div>
           <div>
