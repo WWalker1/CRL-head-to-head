@@ -1,6 +1,14 @@
 # Rival Royale: model-powered product implementation and agent handoff
 
-Plan date: 2026-09-23. Updated: 2026-09-25. Status: friend deck and counter flow implemented locally; Supabase integration and Railway deployment pending. The iterative deck builder is tabled at the user's request. Its beta route remains in the code but is removed from primary navigation and the sitemap. Read DEPLOYMENT_SETUP.md and IMPLEMENTATION_REPORT.md for current status. The sections below retain the full design plan, not a claim that every planned feature is complete.
+Plan date: 2026-09-23. Updated: 2026-10-01. Status: friend deck and counter flow implemented locally; Supabase integration and Railway deployment pending. The iterative deck builder is tabled at the user's request. Its beta route remains in the code but is removed from primary navigation and the sitemap. Read DEPLOYMENT_SETUP.md and IMPLEMENTATION_REPORT.md for current status. The sections below retain the full design plan, not a claim that every planned feature is complete.
+
+## October 1 product and model gate
+
+The matchup and counter pages now use visible card art, slot-based selection, search and form filters. Levels and tower troop controls are collapsed by default for a quicker mobile flow. The visual editor does not make the inference model more capable.
+
+Before treating level-adjusted predictions as reliable, run a level-sensitivity suite using identical decks on both sides at several level gaps and compare with level-stratified future match outcomes. A direct release-bundle check with an identical deck at level 11 against level 13 returned approximately 0.499 for the level-11 side, so the current model does not demonstrate the expected level advantage in this case. The UI marks level effects experimental. Keep tournament and ladder cohorts separate when evaluating level effects so equal levels do not silently combine new accounts and tournament play.
+
+Before promoting counter search or untabling the builder, compare observed-deck retrieval, the current two-mutation search and broader diverse proposals at equal compute budgets on a frozen future opponent basket. Search across multiple seeds, record how often each locked card survives, and audit legality, novelty, distinctness, support, score stability and pair coverage. Current generation uses a frequency-filtered card pool and at most two substitutions from observed seeds; it cannot substantiate a claim of finding previously unseen strategies. Validate promising novel decks through prospective playtesting or later real matches, and label them experimental until then. Do not promote a candidate solely because it attains an extreme model score.
 
 ## 1. Authorization, purpose, and workspace
 

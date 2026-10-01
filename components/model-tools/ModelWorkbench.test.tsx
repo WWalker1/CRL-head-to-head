@@ -3,9 +3,14 @@ import ModelWorkbench, { normalizeExamples } from './ModelWorkbench';
 
 jest.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams() }));
 
-const cards = Array.from({ length: 8 }, (_, index) => ({ key: `2600000${index + 1}:0`, name: `Card ${index + 1}`, min_level: 1 }));
-const deck = { cards: cards.map((card) => ({ key: card.key, level: 14 })), tower_id: 159000000, tower_level: 14 };
+const cards = Array.from({ length: 9 }, (_, index) => ({ key: `2600000${index + 1}:0`, card_id: 26000001 + index, form: 0, name: `Card ${index + 1}`, min_level: 1 }));
+const deck = { cards: cards.slice(0, 8).map((card) => ({ key: card.key, level: 14 })), tower_id: 159000000, tower_level: 14 };
 const response = (body: unknown, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body }) as Response;
+
+async function chooseCard(slot: number, name: string) {
+  fireEvent.click(screen.getByRole('button', { name: `Card ${slot}: choose a card` }));
+  fireEvent.click(await screen.findByRole('button', { name: `Select ${name}` }));
+}
 
 describe('ModelWorkbench', () => {
   beforeEach(() => { jest.restoreAllMocks(); });
@@ -29,8 +34,8 @@ describe('ModelWorkbench', () => {
     render(<ModelWorkbench mode="matchup" title="Test" description="Test" />);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Fixture' })).toBeTruthy());
     fireEvent.click(screen.getByRole('button', { name: 'Score matchup' }));
-    const firstCard = (await screen.findAllByRole('combobox', { name: 'Card 1' }))[0];
-    fireEvent.change(firstCard, { target: { value: '26000002:0' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Card 1: Card 1' })[0]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Select Card 9' }));
     await act(async () => resolvePrediction(response({ probability_a: 0.9, model_version: 'test' })));
     expect(screen.queryByText('Matchup estimate')).toBeNull();
   });
@@ -48,7 +53,7 @@ describe('ModelWorkbench', () => {
     global.fetch = fetchMock;
     render(<ModelWorkbench mode="builder" title="Test" description="Test" />);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Complete my deck' })).toBeTruthy());
-    for (let index = 0; index < 4; index += 1) fireEvent.change((await screen.findAllByRole('combobox', { name: `Card ${index + 1}` }))[0], { target: { value: cards[index].key } });
+    for (let index = 0; index < 4; index += 1) await chooseCard(index + 1, `Card ${index + 1}`);
     fireEvent.click(screen.getByRole('button', { name: 'Complete my deck' }));
     await waitFor(() => expect(fetchMock.mock.calls.some((call) => String(call[0]).endsWith('/complete'))).toBe(true));
     const request = fetchMock.mock.calls.find((call) => String(call[0]).endsWith('/complete'))!;
