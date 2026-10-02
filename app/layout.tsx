@@ -10,11 +10,16 @@ const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ||
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: "CRL Head to Head Tracker - Track Clash Royale Wins Against Friends",
-    template: "%s | CRL Head to Head Tracker"
+    default: "Rival Royale | Clash Royale Matchups, Counter Decks & Friend Stats",
+    template: "%s | Rival Royale"
   },
-  description: "Track your Clash Royale wins and losses against friends. Free head-to-head battle tracker with automatic sync from the Clash Royale API. See your win/loss record and statistics against each friend.",
+  description: "Compare Clash Royale decks, explore model-ranked counter candidates, and track recorded battles against friends with Rival Royale.",
   keywords: [
+    "clash royale deck matchup",
+    "clash royale counter deck finder",
+    "clash royale friend deck analysis",
+    "clash royale player statistics",
+    "rival royale",
     "clash royale tracker",
     "track clash royale wins",
     "clash royale head to head",
@@ -33,22 +38,22 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "CRL Head to Head Tracker",
-    title: "CRL Head to Head Tracker - Track Clash Royale Wins Against Friends",
-    description: "Track your Clash Royale wins and losses against friends. Free head-to-head battle tracker with automatic sync from the Clash Royale API.",
+    siteName: "Rival Royale",
+    title: "Rival Royale | Clash Royale Matchups, Counter Decks & Friend Stats",
+    description: "Compare Clash Royale decks, explore model-ranked counter candidates, and track recorded battles against friends.",
     images: [
       {
         url: `${baseUrl}/images/dashboard-screenshot.png`,
         width: 1200,
         height: 630,
-        alt: "CRL Tracker Dashboard - Track Clash Royale battles against friends",
+        alt: "Rival Royale dashboard for Clash Royale head-to-head battle statistics",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CRL Head to Head Tracker - Track Clash Royale Wins Against Friends",
-    description: "Track your Clash Royale wins and losses against friends. Free head-to-head battle tracker with automatic sync.",
+    title: "Rival Royale | Clash Royale Matchups, Counter Decks & Friend Stats",
+    description: "Compare Clash Royale decks, explore counter candidates, and track recorded battles against friends.",
     images: [`${baseUrl}/images/dashboard-screenshot.png`],
   },
   robots: {

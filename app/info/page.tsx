@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: "How to Track Clash Royale Battles Against Friends - Complete Guide",
-  description: "Complete guide on how to track your Clash Royale wins and losses against friends. Learn how to use the free head-to-head battle tracker, sync battles automatically, and view detailed statistics.",
+  title: "Track Clash Royale Battles Against Friends: Rival Royale Guide",
+  description: "Learn how Rival Royale records eligible Clash Royale 1v1 results against tracked friends, refreshes available history, and helps you explore decks and matchups.",
   openGraph: {
-    title: "How to Track Clash Royale Battles Against Friends - Complete Guide",
-    description: "Complete guide on how to track your Clash Royale wins and losses against friends using the free battle tracker.",
+    title: "Track Clash Royale Battles Against Friends | Rival Royale",
+    description: "Learn how Rival Royale tracks eligible results and connects friend deck insights with Clash Royale matchup tools.",
   },
   alternates: { canonical: '/info' },
 };
@@ -16,17 +16,15 @@ export default function InfoPage() {
     "@context": "https://schema.org",
     "@type": "Article",
     "headline": "How to Track Clash Royale Wins Against Friends",
-    "description": "Complete guide on tracking Clash Royale battles against friends using the free head-to-head tracker",
+    "description": "Guide to tracking eligible Clash Royale battles against friends with Rival Royale.",
     "author": {
       "@type": "Organization",
-      "name": "CRL Tracker"
+      "name": "Rival Royale"
     },
     "publisher": {
       "@type": "Organization",
-      "name": "CRL Tracker"
+      "name": "Rival Royale"
     },
-    "datePublished": "2024-01-01",
-    "dateModified": "2026-09-25",
   };
 
   return (
@@ -53,15 +51,10 @@ export default function InfoPage() {
                 What is a Clash Royale Head-to-Head Tracker?
               </h2>
               <p className="text-gray-700 mb-4">
-                A Clash Royale head-to-head tracker is a tool that automatically monitors and records 
-                your 1v1 battle results against specific players. Instead of manually keeping track of 
-                wins and losses, the tracker syncs directly with the Clash Royale API to pull your 
-                battle history and calculate statistics.
+                A Clash Royale head-to-head tracker organizes available 1v1 results against specific players. Rival Royale can sync recent eligible battle records through the game API and calculate summaries from the records it has; API history may not include every older match.
               </p>
               <p className="text-gray-700">
-                The CRL Head to Head Tracker focuses exclusively on 1v1 battles, filtering out 2v2 matches, 
-                challenges, and other game modes to give you accurate statistics about your performance 
-                against each friend.
+                Rival Royale focuses this record on eligible head-to-head 1v1 battles. Team battles and unsupported modes are excluded, and a partial API history should not be read as a complete lifetime record.
               </p>
             </section>
 
@@ -90,7 +83,7 @@ export default function InfoPage() {
                     Step 2: Sign Up for the Tracker
                   </h3>
                   <p className="text-gray-700">
-                    Create a free account on the CRL Head to Head Tracker and enter your player tag. 
+                    Create an account on Rival Royale and enter your player tag.
                     The tracker uses your player tag to identify you in the Clash Royale API - no passwords 
                     or game credentials needed.
                   </p>
@@ -112,8 +105,7 @@ export default function InfoPage() {
                     Step 4: View Your Statistics
                   </h3>
                   <p className="text-gray-700">
-                    The tracker automatically syncs battles daily, but you can also manually trigger a 
-                    sync at any time. Your dashboard will show:
+                    When sync is enabled, refresh the recent eligible battles available from the API. Your dashboard summarizes the records it has:
                   </p>
                   <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
                     <li>Total wins and losses against each friend</li>
@@ -133,9 +125,9 @@ export default function InfoPage() {
                 This means:
               </p>
               <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4 mb-4">
-                <li>No manual entry required - battles are automatically detected</li>
-                <li>Daily automatic syncs keep your statistics up-to-date</li>
-                <li>Manual sync option available for immediate updates</li>
+                <li>Eligible recent battles can be retrieved from the game API</li>
+                <li>Available history may not include every older battle</li>
+                <li>Refresh tracked battle history from your dashboard when sync is enabled</li>
                 <li>Only 1v1 battles are tracked for accurate head-to-head statistics</li>
               </ul>
               <p className="text-gray-700">
@@ -168,7 +160,7 @@ export default function InfoPage() {
                 </ul>
               </div>
               <p className="text-gray-700">
-                All statistics are calculated in real-time based on your battle history from the Clash Royale API.
+                Summaries reflect the eligible battle records currently stored for your account. The available API history can be shorter than your full playing history.
               </p>
             </section>
 
@@ -212,10 +204,10 @@ export default function InfoPage() {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Is the tracker free to use?
+                    Do I need my game password?
                   </h3>
                   <p className="text-gray-700">
-                    Yes, the CRL Head to Head Tracker is completely free to use. Simply sign up and start tracking your battles.
+                    No. Sign up with your player tag; Rival Royale does not need your Clash Royale account password.
                   </p>
                 </div>
 
@@ -224,7 +216,7 @@ export default function InfoPage() {
                     How often are battles synced?
                   </h3>
                   <p className="text-gray-700">
-                    Battles are automatically synced daily, but you can also manually sync at any time using the "Sync Battles" button.
+                    Sync availability depends on the current account and feature configuration. When enabled, use the dashboard to refresh eligible recent matches; the game API may omit older records.
                   </p>
                 </div>
 

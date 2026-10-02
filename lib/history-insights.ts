@@ -1,5 +1,6 @@
 import { summarizeFriendHistory } from './friend-history';
 import { summarizeMatchupSkill } from './matchup-skill';
+import { buildPlayerStats } from './player-stats';
 import { asFriendHistory, historyConflict, historyQuery, historyTable, type HistorySubject } from './history-storage';
 
 function modelDeck(deck: any) {
@@ -50,5 +51,6 @@ export async function readHistoryInsights(client: any, subject: HistorySubject) 
     }
   }
   const history = rows.map(asFriendHistory);
-  return { summary: summarizeFriendHistory(history), skill: summarizeMatchupSkill(history, version), skillStatus };
+  const skill = summarizeMatchupSkill(history, version);
+  return { summary: summarizeFriendHistory(history), skill, skillStatus, stats: buildPlayerStats(rows, version, skill) };
 }

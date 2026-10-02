@@ -6,12 +6,12 @@ import AnimatedSection from '@/components/AnimatedSection';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "How to Track Clash Royale Wins Against Friends - Free Battle Tracker",
-  description: "Learn how to track your Clash Royale wins and losses against friends. Free head-to-head battle tracker that automatically syncs from the Clash Royale API. See detailed statistics and win/loss records.",
+  title: "Rival Royale: Clash Royale Matchups, Counters & Friend Stats",
+  description: "Compare Clash Royale decks, explore model-ranked counter candidates, and track recorded results against friends. See matchup estimates with their limitations clearly explained.",
   alternates: { canonical: '/' },
   openGraph: {
-    title: "How to Track Clash Royale Wins Against Friends - Free Battle Tracker",
-    description: "Learn how to track your Clash Royale wins and losses against friends. Free head-to-head battle tracker with automatic sync.",
+    title: "Rival Royale: Clash Royale Matchups, Counters & Friend Stats",
+    description: "Compare decks, explore supported counter candidates, and track head-to-head results with friends in Clash Royale.",
   },
 };
 
@@ -34,7 +34,7 @@ export default async function Home() {
         "name": "How can I track Clash Royale wins against friends?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Sign up with your player tag and add your friends' player tags. The tracker syncs recent 1v1 battles from the Clash Royale API and shows your win/loss record and win percentage for each friend."
+        "text": "Create an account with your Clash Royale player tag, add a friend's tag, and sync the eligible recent 1v1 battles available from the game API. Rival Royale summarizes the recorded head-to-head results; available history may be limited."
         }
       },
       {
@@ -42,7 +42,7 @@ export default async function Home() {
         "name": "Is the battle tracking automatic?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Battles are synced daily from the Clash Royale API. You can also manually sync using the Sync Battles button on your dashboard. Recent API logs may omit older battles."
+        "text": "When tracking is enabled, recent eligible battles can be synced from the game API and refreshed from the dashboard. The API may omit older battles, so the tracker cannot promise a complete lifetime record."
         }
       },
       {
@@ -50,15 +50,15 @@ export default async function Home() {
         "name": "What types of battles are tracked?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Only eligible head-to-head 1v1 battles are tracked. 2v2 battles and other game modes are filtered out."
+        "text": "The head-to-head tracker focuses on eligible 1v1 battles. Team battles and unsupported modes are excluded from that record."
         }
       },
       {
         "@type": "Question",
-        "name": "Is this tracker free to use?",
+        "name": "Are Clash Royale deck matchup estimates guaranteed results?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. Sign up with your Clash Royale player tag and track your battles against friends for free."
+          "text": "No. Estimates are produced by a model for supported complete decks. They are not guarantees or a player's personal win rate, and in-game decisions, balance changes, and model coverage affect how useful they are."
         }
       }
     ]
@@ -81,13 +81,26 @@ export default async function Home() {
         <AnimatedSection>
           <div className="text-center mb-8 md:mb-16">
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-3 md:mb-4 drop-shadow-lg">
-              CRL Head-to-Head Tracker
+              Rival Royale
             </h1>
             <p className="text-base md:text-xl lg:text-2xl text-blue-100 max-w-2xl mx-auto mb-4 md:mb-6 px-2">
-              Track your win/loss records against your Clash Royale friends. 
-              See who comes out on top in your battles! 🏆
+              Compare Clash Royale decks, find model-ranked counter candidates, and see how your recorded battles against friends add up. 🏆
             </p>
           </div>
+        </AnimatedSection>
+
+        <AnimatedSection delay={300}>
+          <section className="mx-auto mb-8 md:mb-16 max-w-5xl rounded-xl md:rounded-2xl bg-white p-5 md:p-8 shadow-2xl">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center">Make your next deck choice with more context</h2>
+            <p className="mx-auto mt-3 max-w-3xl text-center text-sm md:text-base leading-7 text-gray-600">Rival Royale brings deck matchup estimates and your own battle history together. Compare complete decks, explore a bounded set of counter candidates, and review patterns in eligible matches recorded against tracked friends. Your stats can also show a provisional model-relative skill summary from supported matchups. Estimates describe the model’s view of a matchup; your play, opponent, and current balance can change the result.</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <Link href="/matchup" className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-center text-blue-900 hover:border-blue-300"><strong className="block">Compare two decks</strong><span className="mt-1 block text-sm">See a model-estimated matchup for complete decks.</span></Link>
+              <Link href="/counter-deck" className="rounded-lg border border-orange-100 bg-orange-50 p-4 text-center text-orange-900 hover:border-orange-300"><strong className="block">Find counter candidates</strong><span className="mt-1 block text-sm">Search supported decks against a deck you want to face.</span></Link>
+              <Link href="/signup" className="rounded-lg border border-violet-100 bg-violet-50 p-4 text-center text-violet-900 hover:border-violet-300"><strong className="block">Analyze tracked friends</strong><span className="mt-1 block text-sm">Review recorded friend decks and head-to-head results.</span></Link>
+            </div>
+            <p className="mt-4 text-center text-xs text-gray-500">The model tools are experimental. Counter search checks a limited candidate set, and history coverage depends on records available from the game API.</p>
+            <p className="mt-3 text-center text-sm"><Link href="/models" className="font-semibold text-blue-700 underline underline-offset-2">Read how matchup estimates and counter search work</Link></p>
+          </section>
         </AnimatedSection>
 
         {/* App Preview Section - smaller on mobile */}
@@ -116,15 +129,15 @@ export default async function Home() {
               <div className="text-4xl md:text-5xl mb-3 md:mb-4">📊</div>
               <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Track Records</h3>
               <p className="text-gray-600 text-xs md:text-sm">
-                Automatically track wins and losses against each friend with detailed statistics
+                Review recorded wins and losses against each tracked friend
               </p>
             </div>
             
             <div className="bg-white bg-opacity-95 rounded-xl p-4 md:p-6 text-center shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 hover:scale-105">
               <div className="text-4xl md:text-5xl mb-3 md:mb-4">🔄</div>
-              <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Auto Sync</h3>
+              <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Refresh Battle History</h3>
               <p className="text-gray-600 text-xs md:text-sm">
-                Battles are automatically synced from the Clash Royale API - no manual entry needed
+                Sync recent eligible battles available through the game API
               </p>
             </div>
             
@@ -180,10 +193,7 @@ function FAQSection() {
               How can I track Clash Royale wins against friends?
             </h3>
             <p className="text-gray-600 text-sm md:text-base">
-              Tracking your Clash Royale wins against friends is easy with CRL Head to Head Tracker. 
-              After signing up with your player tag, simply add your friends' player tags. The app 
-              syncs recent 1v1 battles from the Clash Royale API and displays your
-              win/loss record, win percentage, and detailed statistics for each friend.
+              Create an account with your player tag, add a friend's tag, and sync the recent eligible 1v1 battles available through the game API. Rival Royale summarizes the recorded results; history availability can vary.
             </p>
           </div>
           <div>
@@ -191,8 +201,7 @@ function FAQSection() {
               Is the battle tracking automatic?
             </h3>
             <p className="text-gray-600 text-sm md:text-base">
-              Yes! Battles are automatically synced daily from the Clash Royale API. You can also 
-              manually sync battles at any time using the "Sync Battles" button on your dashboard. Recent API logs may omit older battles.
+              When history sync is enabled, eligible recent battles can be refreshed from the dashboard. The game API may omit older battles, so a tracker record may not cover every match you have played.
             </p>
           </div>
           <div>
@@ -200,17 +209,15 @@ function FAQSection() {
               What battle types are tracked?
             </h3>
             <p className="text-gray-600 text-sm md:text-base">
-              Only head-to-head 1v1 battles are tracked to maintain accurate statistics. 2v2 battles, 
-              challenges, and other game modes are automatically filtered out.
+              The head-to-head record focuses on eligible 1v1 battles. Team battles and unsupported modes are excluded.
             </p>
           </div>
           <div>
             <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
-              Is this tracker free to use?
+              Are the matchup estimates guaranteed results?
             </h3>
             <p className="text-gray-600 text-sm md:text-base">
-              Yes, CRL Head to Head Tracker is completely free to use. Simply sign up with your 
-              Clash Royale player tag and start tracking your battles against friends.
+              No. Estimates apply to the model and its supported complete-deck inputs. They are not guarantees or a personal win rate; player decisions, current balance, and model coverage can affect how closely an estimate matches a real battle. Read the <Link href="/models" className="text-blue-700 underline">methodology</Link> for more detail.
             </p>
           </div>
         </div>

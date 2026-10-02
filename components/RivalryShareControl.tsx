@@ -31,7 +31,7 @@ export default function RivalryShareControl({ friendId, friendName }: Props) {
         throw new Error(response.status === 401 ? 'Sign in to create a share link.' : payload.error || 'Could not create a share link.');
       }
       setShareId(payload.shareId);
-      setShareUrl(`${window.location.origin}/rivalry/${encodeURIComponent(payload.shareId)}`);
+      setShareUrl(typeof payload.shareUrl === 'string' ? payload.shareUrl : `${window.location.origin}/rivalry/${encodeURIComponent(payload.shareId)}`);
       setMessage('Share link ready. Anyone with the link can view this snapshot.');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not create a share link.');

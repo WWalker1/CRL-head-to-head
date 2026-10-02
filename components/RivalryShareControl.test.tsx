@@ -11,7 +11,7 @@ describe('RivalryShareControl', () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       status: 201,
-      json: async () => ({ shareId: 'safe-share-id' }),
+      json: async () => ({ shareId: 'safe-share-id', shareUrl: 'https://beta.rival-royale.com/rivalry/safe-share-id' }),
     } as Response).mockResolvedValueOnce({ ok: true, json: async () => ({ revoked: true }) } as Response);
     const writeText = jest.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
@@ -26,7 +26,7 @@ describe('RivalryShareControl', () => {
       body: JSON.stringify({ friendId: 'friend-1', includeDecks: true }),
     }));
     const input = screen.getByLabelText(/public share link/i) as HTMLInputElement;
-    expect(input.value).toBe(`${window.location.origin}/rivalry/safe-share-id`);
+    expect(input.value).toBe('https://beta.rival-royale.com/rivalry/safe-share-id');
 
     fireEvent.click(screen.getByRole('button', { name: /copy link/i }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(input.value));

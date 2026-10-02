@@ -11,7 +11,10 @@ export default async function Navbar() {
       {showDeckTools && <Link href="/counter-deck" className="inline-flex min-h-11 items-center text-white hover:text-orange-200 text-sm font-medium">Deck tools</Link>}
       <Link href="/info" className="inline-flex min-h-11 items-center text-white hover:text-orange-200 text-sm font-medium">How It Works</Link>
       {user ? (
-        <Link href="/dashboard" className="inline-flex min-h-11 items-center bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 text-sm font-medium">Dashboard</Link>
+        <>
+          {showDeckTools && <Link href="/stats" className="inline-flex min-h-11 items-center text-white hover:text-orange-200 text-sm font-medium">Your stats</Link>}
+          <Link href="/dashboard" className="inline-flex min-h-11 items-center bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 text-sm font-medium">Dashboard</Link>
+        </>
       ) : (
         <>
           <Link href="/login" className="inline-flex min-h-11 items-center text-white hover:text-orange-200 text-sm font-medium">Login</Link>
