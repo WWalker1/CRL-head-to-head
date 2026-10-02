@@ -1,6 +1,6 @@
 """Export a relocatable CPU inference bundle from the frozen selected run."""
 from __future__ import annotations
-import argparse, hashlib, json, shutil
+import argparse, hashlib, json
 from pathlib import Path
 
 def export(source: Path, destination: Path) -> dict:
@@ -24,9 +24,11 @@ def export(source: Path, destination: Path) -> dict:
         elif name == 'metrics.json':
             metrics = json.loads(path.read_text())
             # Runtime does not need local training paths or optimizer metadata.
-            (destination/name).write_text(json.dumps({'models': metrics.get('models', {})}), encoding='utf-8')
+            (destination/name).write_bytes(json.dumps({'models': metrics.get('models', {})}).encode('utf-8'))
         else:
-            shutil.copy2(path, destination/name)
+            # Git stores these JSON artifacts with LF endings on every platform.
+            # Hash the same bytes that a Linux deployment will receive.
+            (destination/name).write_bytes(path.read_bytes().replace(b'\r\n', b'\n'))
     manifest = {'schema_version': 1, 'model_id': source.name, 'training_cutoff': None,
                 'architecture': 'MatchupAttention', 'temperature': float(checkpoint['temperature']),
                 'rules_version': '2026-03-deck-slots',
@@ -39,7 +41,7 @@ def export(source: Path, destination: Path) -> dict:
             manifest['training_cutoff'] = source_manifest.get('train_cutoff_utc')
             manifest['training_schema_version'] = source_manifest.get('schema_version')
         except Exception: pass
-    (destination/'bundle.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+    (destination/'bundle.json').write_bytes((json.dumps(manifest, indent=2) + '\n').encode('utf-8'))
     return manifest
 
 if __name__ == '__main__':
