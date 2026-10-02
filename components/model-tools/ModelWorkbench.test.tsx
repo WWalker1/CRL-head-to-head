@@ -40,6 +40,28 @@ describe('ModelWorkbench', () => {
     expect(screen.queryByText('Matchup estimate')).toBeNull();
   });
 
+  it('offers a Clash Royale export link for every counter deck', async () => {
+    global.fetch = jest.fn((input, init) => {
+      const url = String(input);
+      if (url.endsWith('/catalog')) return Promise.resolve(response({ variants: cards, towers: [{ id: 159000000, name: 'Tower Princess' }] }));
+      if (url.endsWith('/examples')) return Promise.resolve(response([]));
+      if (init?.method === 'POST') return Promise.resolve(response({
+        deck,
+        candidates: [{ deck, probability: 0.7 }, { deck, probability: 0.6 }],
+      }));
+      return Promise.resolve(response({}, 404));
+    });
+
+    render(<ModelWorkbench mode="counter" title="Test" description="Test" />);
+    for (let index = 0; index < 8; index += 1) await chooseCard(index + 1, `Card ${index + 1}`);
+    fireEvent.click(screen.getByRole('button', { name: 'Find counters' }));
+
+    const exportLinks = await screen.findAllByRole('link', { name: 'Export to Clash Royale' });
+    expect(exportLinks).toHaveLength(3);
+    expect(exportLinks[0].getAttribute('href')).toBe(`https://link.clashroyale.com/deck/en?deck=${cards.slice(0, 8).map((card) => card.card_id).join(';')}`);
+    expect(screen.getAllByText(/Check Evolution and Hero forms/)).toHaveLength(3);
+  });
+
   it.each([false, true])('preserves mandatory cards and rejects invalid completion (invalid=%s)', async (invalid) => {
     let resolveCompletion!: (response: Response) => void;
     const pending = new Promise<Response>((resolve) => { resolveCompletion = resolve; });

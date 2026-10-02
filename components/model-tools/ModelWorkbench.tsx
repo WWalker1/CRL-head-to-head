@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { complete, counter, fetchCatalog, fetchExamples, predict } from './api';
 import type { CatalogVariant, Deck, DeckCard, ModelCatalog, ModelResult } from './types';
 import VisualDeckForm from './VisualDeckForm';
+import { buildClashDeckLink, CLASH_DECK_IMPORT_NOTICE } from '@/lib/clash-deck-link';
 
 type Mode = 'matchup' | 'counter' | 'builder';
 type Example = { name?: string; decks?: Deck[] };
@@ -42,6 +43,24 @@ function preservesRequiredCards(deck: Deck | undefined, requiredKeys: string[]) 
   return requiredKeys.every((key) => keys.has(key));
 }
 
+function counterExportUrl(deck: Deck | undefined) {
+  if (!deck || deck.cards.length !== 8) return null;
+  try {
+    return buildClashDeckLink(deck);
+  } catch {
+    return null;
+  }
+}
+
+function CounterDeckExport({ deck }: { deck: Deck }) {
+  const url = counterExportUrl(deck);
+  if (!url) return null;
+  return <div className="mt-3">
+    <a href={url} target="_blank" rel="noopener noreferrer" className="flex min-h-11 w-full items-center justify-center rounded-xl bg-orange-600 px-4 text-sm font-bold text-white transition hover:bg-orange-700 sm:w-auto">Export to Clash Royale</a>
+    <p className="mt-2 text-xs leading-5 text-slate-400">{CLASH_DECK_IMPORT_NOTICE}</p>
+  </div>;
+}
+
 function ResultPanel({ result, mode, variants, onApply, unequalLevels }: { result: ModelResult | null; mode: Mode; variants: CatalogVariant[]; onApply?: (deck: Deck) => void; unequalLevels?: boolean }) {
   if (!result) return null;
   const probability = getProbability(result);
@@ -55,9 +74,9 @@ function ResultPanel({ result, mode, variants, onApply, unequalLevels }: { resul
       </div>
       {probability !== null && <div className="mt-6 rounded-2xl bg-gradient-to-br from-blue-500/25 to-orange-500/10 p-5"><p className="text-sm text-slate-300">Estimated win chance for deck A</p><p className="mt-1 text-5xl font-black tabular-nums text-white">{Math.round(probability * 100)}<span className="text-2xl text-blue-300">%</span></p>{mode === 'matchup' && <p className="mt-1 text-sm text-slate-300">Deck B: {Math.round((1 - probability) * 100)}%</p>}<div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-gradient-to-r from-blue-400 to-orange-400" style={{ width: `${Math.max(0, Math.min(1, probability)) * 100}%` }} /></div></div>}
       {mode === 'matchup' && unequalLevels && <p className="mt-4 rounded-xl border border-amber-300/25 bg-amber-400/10 px-4 py-3 text-sm leading-6 text-amber-100">Level effects in this model have not been validated. A test with identical decks at levels 11 and 13 returned almost 50/50, so this estimate may understate a real level advantage.</p>}
-      {returnedDeck && <><DeckPreview deck={returnedDeck} variants={variants} title="Suggested deck" />{onApply && <button type="button" onClick={() => onApply(returnedDeck)} className="mt-4 h-11 rounded-xl border border-blue-300/30 bg-blue-400/10 px-4 text-sm font-semibold text-blue-100 transition hover:bg-blue-400/20">Use this deck</button>}</>}
+      {returnedDeck && <><DeckPreview deck={returnedDeck} variants={variants} title="Suggested deck" />{mode === 'counter' && <CounterDeckExport deck={returnedDeck} />}{onApply && <button type="button" onClick={() => onApply(returnedDeck)} className="mt-4 h-11 rounded-xl border border-blue-300/30 bg-blue-400/10 px-4 text-sm font-semibold text-blue-100 transition hover:bg-blue-400/20">Use this deck</button>}</>}
       {result.explanation && <p className="mt-5 rounded-xl border border-white/10 bg-white/[.03] px-4 py-3 text-sm leading-6 text-slate-300">{result.explanation}</p>}
-      {candidateList.length > 0 && <div className="mt-6 space-y-4"><p className="text-sm font-semibold text-slate-300">Search candidates</p>{candidateList.slice(0, 5).map((candidate, index) => { const score = candidate.probability ?? candidate.win_probability ?? candidate.score; return <div key={index} className="rounded-xl border border-white/10 bg-white/[.04] px-4 py-3"><div className="flex items-center justify-between gap-3"><span className="text-sm text-slate-200">Option {index + 1}</span><span className="flex items-center gap-2 font-semibold text-blue-200">{typeof score === 'number' ? `${Math.round((score > 1 ? score : score * 100))}%` : 'Scored'}{candidate.support && <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-slate-400">{candidate.support}</span>}</span></div>{candidate.explanation && <p className="mt-2 text-xs leading-5 text-slate-400">{candidate.explanation}</p>}{candidate.deck && <><DeckPreview deck={candidate.deck} variants={variants} title="" />{onApply && <button type="button" onClick={() => onApply(candidate.deck!)} className="mt-3 h-10 rounded-xl border border-blue-300/30 bg-blue-400/10 px-3 text-xs font-semibold text-blue-100 hover:bg-blue-400/20">Use option {index + 1}</button>}</>}</div>; })}</div>}
+      {candidateList.length > 0 && <div className="mt-6 space-y-4"><p className="text-sm font-semibold text-slate-300">Search candidates</p>{candidateList.slice(0, 5).map((candidate, index) => { const score = candidate.probability ?? candidate.win_probability ?? candidate.score; return <div key={index} className="rounded-xl border border-white/10 bg-white/[.04] px-4 py-3"><div className="flex items-center justify-between gap-3"><span className="text-sm text-slate-200">Option {index + 1}</span><span className="flex items-center gap-2 font-semibold text-blue-200">{typeof score === 'number' ? `${Math.round((score > 1 ? score : score * 100))}%` : 'Scored'}{candidate.support && <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-slate-400">{candidate.support}</span>}</span></div>{candidate.explanation && <p className="mt-2 text-xs leading-5 text-slate-400">{candidate.explanation}</p>}{candidate.deck && <><DeckPreview deck={candidate.deck} variants={variants} title="" />{mode === 'counter' && <CounterDeckExport deck={candidate.deck} />}{onApply && <button type="button" onClick={() => onApply(candidate.deck!)} className="mt-3 h-10 rounded-xl border border-blue-300/30 bg-blue-400/10 px-3 text-xs font-semibold text-blue-100 hover:bg-blue-400/20">Use option {index + 1}</button>}</>}</div>; })}</div>}
       {(result.evaluated !== undefined || result.opponents_evaluated !== undefined || result.elapsed_ms !== undefined || (result.objective === 'historical_training_meta')) && <p className="mt-5 text-xs leading-5 text-slate-500">{result.evaluated !== undefined ? `${result.evaluated} candidates evaluated` : ''}{result.opponents_evaluated !== undefined ? ` · ${result.opponents_evaluated} opponents compared` : ''}{result.elapsed_ms !== undefined ? ` · ${result.elapsed_ms}ms` : ''}{(result.objective === 'historical_training_meta') ? ' · historical training context' : ''}</p>}
       {typeof result.warning === 'string' && <p className="mt-4 text-sm text-amber-200">{result.warning}</p>}
       {Array.isArray(result.warnings) && result.warnings.map((warning, index) => <p key={index} className="mt-2 text-sm text-amber-200">{String(warning)}</p>)}
