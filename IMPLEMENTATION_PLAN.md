@@ -1,6 +1,14 @@
 # Rival Royale: model-powered product implementation and agent handoff
 
-Plan date: 2026-09-23. Updated: 2026-10-01. Status: friend deck and counter flow implemented locally; feature migrations 007–009 applied to the existing Supabase project; Railway and Vercel deployment pending. The iterative deck builder is tabled at the user's request. Its beta route remains in the code but is removed from primary navigation and the sitemap. Read DEPLOYMENT_SETUP.md, MIGRATION_REPORT.md, and IMPLEMENTATION_REPORT.md for current status. The sections below retain the full design plan, not a claim that every planned feature is complete.
+Plan date: 2026-09-23. Updated: 2026-10-01. Status: friend deck and counter flow implemented; feature migrations 007–009 applied to the existing Supabase project; Railway model service live. The existing Vercel project builds preview deployments from `codex/rival-model-product`, but the preview environment and friend access still need configuration and end-to-end verification. The iterative deck builder is tabled: its route returns 404 and its web API action is disabled. Read DEPLOYMENT_SETUP.md, MIGRATION_REPORT.md, and IMPLEMENTATION_REPORT.md for current status. The sections below retain the full design plan, not a claim that every planned feature is complete.
+
+## Preview release gate
+
+Keep Vercel's production branch on `main`. Deploy this branch to the existing project's Preview environment and use its stable branch URL for friend testing. The Preview build needs its own `NEXT_PUBLIC_SITE_URL` matching that URL, the existing Supabase project's public and server keys, the Railway URL and matching service token, and the enabled model/history flags. Add the Preview URL to Supabase Auth's redirect allow list. Preview accounts share the existing Supabase database, so use dedicated tester accounts and review the effect on live records before inviting friends.
+
+The beta should expose the friend's most-played deck and counter, a full friend-deck page, arbitrary complete-deck counter search, a Clash Royale export for every generated counter deck, and opt-in rivalry links for wins/losses with copy/native-share controls. Confirm mobile card picking and results at narrow widths. Keep `/deck-builder` and the `/api/model/complete` proxy action unavailable. Verify metadata, canonical URLs, sitemap, and `noindex` on personal share pages. Only promote to `main` after the user and testers accept the Preview build.
+
+Target a 1–2 hour engineering pass for configuration, focused fixes, and initial mobile smoke tests once Vercel dashboard access is available. Friend testing and any resulting fixes may extend beyond that window.
 
 ## October 1 product and model gate
 
@@ -22,7 +30,7 @@ Branch: `codex/rival-model-product`.
 
 Original workspace: `C:\Users\22wes\Programming Projects\head-to-head-royale`.
 
-Production application changes are now authorized in this worktree. Earlier language in models/AGENTS.md prohibiting production code changes describes the research phase; the present authorization supersedes it for this worktree. Implement and test locally before deploying. Do not assume credentials authorize unrelated database changes. Migrations 007–009 were applied to the existing Supabase project at the user's direction on October 1, 2026; no Railway or Vercel deployment has occurred.
+Production application changes are now authorized in this worktree. Earlier language in models/AGENTS.md prohibiting production code changes describes the research phase; the present authorization supersedes it for this worktree. Implement and test locally before deploying. Do not assume credentials authorize unrelated database changes. Migrations 007–009 were applied to the existing Supabase project at the user's direction on October 1, 2026. Railway serves the model at `https://crl-head-to-head-production-12d1.up.railway.app`; Vercel preview builds exist, while the production site remains on `main`.
 
 The original models/ directory was untracked. Its nonignored source, documentation and tests were copied into this worktree. Large datasets, model artifacts, virtual environment and secrets were deliberately not copied. Keep original collection processes and databases undisturbed. Do not start duplicate collectors. User prefers concise updates and low token consumption; use bounded cheaper agents only where useful and explicitly authorized by the research guide.
 
