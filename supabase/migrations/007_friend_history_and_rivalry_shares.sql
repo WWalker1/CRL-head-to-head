@@ -1,5 +1,6 @@
 -- Friend history and explicitly shared rivalry snapshots.
 -- This migration is intentionally additive; apply it only after review.
+BEGIN;
 
 CREATE TABLE IF NOT EXISTS friend_match_history (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -46,3 +47,4 @@ CREATE POLICY "Owners can view their rivalry shares"
 REVOKE INSERT, UPDATE, DELETE ON rivalry_shares FROM anon, authenticated;
 -- Public reads go through the server route, which selects only snapshot and status
 -- using the service role. Do not expose owner_user_id/tracked_friend_id to anon.
+COMMIT;

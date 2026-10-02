@@ -1,4 +1,5 @@
 -- Durable per-user quota shared across Vercel instances; never trust caller-supplied user IDs.
+BEGIN;
 CREATE TABLE IF NOT EXISTS public.model_request_quotas (
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   operation text NOT NULL CHECK (operation IN ('predict', 'search')),
@@ -32,3 +33,4 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.consume_model_quota(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.consume_model_quota(text) TO authenticated;
+COMMIT;
