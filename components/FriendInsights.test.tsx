@@ -26,4 +26,16 @@ describe('Friend deck preview', () => {
     fireEvent.click(screen.getByRole('button', { name: /close deck preview/i }));
     expect(screen.queryByText('Played deck and counter')).toBeNull();
   });
+
+  it('keeps the preview open after a click even when the mouse leaves', () => {
+    const { container } = render(<FriendInsights {...props} />);
+    const button = screen.getByRole('button', { name: /see deck and best counter/i });
+    fireEvent.click(button);
+    const leave = new Event('pointerout', { bubbles: true });
+    Object.defineProperty(leave, 'pointerType', { value: 'mouse' });
+    fireEvent(container.firstElementChild!, leave);
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.click(button);
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+  });
 });
