@@ -1,6 +1,6 @@
 # Rival Royale: model-powered product implementation and agent handoff
 
-Plan date: 2026-09-23. Updated: 2026-10-01. Status: friend deck and counter flow implemented; feature migrations 007–009 applied to the existing Supabase project; Railway model service live. The existing Vercel project builds preview deployments from `codex/rival-model-product`, but the preview environment and friend access still need configuration and end-to-end verification. The iterative deck builder is tabled: its route returns 404 and its web API action is disabled. Read DEPLOYMENT_SETUP.md, MIGRATION_REPORT.md, and IMPLEMENTATION_REPORT.md for current status. The sections below retain the full design plan, not a claim that every planned feature is complete.
+Plan date: 2026-09-23. Updated: 2026-10-02. Status: friend deck and counter flow implemented; feature migrations 007–009 applied to the existing Supabase project; Railway model service live; protected Vercel Preview and public `beta.rival-royale.com` deployed. The October 1 Preview feedback fixes are implemented, with signed-in friend testing and final mobile acceptance still to complete. The iterative deck builder is tabled: its route returns 404 and its web API action is disabled. Read DEPLOYMENT_SETUP.md, MIGRATION_REPORT.md, and IMPLEMENTATION_REPORT.md for current status. The sections below retain the full design plan, not a claim that every planned feature is complete.
 
 ## Preview release gate
 
@@ -10,9 +10,9 @@ The beta should expose the friend's most-played deck and counter, a full friend-
 
 Target a 1–2 hour engineering pass for configuration, focused fixes, and initial mobile smoke tests once Vercel dashboard access is available. Friend testing and any resulting fixes may extend beyond that window.
 
-## October 1 Preview feedback — recorded, not started
+## October 1 Preview feedback — implemented October 2, awaiting tester acceptance
 
-The user can see the Preview deployment and asked to record the following work before any more implementation. Keep the current visual identity and color palette. Recheck every item on a narrow phone viewport and with touch input before another friend-testing invitation.
+The user reported the following Preview issues. The fixes are in the beta branch and public beta site; keep the current visual identity and color palette. The public routes and share snapshot were checked at 390px. Signed-in friend and stats flows still need tester acceptance on a phone.
 
 1. **Share links and access:** A generated `/rivalry/[shareId]` link uses the long protected `vercel.app` branch domain, so recipients encounter Vercel sign-in. Provide a short, recognizable, friend-accessible URL that opens the intended public snapshot without Vercel authentication. Review domain/routing options and verify opening from an unsigned-in browser and a phone. Preserve snapshot revocation and `noindex` behavior. Do not treat a project-wide automation bypass token as a sharing link.
 2. **Methodology navigation:** The methodology page currently leaves the user unable to navigate away. Reproduce and fix the navigation path, then check browser back, header/menu links, and phone navigation.
@@ -21,7 +21,7 @@ The user can see the Preview deployment and asked to record the following work b
 5. **Stats page:** Design a player stats view that highlights recent games where the model rated the player's matchup favorable but the player lost, alongside tough-matchup wins and the skill score. Show the actual result, predicted matchup estimate, deck context, time window, model version, and support/uncertainty so a single prediction is not presented as proof of a mistake. Define the ranking and data-coverage rules against stored full match history before implementation.
 6. **SEO and GEO content:** Expand useful, server-rendered public copy and internal links around player skill, finding counter decks, friend deck analysis, and matchup evaluation. Give public pages clear titles, descriptions, structured data where appropriate, canonical URLs, and answer-oriented explanations suitable for search and AI answer engines. The requested “number 1 site” language is a proposed positioning claim; use it only if substantiated, otherwise write strong, accurate benefit-focused copy. Keep private player data and personal rivalry snapshots out of the index.
 
-Do not begin these changes until the user asks to resume implementation. After they are built, test the friend-access link and the navigation/interaction fixes in an unsigned-in browser and on a phone before considering production promotion.
+The new beta domain resolves without Vercel authentication, and the supplied rivalry snapshot returned HTTP 200 with card art, an Open Graph image and `noindex`. Methodology navigation and the counter card picker were checked in a phone-sized browser. Do not promote to the main site until signed-in friend/stats interactions and the Clash Royale export have been accepted on a physical phone.
 
 ## October 1 product and model gate
 

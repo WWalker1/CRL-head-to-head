@@ -1,6 +1,6 @@
 # Rival Royale setup
 
-Migrations 007–009 were applied to the existing Clash-Royale Supabase project on October 1, 2026. See MIGRATION_REPORT.md for the precheck, rollback test, application, and verification. The Railway model service is deployed. The existing Vercel project builds this branch as Preview, but its environment and tester access are not configured yet; production remains on `main`.
+Migrations 007–009 were applied to the existing Clash-Royale Supabase project on October 1, 2026. See MIGRATION_REPORT.md for the precheck, rollback test, application, and verification. The Railway model service is deployed. The existing Vercel project's Preview branch and the separate public beta project are configured. The main production site remains on `main`.
 
 ## 1. Supabase
 
@@ -18,7 +18,9 @@ When promoting a new model, export and validate its bundle, replace `models/rele
 
 ## 3. Web host
 
-In the existing Vercel project, configure Preview variables for branch `codex/rival-model-product`: the Supabase variables above plus `CLASH_ROYALE_API_KEY`, `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL` (the Preview branch URL), `MODEL_SERVICE_URL` (Railway HTTPS URL), and `MODEL_SERVICE_TOKEN` (exact same value as Railway). Keep service keys and secret tokens server-side. Set `MODEL_TOOLS_ENABLED=1`, `NEXT_PUBLIC_MODEL_TOOLS_ENABLED=1`, and `MATCH_HISTORY_ENABLED=1` for Preview after the dependencies work. Redeploy Preview after changing variables. The current branch alias is `https://crl-head-to-head-git-codex-riva-121930-wwrens-projects-9530f2aa.vercel.app`; it is protected by Vercel Authentication until a shareable link or tester access is configured. Its exact `/reset-password` URL has been added to the existing Supabase Auth redirect allow list while preserving the production entry and site URL. Production remains on `main` until acceptance.
+The existing `crl-head-to-head` Vercel project builds `codex/rival-model-product` as a protected Preview. Its branch-scoped Supabase, Clash API, Railway, model/history flags, and `RIVALRY_PUBLIC_ORIGIN=https://beta.rival-royale.com` are configured. Its branch alias is `https://crl-head-to-head-git-codex-riva-121930-wwrens-projects-9530f2aa.vercel.app`; ordinary friend share URLs are generated on the public beta domain rather than that protected alias.
+
+The separate `rival-royale-beta` Vercel project serves `https://beta.rival-royale.com` publicly from this branch, using the same existing Supabase project and Railway model service. It has its own Production-scoped variables, including `NEXT_PUBLIC_SITE_URL` and `RIVALRY_PUBLIC_ORIGIN` set to the beta domain. The beta deployment uses `vercel.beta.json`, which omits the main project's scheduled sync, so testing does not launch a second collector. The beta domain's `/reset-password` URL is in Supabase Auth's redirect allow list. Beta is intentionally `noindex` until a reviewed release is promoted to the main site. The beta project is manually deployed; a branch push alone updates the protected Preview, not the public beta. To update beta from this checkout, link to `rival-royale-beta`, run `vercel deploy --prod --local-config vercel.beta.json`, then relink the checkout to `crl-head-to-head`. Keep `rival-royale.com` on `main` until acceptance.
 
 For local signed-in testing, place the same variables in ignored `.env.local` and use the development Supabase project. Start the model service with `MODEL_BUNDLE` pointing at `models/release-bundle`. `env.template` lists every placeholder. The existing game API uses the RoyaleAPI proxy, so its key must be valid for that route.
 

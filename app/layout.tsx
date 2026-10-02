@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+const isPublicBeta = new URL(baseUrl).hostname === 'beta.rival-royale.com';
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -56,7 +57,7 @@ export const metadata: Metadata = {
     description: "Compare Clash Royale decks, explore counter candidates, and track recorded battles against friends.",
     images: [`${baseUrl}/images/dashboard-screenshot.png`],
   },
-  robots: {
+  robots: isPublicBeta ? { index: false, follow: false } : {
     index: true,
     follow: true,
     googleBot: {
