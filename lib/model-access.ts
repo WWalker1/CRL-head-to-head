@@ -5,7 +5,7 @@ export function isLocalModelPreview(url: string): boolean {
 }
 
 export const MODEL_READ_ACTIONS = new Set(['catalog', 'examples']);
-export const MODEL_WRITE_ACTIONS = new Set(['predict', 'counter', 'complete']);
+export const MODEL_WRITE_ACTIONS = new Set(['predict', 'counter']);
 
 // Bound streamed requests too: Content-Length is optional and untrusted.
 export async function readModelBody(request: Request, limit = 32768): Promise<string> {

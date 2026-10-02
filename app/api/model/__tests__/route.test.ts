@@ -26,7 +26,7 @@ describe('model proxy', () => {
   });
   it('requires a working quota check', async () => {
     client.rpc.mockResolvedValue({ data: false });
-    expect((await POST(request(), context('complete'))).status).toBe(429);
+    expect((await POST(request(), context('counter'))).status).toBe(429);
     expect(global.fetch).not.toHaveBeenCalled();
   });
   it('rejects cross-site writes', async () => {
@@ -34,8 +34,9 @@ describe('model proxy', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
   it('forwards only allowlisted operations with a server-held token', async () => {
-    expect((await POST(request('{"locked":[]}'), context('complete'))).status).toBe(200);
-    expect(global.fetch).toHaveBeenCalledWith('http://model:8768/complete', expect.objectContaining({ body: '{"locked":[]}', headers: expect.objectContaining({ Authorization: 'Bearer test-only-token' }) }));
+    expect((await POST(request('{"target":{}}'), context('counter'))).status).toBe(200);
+    expect(global.fetch).toHaveBeenCalledWith('http://model:8768/counter', expect.objectContaining({ body: '{"target":{}}', headers: expect.objectContaining({ Authorization: 'Bearer test-only-token' }) }));
+    expect((await POST(request(), context('complete'))).status).toBe(404);
     expect((await GET(new NextRequest('https://rival.example/api/model/health'), context('health'))).status).toBe(404);
   });
   it('limits bodies and hides service tracebacks', async () => {
