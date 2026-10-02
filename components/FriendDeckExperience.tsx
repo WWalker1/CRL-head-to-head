@@ -8,6 +8,7 @@ import { counter, fetchCatalog } from './model-tools/api';
 import type { CatalogVariant, Deck, ModelResult } from './model-tools/types';
 import MatchupSkill from './MatchupSkill';
 import type { MatchupSkillSummary } from '@/lib/matchup-skill';
+import RivalryShareControl from './RivalryShareControl';
 
 function toModelDeck(usage: DeckUsage): Deck | null {
   if (usage.cards.length !== 8) return null;
@@ -74,7 +75,7 @@ export default function FriendDeckExperience({ friendId, friendName, friendTag, 
     {loading && <p role="status" className="text-sm text-gray-600">Loading recorded decks…</p>}
     {error && <p role="alert" className="rounded-lg bg-orange-50 p-2 text-sm text-orange-800">{error}</p>}
     {!loading && skill && <MatchupSkill skill={skill} status={skillStatus} />}
-    {!loading && summary && <><p className="text-xs text-gray-600">{summary.recordedMatches} eligible recorded matches · shown decks cover {Math.round(summary.coverage * 100)}%. Recent API logs may contain fewer than 100 matches.</p>{summary.topDecks.length === 0 ? <p className="text-sm text-gray-600">No eligible deck history yet. Refresh after your friend plays a standard 1v1 match.</p> : <>
+    {!loading && summary && <><RivalryShareControl friendId={friendId} friendName={name} /><p className="text-xs text-gray-600">{summary.recordedMatches} eligible recorded matches · shown decks cover {Math.round(summary.coverage * 100)}%. Recent API logs may contain fewer than 100 matches.</p>{summary.topDecks.length === 0 ? <p className="text-sm text-gray-600">No eligible deck history yet. Refresh after your friend plays a standard 1v1 match.</p> : <>
       {summary.topDecks.length > 1 && <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Played decks">{summary.topDecks.map((deck, index) => <button type="button" key={deck.key} onClick={() => { setSelected(index); setError(''); }} aria-pressed={selected === index} className={`min-h-11 shrink-0 rounded-lg px-3 text-xs font-semibold ${selected === index ? 'bg-blue-700 text-white' : 'bg-blue-50 text-blue-800'}`}>Deck {index + 1} · {deck.count} games</button>)}</div>}
       {target ? <Cards deck={target} variants={variants} /> : <p className="text-sm text-orange-700">This deck has a form the model cannot score yet.</p>}
       <p className="text-xs text-gray-600">Played {usage?.count} of {summary.recordedMatches} recorded matches ({Math.round((usage?.share ?? 0) * 100)}%).</p>
