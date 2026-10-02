@@ -38,4 +38,20 @@ describe('Friend deck preview', () => {
     fireEvent.click(button);
     expect(button.getAttribute('aria-expanded')).toBe('false');
   });
+
+  it('uses click instead of hover on a narrow screen', () => {
+    const width = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    try {
+      const { container } = render(<FriendInsights {...props} />);
+      const enter = new Event('pointerover', { bubbles: true });
+      Object.defineProperty(enter, 'pointerType', { value: 'mouse' });
+      fireEvent(container.firstElementChild!, enter);
+      expect(screen.queryByText('Played deck and counter')).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: /see deck and best counter/i }));
+      expect(screen.getByText('Played deck and counter')).toBeTruthy();
+    } finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
+    }
+  });
 });
