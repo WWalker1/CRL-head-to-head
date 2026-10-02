@@ -1,6 +1,6 @@
 # Rival Royale: model-powered product implementation and agent handoff
 
-Plan date: 2026-09-23. Updated: 2026-10-01. Status: friend deck and counter flow implemented locally; Supabase integration and Railway deployment pending. The iterative deck builder is tabled at the user's request. Its beta route remains in the code but is removed from primary navigation and the sitemap. Read DEPLOYMENT_SETUP.md and IMPLEMENTATION_REPORT.md for current status. The sections below retain the full design plan, not a claim that every planned feature is complete.
+Plan date: 2026-09-23. Updated: 2026-10-01. Status: friend deck and counter flow implemented locally; feature migrations 007–009 applied to the existing Supabase project; Railway and Vercel deployment pending. The iterative deck builder is tabled at the user's request. Its beta route remains in the code but is removed from primary navigation and the sitemap. Read DEPLOYMENT_SETUP.md, MIGRATION_REPORT.md, and IMPLEMENTATION_REPORT.md for current status. The sections below retain the full design plan, not a claim that every planned feature is complete.
 
 ## October 1 product and model gate
 
@@ -12,7 +12,7 @@ Before promoting counter search or untabling the builder, compare observed-deck 
 
 ## 1. Authorization, purpose, and workspace
 
-September 25 follow-up: migration 009 adds the account owner's persistent normalized history and versioned matchup predictions. Manual and existing daily sync capture eligible player/friend logs when MATCH_HISTORY_ENABLED=1. Recent most-played decks and model-relative skill use a latest-100 window while archival rows remain stored. A provisional skill score compares actual decisive Ranked wins to supported, post-training-cutoff deck expectations; tough-matchup record uses p < 0.40. See DEPLOYMENT_SETUP.md for formula, exclusions, and setup. No live migration has been applied.
+September 25 follow-up: migration 009 adds the account owner's persistent normalized history and versioned matchup predictions. Manual and existing daily sync capture eligible player/friend logs when MATCH_HISTORY_ENABLED=1. Recent most-played decks and model-relative skill use a latest-100 window while archival rows remain stored. A provisional skill score compares actual decisive Ranked wins to supported, post-training-cutoff deck expectations; tough-matchup record uses p < 0.40. See DEPLOYMENT_SETUP.md for formula, exclusions, and setup. Migrations 007–009 were applied on October 1; history capture remains disabled until deployment and integration verification.
 
 The user approved moving the experimental matchup predictor into a product beta: friend deck analysis, counter decks, iterative deck building, and shareable rivalry cards. They explicitly requested an isolated worktree and a detailed plan before implementation so another agent can continue. Their main concern is searching the enormous deck space quickly. Do not attempt exhaustive enumeration or promise a globally optimal counter.
 
@@ -22,7 +22,7 @@ Branch: `codex/rival-model-product`.
 
 Original workspace: `C:\Users\22wes\Programming Projects\head-to-head-royale`.
 
-Production application changes are now authorized in this worktree. Earlier language in models/AGENTS.md prohibiting production code changes describes the research phase; the present authorization supersedes it for this worktree. Implement and test locally before deploying. Do not assume credentials authorize unrelated database changes. Prepare migrations and deployment artifacts for review before any live rollout. No live deployment or database migration has occurred in this task.
+Production application changes are now authorized in this worktree. Earlier language in models/AGENTS.md prohibiting production code changes describes the research phase; the present authorization supersedes it for this worktree. Implement and test locally before deploying. Do not assume credentials authorize unrelated database changes. Migrations 007–009 were applied to the existing Supabase project at the user's direction on October 1, 2026; no Railway or Vercel deployment has occurred.
 
 The original models/ directory was untracked. Its nonignored source, documentation and tests were copied into this worktree. Large datasets, model artifacts, virtual environment and secrets were deliberately not copied. Keep original collection processes and databases undisturbed. Do not start duplicate collectors. User prefers concise updates and low token consumption; use bounded cheaper agents only where useful and explicitly authorized by the research guide.
 
