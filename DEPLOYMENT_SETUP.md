@@ -1,6 +1,6 @@
 # Rival Royale setup
 
-The code is ready for configuration. Migrations 007–009 were applied to the existing Clash-Royale Supabase project on October 1, 2026. See MIGRATION_REPORT.md for the precheck, rollback test, application, and verification. Railway and Vercel deployment remain pending.
+Migrations 007–009 were applied to the existing Clash-Royale Supabase project on October 1, 2026. See MIGRATION_REPORT.md for the precheck, rollback test, application, and verification. The Railway model service is deployed; the Vercel web deployment remains pending.
 
 ## 1. Supabase
 
@@ -12,7 +12,7 @@ In the Supabase project dashboard, copy the **Project URL**, **anon / publishabl
 
 Create a Railway service from this GitHub repository and select branch `codex/rival-model-product`. In the service settings, leave **Root Directory** blank (repository root), select the **Dockerfile** builder, and set **Dockerfile Path** to `models/service/Dockerfile`. Railway also accepts the service variable `RAILWAY_DOCKERFILE_PATH=models/service/Dockerfile` for that path. Do not set a custom build or start command; the Dockerfile starts `python -m service`, which listens on Railway's `PORT`. If Railway builds the Next.js app or reports missing `models/service/requirements.txt` or `models/release-bundle`, check the branch, root directory, and Dockerfile path first.
 
-Use GitHub-connected deployment for this service. The committed `models/release-bundle/` contains the selected model's runtime files; it contains no training archive. Railway needs enough memory for CPU PyTorch and the loaded model. Set `MODEL_SERVICE_TOKEN` to a long random value in Railway variables. Set the service healthcheck path to `/ready`, generate a public HTTPS domain, and copy its base URL. Check `GET /ready` after startup; it should report model version `20260921T223438Z`. The model endpoints require the bearer token and should not be called directly from browser code.
+Use GitHub-connected deployment for this service. The committed `models/release-bundle/` contains the selected model's runtime files; it contains no training archive. Railway needs enough memory for CPU PyTorch and the loaded model. Set `MODEL_SERVICE_TOKEN` to a long random value in Railway variables. Set the service healthcheck path to `/ready`, generate a public HTTPS domain, and copy its base URL. The current model service URL is `https://crl-head-to-head-production-12d1.up.railway.app`. Its domain targets the Railway-provided app port 8080. Check `GET /ready` after startup; it should report model version `20260921T223438Z`. The model endpoints require the bearer token and should not be called directly from browser code.
 
 When promoting a new model, export and validate its bundle, replace `models/release-bundle/`, and commit it with the code that supports its schema. Retain the previous release for rollback. Do not copy raw match archives, `.env` files, or service credentials into the bundle.
 
