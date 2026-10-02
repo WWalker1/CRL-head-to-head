@@ -1,6 +1,6 @@
 # Rival Royale setup
 
-Migrations 007–009 were applied to the existing Clash-Royale Supabase project on October 1, 2026. See MIGRATION_REPORT.md for the precheck, rollback test, application, and verification. The Railway model service is deployed; the Vercel web deployment remains pending.
+Migrations 007–009 were applied to the existing Clash-Royale Supabase project on October 1, 2026. See MIGRATION_REPORT.md for the precheck, rollback test, application, and verification. The Railway model service is deployed. The existing Vercel project builds this branch as Preview, but its environment and tester access are not configured yet; production remains on `main`.
 
 ## 1. Supabase
 
@@ -18,7 +18,7 @@ When promoting a new model, export and validate its bundle, replace `models/rele
 
 ## 3. Web host
 
-In Vercel (or your Next.js host), add the Supabase variables above plus `CLASH_ROYALE_API_KEY`, `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL` (the final `https://` web domain), `MODEL_SERVICE_URL` (Railway HTTPS URL), and `MODEL_SERVICE_TOKEN` (exact same value as Railway). Keep the two secret tokens server-side. Set `MODEL_TOOLS_ENABLED=1` and `NEXT_PUBLIC_MODEL_TOOLS_ENABLED=1` only after the model service and migrations work. The web host builds from the `codex/rival-model-product` branch until it is merged.
+In the existing Vercel project, configure Preview variables for branch `codex/rival-model-product`: the Supabase variables above plus `CLASH_ROYALE_API_KEY`, `CRON_SECRET`, `NEXT_PUBLIC_SITE_URL` (the Preview branch URL), `MODEL_SERVICE_URL` (Railway HTTPS URL), and `MODEL_SERVICE_TOKEN` (exact same value as Railway). Keep service keys and secret tokens server-side. Set `MODEL_TOOLS_ENABLED=1`, `NEXT_PUBLIC_MODEL_TOOLS_ENABLED=1`, and `MATCH_HISTORY_ENABLED=1` for Preview after the dependencies work. Redeploy Preview after changing variables. The current branch alias is `https://crl-head-to-head-git-codex-riva-121930-wwrens-projects-9530f2aa.vercel.app`; it is protected by Vercel Authentication until a shareable link or tester access is configured. Add the Preview origin to Supabase Auth's redirect allow list before testing password reset. Production remains on `main` until acceptance.
 
 For local signed-in testing, place the same variables in ignored `.env.local` and use the development Supabase project. Start the model service with `MODEL_BUNDLE` pointing at `models/release-bundle`. `env.template` lists every placeholder. The existing game API uses the RoyaleAPI proxy, so its key must be valid for that route.
 
