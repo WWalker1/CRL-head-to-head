@@ -9,6 +9,9 @@ export interface MatchupSkillRow {
 
 export interface MatchupSkillSummary {
   score: number | null;
+  recordScore: number | null;
+  recordWins: number;
+  recordLosses: number;
   scoredMatches: number;
   eligibleMatches: number;
   actualWins: number;
@@ -20,7 +23,9 @@ export interface MatchupSkillSummary {
   modelVersion: string | null;
 }
 
-/** Summarize a player's ranked results against the selected model's expectations. */
+export const SKILL_MODES = new Set(['ladder', 'ranked', 'challenge']);
+
+/** Compare recent standard 1v1 results with a supported deck model. */
 export function summarizeMatchupSkill(
   rows: MatchupSkillRow[],
   modelVersion: string | null,
@@ -32,8 +37,10 @@ export function summarizeMatchupSkill(
     return true;
   });
 
-  const decisiveRanked = deduped.filter(row => row.mode === 'ranked' && row.friend_result !== 'draw');
-  const scored = decisiveRanked.filter(row =>
+  const decisive = deduped.filter(row => SKILL_MODES.has(row.mode) && row.friend_result !== 'draw');
+  const recordWins = decisive.filter(row => row.friend_result === 'win').length;
+  const recordLosses = decisive.length - recordWins;
+  const scored = decisive.filter(row =>
     Boolean(modelVersion) &&
     row.prediction_eligible === true &&
     row.prediction_model_version === modelVersion &&
@@ -53,8 +60,11 @@ export function summarizeMatchupSkill(
     score: scoredMatches === 0
       ? null
       : Math.round(Math.max(0, Math.min(100, 50 + 50 * winsAboveExpected / (scoredMatches + 20))) * 10) / 10,
+    recordScore: decisive.length === 0 ? null : Math.round(1000 * (recordWins + 5) / (decisive.length + 10)) / 10,
+    recordWins,
+    recordLosses,
     scoredMatches,
-    eligibleMatches: decisiveRanked.length,
+    eligibleMatches: decisive.length,
     actualWins,
     expectedWins,
     winsAboveExpected,

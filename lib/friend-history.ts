@@ -1,9 +1,9 @@
 import { createHash } from 'crypto';
 
 export const FRIEND_HISTORY_LIMIT = 100;
-/** Reviewed constructed 1v1 mode IDs. Unknown events are excluded by default. */
-export const ELIGIBLE_MODE_IDS = new Set([72000006, 72000464, 72000450]);
-export const ELIGIBLE_MODES = ['ladder', 'ranked'] as const;
+/** Known competitive mode IDs; other constructed 1v1 games are archived separately. */
+export const ELIGIBLE_MODE_IDS = new Set([72000006, 72000464, 72000450, 72000474]);
+export const ELIGIBLE_MODES = ['ladder', 'ranked', 'challenge', 'other'] as const;
 export type EligibleMode = (typeof ELIGIBLE_MODES)[number];
 
 export interface DeckCard { id: string; name?: string | null; form?: string | null; level?: number | null }
@@ -14,6 +14,10 @@ export interface FriendHistoryLog {
   opponent_crowns?: number;
   battle_type?: string;
   game_mode_id?: number;
+  game_mode_name?: string | null;
+  deck_selection?: string | null;
+  challenge_type?: string | null;
+  event_tag?: string | null;
   physical_match_id: string;
   battle_time: string;
   mode: string;
@@ -25,9 +29,10 @@ export interface DeckUsage { key: string; cards: DeckCard[]; tower: string | nul
 export interface FriendHistorySummary {
   matches: number;
   eligibleMatches: number;
-  /** Fraction of recorded rows represented by the displayed top three decks. */
+  /** Fraction of matches since tracking began represented by the displayed top five decks. */
   coverage: number;
   recordedMatches: number;
+  allTimeMatches: number;
   firstObserved: string | null;
   lastObserved: string | null;
   topDecks: DeckUsage[];
@@ -55,25 +60,27 @@ export function deckIdentity(deck: FriendHistoryLog['friend_deck']) {
 
 export function summarizeFriendHistory(rows: FriendHistoryLog[]): FriendHistorySummary {
   const eligible = rows.filter(row => isEligibleMode(row.mode)).sort((a, b) => +new Date(b.battle_time) - +new Date(a.battle_time));
+  const recent = eligible.slice(0, FRIEND_HISTORY_LIMIT);
   const counts = new Map<string, DeckUsage>();
-  for (const row of eligible.slice(0, FRIEND_HISTORY_LIMIT)) {
+  for (const row of recent) {
     const deck = canonicalDeck(row.friend_deck);
     const key = JSON.stringify(deckIdentity(deck));
     const current = counts.get(key);
     if (current) current.count += 1;
     else counts.set(key, { key, cards: deck.cards, tower: deck.tower, towerLevel: deck.towerLevel, count: 1, share: 0 });
   }
-  const total = eligible.slice(0, FRIEND_HISTORY_LIMIT).length;
-  const topDecks = [...counts.values()].sort((a, b) => b.count - a.count).slice(0, 3)
+  const total = recent.length;
+  const topDecks = [...counts.values()].sort((a, b) => b.count - a.count).slice(0, 5)
     .map(deck => ({ ...deck, share: total ? deck.count / total : 0 }));
-  const topThreeCount = topDecks.reduce((sum, deck) => sum + deck.count, 0);
+  const topFiveCount = topDecks.reduce((sum, deck) => sum + deck.count, 0);
   return {
     matches: rows.length,
     eligibleMatches: total,
-    coverage: total ? topThreeCount / total : 0,
+    coverage: total ? topFiveCount / total : 0,
     recordedMatches: total,
-    firstObserved: eligible.length ? eligible[eligible.length - 1].battle_time : null,
-    lastObserved: eligible.length ? eligible[0].battle_time : null,
+    allTimeMatches: total,
+    firstObserved: recent.length ? recent[recent.length - 1].battle_time : null,
+    lastObserved: recent.length ? recent[0].battle_time : null,
     topDecks,
   };
 }
@@ -86,8 +93,14 @@ function parseBattleTime(value: string) {
 
 /** Convert one authoritative RoyaleAPI battle into a friend history row. */
 export function normalizeBattle(battle: any, friendTag: string): FriendHistoryLog | null {
-  const modeId = Number(battle.gameMode?.id);
-  if (!((battle.type === 'PvP' && modeId === 72000006) || (battle.type === 'pathOfLegend' && [72000464, 72000450].includes(modeId))) || battle.modifiers || battle.isHostedMatch || battle.isLadderTournament || battle.deckSelection !== 'collection') return null;
+  const modeId = Number(battle?.gameMode?.id);
+  const modeName = typeof battle?.gameMode?.name === 'string' ? battle.gameMode.name : null;
+  const deckSelection = typeof battle?.deckSelection === 'string' ? battle.deckSelection : null;
+  const challengeType = typeof battle?.challengeType === 'string' ? battle.challengeType.toLowerCase() : null;
+  const modernChallenge = battle?.type === 'trail' && modeId === 72000474 && modeName === 'Challenge_AllCards_EventDeck_NoSet' && deckSelection === 'eventDeck' && (!challengeType || ['classic', 'grand'].includes(challengeType));
+  const legacyChallenge = battle?.type === 'challenge' && ['classic', 'grand'].includes(String(battle.challengeType).toLowerCase()) && deckSelection === 'collection';
+  const constructed = deckSelection === 'collection' || modernChallenge;
+  if (!Number.isInteger(modeId) || modeId <= 0 || !constructed || (battle.modifiers && (!Array.isArray(battle.modifiers) || battle.modifiers.length > 0)) || (battle.type === 'challenge' && !legacyChallenge) || (challengeType && !['classic', 'grand'].includes(challengeType))) return null;
   if (!Array.isArray(battle.team) || !Array.isArray(battle.opponent) || battle.team.length !== 1 || battle.opponent.length !== 1) return null;
   const friendSide = [...battle.team, ...battle.opponent].find(player => player.tag === friendTag);
   const opponentSide = battle.team[0].tag === friendTag ? battle.opponent[0] : battle.team[0];
@@ -103,7 +116,8 @@ export function normalizeBattle(battle: any, friendTag: string): FriendHistoryLo
   const participants = [battle.team[0].tag, battle.opponent[0].tag];
   const friendCrowns = friendSide.crowns; const opponentCrowns = opponentSide.crowns;
   if (![friendCrowns, opponentCrowns].every(value => Number.isInteger(value) && value >= 0 && value <= 3)) return null;
-  return { player_tag: friendTag, opponent_tag: opponentSide.tag, player_crowns: friendCrowns, opponent_crowns: opponentCrowns, battle_type: battle.type, game_mode_id: modeId, physical_match_id: physicalMatchId(battle.battleTime, participants, battle.type, modeId), battle_time: parsedTime.toISOString(), mode: modeId === 72000006 ? 'ladder' : 'ranked', friend_result: friendCrowns === opponentCrowns ? 'draw' : friendCrowns > opponentCrowns ? 'win' : 'loss', friend_deck: mapDeck(friendSide), opponent_deck: mapDeck(opponentSide) };
+  const mode: EligibleMode = modernChallenge || legacyChallenge ? 'challenge' : modeId === 72000006 ? 'ladder' : battle.type === 'pathOfLegend' && [72000464, 72000450].includes(modeId) ? 'ranked' : 'other';
+  return { player_tag: friendTag, opponent_tag: opponentSide.tag, player_crowns: friendCrowns, opponent_crowns: opponentCrowns, battle_type: battle.type, game_mode_id: modeId, game_mode_name: modeName, deck_selection: deckSelection, challenge_type: typeof battle.challengeType === 'string' ? battle.challengeType : null, event_tag: typeof battle.eventTag === 'string' ? battle.eventTag : null, physical_match_id: physicalMatchId(battle.battleTime, participants, battle.type, modeId), battle_time: parsedTime.toISOString(), mode, friend_result: friendCrowns === opponentCrowns ? 'draw' : friendCrowns > opponentCrowns ? 'win' : 'loss', friend_deck: mapDeck(friendSide), opponent_deck: mapDeck(opponentSide) };
 }
 
 export function normalizeLog(input: any): FriendHistoryLog | null {

@@ -4,7 +4,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')).replace(/\/$/, '')
   
-  const tools = ['/counter-deck', '/matchup', '/models'].map(path => ({
+  const tools = ['/counter-deck', '/matchup', '/models', '/clash-royale-counter-deck-finder'].map(path => ({
     url: `${baseUrl}${path}`, changeFrequency: 'weekly' as const, priority: 0.8,
   }));
   return [

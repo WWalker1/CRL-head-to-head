@@ -65,117 +65,104 @@ export default async function Home() {
   };
 
   return (
-    <div className="min-h-screen animated-gradient relative overflow-hidden">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
-      />
-      {/* Decorative floating elements - hidden on mobile */}
-      <div className="hidden md:block absolute top-20 left-10 text-6xl floating">🏆</div>
-      <div className="hidden md:block absolute top-20 right-20 text-5xl floating">⚔️</div>
-      <div className="hidden md:block absolute bottom-20 left-20 text-5xl floating">🎮</div>
-      <div className="hidden md:block absolute bottom-20 right-10 text-6xl floating">👑</div>
+    <main className="relative min-h-[calc(100vh-73px)] overflow-hidden bg-[#0d1024] text-white">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }} />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-36 -top-28 h-[30rem] w-[30rem] rounded-full bg-violet-600/20 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 -left-32 h-[28rem] w-[28rem] rounded-full bg-orange-500/15 blur-3xl" />
 
-      <div className="container mx-auto px-4 py-6 md:py-12 relative z-10">
-        {/* Hero Section */}
-        <AnimatedSection>
-          <div className="text-center mb-8 md:mb-16">
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-3 md:mb-4 drop-shadow-lg">
-              Rival Royale
+      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 sm:pt-12 lg:px-8 lg:pb-16 lg:pt-16">
+        <section className="grid items-center gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12" aria-labelledby="home-heading">
+          <div>
+            <p className="inline-flex items-center gap-2 rounded-full border border-violet-300/25 bg-violet-300/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-violet-200">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-orange-400" /> Clash Royale deck tools
+            </p>
+            <h1 id="home-heading" className="mt-5 max-w-2xl text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">
+              Make your next matchup make sense.
             </h1>
-            <p className="text-base md:text-xl lg:text-2xl text-blue-100 max-w-2xl mx-auto mb-4 md:mb-6 px-2">
-              Compare Clash Royale decks, find model-ranked counter candidates, and see how your recorded battles against friends add up. 🏆
+            <p className="mt-4 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
+              Compare complete decks, explore counter candidates, and track your results against friends.
+            </p>
+            <p className="mt-4 text-sm text-slate-400">
+              Already have an account? <Link href="/login" className="font-semibold text-orange-200 underline decoration-orange-300/60 underline-offset-4 hover:text-white">Sign in</Link>
             </p>
           </div>
-        </AnimatedSection>
 
-        <AnimatedSection delay={300}>
-          <section className="mx-auto mb-8 md:mb-16 max-w-5xl rounded-xl md:rounded-2xl bg-white p-5 md:p-8 shadow-2xl">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center">Make your next deck choice with more context</h2>
-            <p className="mx-auto mt-3 max-w-3xl text-center text-sm md:text-base leading-7 text-gray-600">Rival Royale brings deck matchup estimates and your own battle history together. Compare complete decks, explore a bounded set of counter candidates, and review patterns in eligible matches recorded against tracked friends. Your stats can also show a provisional model-relative skill summary from supported matchups. Estimates describe the model’s view of a matchup; your play, opponent, and current balance can change the result.</p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <Link href="/matchup" className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-center text-blue-900 hover:border-blue-300"><strong className="block">Compare two decks</strong><span className="mt-1 block text-sm">See a model-estimated matchup for complete decks.</span></Link>
-              <Link href="/counter-deck" className="rounded-lg border border-orange-100 bg-orange-50 p-4 text-center text-orange-900 hover:border-orange-300"><strong className="block">Find counter candidates</strong><span className="mt-1 block text-sm">Search supported decks against a deck you want to face.</span></Link>
-              <Link href="/signup" className="rounded-lg border border-violet-100 bg-violet-50 p-4 text-center text-violet-900 hover:border-violet-300"><strong className="block">Analyze tracked friends</strong><span className="mt-1 block text-sm">Review recorded friend decks and head-to-head results.</span></Link>
-            </div>
-            <p className="mt-4 text-center text-xs text-gray-500">The model tools are experimental. Counter search checks a limited candidate set, and history coverage depends on records available from the game API.</p>
-            <p className="mt-3 text-center text-sm"><Link href="/models" className="font-semibold text-blue-700 underline underline-offset-2">Read how matchup estimates and counter search work</Link></p>
-          </section>
-        </AnimatedSection>
-
-        {/* App Preview Section - smaller on mobile */}
-        <AnimatedSection delay={200}>
-          <div className="mb-8 md:mb-16 max-w-6xl mx-auto">
-            <div className="bg-white rounded-xl md:rounded-2xl shadow-2xl p-4 md:p-6 lg:p-8 overflow-hidden">
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 md:mb-4 text-center">
-                See Your Stats Come to Life
-              </h2>
-              <div className="relative w-full aspect-[1888/520] bg-gradient-to-br from-blue-50 to-orange-50 rounded-lg overflow-hidden border-2 border-gray-200">
-                <Image 
-                  src="/images/dashboard-screenshot.png" 
-                  alt="Clash Royale head to head tracker dashboard showing win loss statistics against friends"
+          <div className="relative mx-auto w-full max-w-2xl">
+            <div aria-hidden="true" className="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-violet-500/30 via-blue-500/10 to-orange-500/30 blur-xl" />
+            <figure className="relative overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-br from-blue-900 to-violet-950 p-2 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-3">
+              <div className="relative aspect-[16/10] overflow-hidden rounded-xl bg-slate-950/30 sm:rounded-2xl">
+                <Image
+                  src="/images/dashboard-screenshot.png"
+                  alt="Rival Royale friend dashboard showing recorded Clash Royale wins, losses, and win rates"
                   fill
-                  className="object-contain"
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 55vw"
+                  className="object-cover object-left"
                 />
               </div>
-            </div>
+              <figcaption className="flex flex-wrap items-center justify-between gap-2 px-2 pb-1 pt-3 text-xs text-blue-100 sm:px-3 sm:text-sm">
+                <span className="font-semibold">Friend matchups at a glance</span>
+                <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1">Recorded results</span>
+              </figcaption>
+            </figure>
           </div>
-        </AnimatedSection>
+        </section>
 
-        {/* Features Section - compact on mobile */}
-        <AnimatedSection delay={400}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-16 max-w-5xl mx-auto">
-            <div className="bg-white bg-opacity-95 rounded-xl p-4 md:p-6 text-center shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 hover:scale-105">
-              <div className="text-4xl md:text-5xl mb-3 md:mb-4">📊</div>
-              <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Track Records</h3>
-              <p className="text-gray-600 text-xs md:text-sm">
-                Review recorded wins and losses against each tracked friend
-              </p>
+        <nav aria-label="Explore Rival Royale" className="mt-8 grid gap-3 sm:grid-cols-3 lg:mt-10">
+          <Link href="/counter-deck" className="group flex min-h-24 items-center gap-4 rounded-2xl border border-orange-300/25 bg-gradient-to-br from-orange-500/15 to-orange-900/10 p-4 transition hover:-translate-y-0.5 hover:border-orange-200/60 hover:bg-orange-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200 sm:p-5">
+            <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-400/15 text-orange-200">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path d="M4 5.5 9 4l5 1.5L20 4v14.5L14 20l-5-1.5L4 20V5.5Z" /><path d="M9 4v14.5M14 5.5V20" /><path d="m15.5 9 1.2 1.2 2.3-2.4" /></svg>
+            </span>
+            <span className="min-w-0 flex-1"><strong className="block text-base font-bold text-white sm:text-lg">Counter finder</strong><span className="mt-1 block text-sm text-slate-300">Explore candidate decks</span></span>
+            <span aria-hidden="true" className="text-xl text-orange-200 transition-transform group-hover:translate-x-1">→</span>
+          </Link>
+          <Link href="/matchup" className="group flex min-h-24 items-center gap-4 rounded-2xl border border-violet-300/25 bg-gradient-to-br from-violet-500/15 to-violet-900/10 p-4 transition hover:-translate-y-0.5 hover:border-violet-200/60 hover:bg-violet-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-200 sm:p-5">
+            <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-400/15 text-violet-200">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path d="M4 6.5h6v11H4zM14 6.5h6v11h-6z" /><path d="M10 12h4M11.5 10.5 10 12l1.5 1.5M12.5 10.5 14 12l-1.5 1.5" /></svg>
+            </span>
+            <span className="min-w-0 flex-1"><strong className="block text-base font-bold text-white sm:text-lg">Deck matchup</strong><span className="mt-1 block text-sm text-slate-300">Compare two full decks</span></span>
+            <span aria-hidden="true" className="text-xl text-violet-200 transition-transform group-hover:translate-x-1">→</span>
+          </Link>
+          <Link href="/signup" className="group flex min-h-24 items-center gap-4 rounded-2xl border border-orange-300/25 bg-gradient-to-br from-violet-500/10 to-orange-500/10 p-4 transition hover:-translate-y-0.5 hover:border-orange-200/60 hover:bg-violet-500/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200 sm:p-5">
+            <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-400/15 text-orange-200">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path d="M4 19V5M4 19h17" /><path d="m7 15 4-4 3 2 5-6" /><path d="M16 7h3v3" /></svg>
+            </span>
+            <span className="min-w-0 flex-1"><strong className="block text-base font-bold text-white sm:text-lg">Your stats</strong><span className="mt-1 block text-sm text-slate-300">Track results with friends</span></span>
+            <span aria-hidden="true" className="text-xl text-orange-200 transition-transform group-hover:translate-x-1">→</span>
+          </Link>
+        </nav>
+
+        <section className="mx-auto mt-10 max-w-4xl space-y-3 lg:mt-12" aria-label="More information">
+          <details className="group rounded-2xl border border-white/10 bg-white/[0.04] px-4 sm:px-5">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 font-semibold text-white marker:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 [&::-webkit-details-marker]:hidden">
+              How matchup estimates and battle history work
+              <span aria-hidden="true" className="text-xl text-violet-200 transition-transform group-open:rotate-45">+</span>
+            </summary>
+            <div className="max-w-3xl space-y-3 pb-5 text-sm leading-6 text-slate-300">
+              <p>Matchup estimates compare supported complete decks with a trained model. Counter search checks a bounded candidate set, so suggestions are not guaranteed counters, live rankings, or observed win rates.</p>
+              <p>Friend stats summarize eligible 1v1 battles available through the game API. The API may omit older matches, so recorded results may not cover every game you have played.</p>
+              <p><Link href="/models" className="font-semibold text-violet-200 underline underline-offset-4 hover:text-white">Read the model methodology</Link> for assumptions and limitations.</p>
             </div>
-            
-            <div className="bg-white bg-opacity-95 rounded-xl p-4 md:p-6 text-center shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 hover:scale-105">
-              <div className="text-4xl md:text-5xl mb-3 md:mb-4">🔄</div>
-              <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Refresh Battle History</h3>
-              <p className="text-gray-600 text-xs md:text-sm">
-                Sync recent eligible battles available through the game API
-              </p>
-            </div>
-            
-            <div className="bg-white bg-opacity-95 rounded-xl p-4 md:p-6 text-center shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 hover:scale-105">
-              <div className="text-4xl md:text-5xl mb-3 md:mb-4">🎮</div>
-              <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">1v1 Focus</h3>
-              <p className="text-gray-600 text-xs md:text-sm">
-                Only tracks head-to-head 1v1 battles, keeping your stats clean and accurate
-              </p>
-            </div>
-          </div>
-        </AnimatedSection>
+          </details>
+          <details className="group rounded-2xl border border-white/10 bg-white/[0.04] px-4 sm:px-5">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 font-semibold text-white marker:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 [&::-webkit-details-marker]:hidden">
+              Frequently asked questions
+              <span aria-hidden="true" className="text-xl text-violet-200 transition-transform group-open:rotate-45">+</span>
+            </summary>
+            <div className="pb-2"><FAQSection /></div>
+          </details>
+          <details className="group rounded-2xl border border-white/10 bg-white/[0.04] px-4 sm:px-5">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 font-semibold text-white marker:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 [&::-webkit-details-marker]:hidden">
+              How to find your Clash Royale player tag
+              <span aria-hidden="true" className="text-xl text-violet-200 transition-transform group-open:rotate-45">+</span>
+            </summary>
+            <div className="pb-2"><MobileTutorialSection /></div>
+          </details>
+        </section>
 
-        {/* How to Find Your Player Tag Section - collapsible on mobile */}
-        <MobileTutorialSection />
-
-        {/* FAQ Section */}
-        <FAQSection />
-
-        {/* CTA Section - always visible */}
-        <AnimatedSection delay={800}>
-          <div className="text-center mb-6 md:mb-0">
-            <Link
-              href="/signup"
-              className="inline-block px-6 md:px-10 py-3 md:py-5 bg-orange-600 text-white text-lg md:text-xl font-bold rounded-xl hover:bg-orange-700 transition-all shadow-2xl hover:shadow-orange-500/50 transform hover:scale-105 transition-transform duration-200"
-            >
-              Get Started 🚀
-            </Link>
-            <p className="mt-4 md:mt-6 text-blue-100 text-sm md:text-lg">
-              Already have an account?{' '}
-              <Link href="/login" className="text-white font-semibold hover:underline hover:text-orange-200 transition-colors">
-                Sign in
-              </Link>
-            </p>
-          </div>
-        </AnimatedSection>
+        <p className="mt-8 text-center text-xs text-slate-500">Rival Royale is an independent Clash Royale companion. Model estimates are guidance, not guarantees.</p>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -270,7 +257,7 @@ function MobileTutorialSection() {
           />
           <div className="text-center">
             <p className="text-sm text-gray-600 mb-2">
-              Need help? The full tutorial is available on desktop.
+              Need help? Open the full tutorial here.
             </p>
             <p className="text-xs text-gray-500">
               Steps 2 & 3: Find your tag below your name and tap &quot;Copy Tag&quot;

@@ -9,6 +9,7 @@ export default async function Navbar() {
   const links = (
     <>
       {showDeckTools && <Link href="/counter-deck" className="inline-flex min-h-11 items-center text-white hover:text-orange-200 text-sm font-medium">Deck tools</Link>}
+      {showDeckTools && <Link href="/clash-royale-counter-deck-finder" className="inline-flex min-h-11 items-center text-white hover:text-orange-200 text-sm font-medium">Counter guide</Link>}
       <Link href="/info" className="inline-flex min-h-11 items-center text-white hover:text-orange-200 text-sm font-medium">How It Works</Link>
       {user ? (
         <>

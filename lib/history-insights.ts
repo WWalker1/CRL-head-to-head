@@ -1,5 +1,5 @@
-import { summarizeFriendHistory } from './friend-history';
-import { summarizeMatchupSkill } from './matchup-skill';
+import { canonicalDeck, summarizeFriendHistory, type FriendHistorySummary } from './friend-history';
+import { SKILL_MODES, summarizeMatchupSkill } from './matchup-skill';
 import { buildPlayerStats } from './player-stats';
 import { asFriendHistory, historyConflict, historyQuery, historyTable, type HistorySubject } from './history-storage';
 
@@ -8,6 +8,28 @@ function modelDeck(deck: any) {
   const cards = deck.cards.map((card: any) => ({ key: `${card.id}:${card.form ?? 0}`, level: card.level }));
   if (cards.some((card: any) => !/^\d+:[012]$/.test(card.key) || !Number.isInteger(card.level))) return null;
   return { cards, tower_id: Number(deck.tower), tower_level: deck.towerLevel };
+}
+
+/** Full match rows are capped at 100; deck counts continue without keeping old games. */
+export async function withAllTimeDecks(client: any, subject: HistorySubject, recent: FriendHistorySummary): Promise<FriendHistorySummary> {
+  const subjectType = subject.friendId ? 'friend' : 'player';
+  const subjectId = subject.friendId || subject.playerTag;
+  const [top, total] = await Promise.all([
+    client.from('history_deck_totals').select('deck_key,deck,match_count')
+      .eq('user_id', subject.userId).eq('subject_type', subjectType).eq('subject_id', subjectId)
+      .order('match_count', { ascending: false }).limit(5),
+    client.rpc('history_match_count', { p_user_id: subject.userId, p_subject_type: subjectType, p_subject_id: subjectId }),
+  ]);
+  if (top.error || total.error) throw new Error('Deck totals unavailable. Check migrations 011–012.');
+  const allTimeMatches = Number(total.data || 0);
+  const topDecks = (top.data || []).map((row: any) => {
+    const deck = canonicalDeck(row.deck);
+    const count = Number(row.match_count);
+    return { key: row.deck_key, cards: deck.cards, tower: deck.tower, towerLevel: deck.towerLevel,
+      count, share: allTimeMatches ? count / allTimeMatches : 0 };
+  });
+  return { ...recent, allTimeMatches, topDecks,
+    coverage: allTimeMatches ? topDecks.reduce((sum: number, deck: { count: number }) => sum + deck.count, 0) / allTimeMatches : 0 };
 }
 
 /** No outcomes or player identity are submitted to the deck predictor. */
@@ -26,7 +48,7 @@ export async function readHistoryInsights(client: any, subject: HistorySubject) 
       const metadata = await ready.json();
       if (typeof metadata.model_version !== 'string' || !Number.isFinite(Date.parse(metadata.training_cutoff))) throw new Error('missing model metadata');
       version = metadata.model_version;
-      const pending = rows.filter(row => row.mode === 'ranked' && (row.friend_result ?? row.result) !== 'draw' && Date.parse(row.battle_time) > Date.parse(metadata.training_cutoff) && row.prediction_model_version !== version);
+      const pending = rows.filter(row => SKILL_MODES.has(row.mode) && (row.friend_result ?? row.result) !== 'draw' && Date.parse(row.battle_time) > Date.parse(metadata.training_cutoff) && row.prediction_model_version !== version);
       // 25 pairs fit under the inference service's request byte limit.
       for (let at = 0; at < pending.length; at += 25) {
         const group = pending.slice(at, at + 25);
@@ -45,12 +67,12 @@ export async function readHistoryInsights(client: any, subject: HistorySubject) 
         const byId = new Map(updated.map(row => [row.physical_match_id, row]));
         rows = rows.map(row => byId.get(row.physical_match_id) ?? row);
       }
-      skillStatus = 'Ranked matches after the model training cutoff; unsupported decks and draws are excluded.';
+      skillStatus = 'Standard 1v1 matches after the model training cutoff; unsupported decks and draws are excluded.';
     } catch {
       skillStatus = 'Some matchup estimates are unavailable. Previously scored matches are shown when the model version is known.';
     }
   }
   const history = rows.map(asFriendHistory);
   const skill = summarizeMatchupSkill(history, version);
-  return { summary: summarizeFriendHistory(history), skill, skillStatus, stats: buildPlayerStats(rows, version, skill) };
+  return { summary: await withAllTimeDecks(client, subject, summarizeFriendHistory(history)), skill, skillStatus, stats: buildPlayerStats(rows, version, skill) };
 }

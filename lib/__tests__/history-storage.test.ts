@@ -35,6 +35,14 @@ function battle(friendTag: string, opponentTag = '#OPPONENT') {
   };
 }
 
+function challengeBattle(friendTag: string, challengeType: 'classic' | 'grand', battleTime: string) {
+  return {
+    ...battle(friendTag), type: 'trail', challengeType, battleTime,
+    gameMode: { id: 72000474, name: 'Challenge_AllCards_EventDeck_NoSet' },
+    deckSelection: 'eventDeck', eventTag: `challenge-${challengeType}`,
+  };
+}
+
 function makeClient(error: unknown = null) {
   const upsert = jest.fn().mockResolvedValue({ error });
   const from = jest.fn((_table: string) => ({ upsert }));
@@ -69,6 +77,38 @@ describe('history storage', () => {
     await persistHistory(client, { userId: 'user-1', playerTag: '#PLAYER' }, [repeated, repeated]);
     expect(upsert.mock.calls[0][0]).toHaveLength(2);
     expect(upsert.mock.calls[0][1]).toMatchObject({ onConflict: 'user_id,player_tag,physical_match_id', ignoreDuplicates: true });
+
+    const friendReplay = battle('#FRIEND');
+    await persistHistory(client, { userId: 'user-1', playerTag: '#FRIEND', friendId: 'friend-7' }, [friendReplay, friendReplay]);
+    expect(upsert.mock.calls[1][0]).toHaveLength(2);
+    expect(upsert.mock.calls[1][0][0]).toMatchObject({ tracked_friend_id: 'friend-7', mode: 'ranked' });
+    expect(upsert.mock.calls[1][1]).toMatchObject({ onConflict: 'tracked_friend_id,physical_match_id', ignoreDuplicates: true });
+  });
+
+  it('stores constructed Classic and Grand challenge battles for the owner and tracked friends', async () => {
+    const { client, from, upsert } = makeClient();
+    const ownerGames = [challengeBattle('#PLAYER', 'classic', '20260921T000000.000Z'), challengeBattle('#PLAYER', 'grand', '20260922T000000.000Z')];
+    const friendGames = ownerGames.map(game => ({
+      ...game,
+      team: [{ ...game.team[0], tag: '#FRIEND' }],
+    }));
+    mockedGetPlayerBattleLog.mockResolvedValue(friendGames as any);
+
+    const errors = await captureUserHistory(client, 'user-1', '#PLAYER', ownerGames, [
+      { id: 'friend-7', friend_player_tag: '#FRIEND' },
+    ]);
+
+    expect(errors).toEqual([]);
+    expect(from.mock.calls.map(call => call[0])).toEqual(['player_match_history', 'friend_match_history']);
+    expect(upsert).toHaveBeenCalledTimes(2);
+    const ownerRows = upsert.mock.calls[0][0];
+    const friendRows = upsert.mock.calls[1][0];
+    expect(ownerRows).toHaveLength(2);
+    expect(ownerRows.map((row: any) => row.mode)).toEqual(['challenge', 'challenge']);
+    expect(friendRows).toHaveLength(2);
+    expect(friendRows).toEqual(expect.arrayContaining([
+      expect.objectContaining({ user_id: 'user-1', tracked_friend_id: 'friend-7', mode: 'challenge', friend_deck: { cards: expect.any(Array), tower: '159000000', towerLevel: 16 } }),
+    ]));
   });
 
   it('raises when the database upsert fails', async () => {

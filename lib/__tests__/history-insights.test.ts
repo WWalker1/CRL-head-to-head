@@ -25,17 +25,22 @@ function historyRow(id: string, battleTime: string, result: 'win' | 'loss' | 'dr
   };
 }
 
-function database(rows: any[]) {
-  const payload = { data: rows, error: null };
-  const query: any = {
-    select: jest.fn(() => query),
-    eq: jest.fn(() => query),
-    order: jest.fn(() => query),
-    limit: jest.fn(() => query),
-    then: (resolve: (value: typeof payload) => unknown, reject: (reason: unknown) => unknown) => Promise.resolve(payload).then(resolve, reject),
+function database(rows: any[], totals = rows.length ? [{ deck_key: 'recent-deck', deck: deck(), match_count: rows.length }] : [], totalCount = rows.length) {
+  const makeQuery = (data: any[]) => {
+    const query: any = {
+      select: jest.fn(() => query),
+      eq: jest.fn(() => query),
+      order: jest.fn(() => query),
+      limit: jest.fn((limit: number) => Promise.resolve({ data: data.slice(0, limit), error: null })),
+      then: (resolve: (value: { data: any[]; error: null }) => unknown, reject: (reason: unknown) => unknown) => Promise.resolve({ data, error: null }).then(resolve, reject),
+    };
+    return query;
   };
   const upsert = jest.fn().mockResolvedValue({ error: null });
-  const client = { from: jest.fn(() => ({ ...query, upsert })) };
+  const client = {
+    from: jest.fn((table: string) => ({ ...makeQuery(table === 'history_deck_totals' ? totals : rows), upsert })),
+    rpc: jest.fn().mockResolvedValue({ data: totalCount, error: null }),
+  };
   return { client, upsert };
 }
 
@@ -130,5 +135,27 @@ describe('readHistoryInsights', () => {
     expect(result.skill.score).toBeNull();
     expect(result.skill.scoredMatches).toBe(0);
     expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it('uses compact all-time counters for its top five decks and total record count', async () => {
+    const rows = [historyRow('recent', '2026-09-02T00:00:00.000Z')];
+    const totals = Array.from({ length: 6 }, (_, index) => ({
+      deck_key: `deck-${index + 1}`,
+      deck: { ...deck(), tower: `tower-${index + 1}` },
+      match_count: [90, 50, 25, 15, 10, 5][index],
+    }));
+    const { client } = database(rows, totals, 200);
+    global.fetch = jest.fn().mockRejectedValue(new Error('service unavailable')) as unknown as typeof fetch;
+
+    const result = await readHistoryInsights(client, { userId: 'user-1', playerTag: '#PLAYER' });
+
+    expect(client.from).toHaveBeenCalledWith('history_deck_totals');
+    expect(client.rpc).toHaveBeenCalledWith('history_match_count', {
+      p_user_id: 'user-1', p_subject_type: 'player', p_subject_id: '#PLAYER',
+    });
+    expect(result.summary.allTimeMatches).toBe(200);
+    expect(result.summary.topDecks.map(deck => deck.count)).toEqual([90, 50, 25, 15, 10]);
+    expect(result.summary.topDecks).toHaveLength(5);
+    expect(result.summary.coverage).toBe(190 / 200);
   });
 });

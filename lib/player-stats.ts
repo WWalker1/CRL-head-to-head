@@ -1,4 +1,4 @@
-import type { MatchupSkillSummary } from './matchup-skill';
+import { SKILL_MODES, type MatchupSkillSummary } from './matchup-skill';
 
 export type PlayerStatsRow = {
   physical_match_id: string;
@@ -54,14 +54,14 @@ function highlight(row: PlayerStatsRow): MatchupHighlight {
 /** Current-model highlights are restricted to supported estimates in the same latest-100 window as skill. */
 export function buildPlayerStats(rows: PlayerStatsRow[], modelVersion: string | null, skill: MatchupSkillSummary): PlayerStats {
   const window = rows
-    .filter(row => row.mode === 'ranked' && ['win', 'loss'].includes(row.friend_result ?? row.result ?? ''))
+    .filter(row => SKILL_MODES.has(row.mode) && ['win', 'loss'].includes(row.friend_result ?? row.result ?? ''))
     .sort((a, b) => Date.parse(b.battle_time) - Date.parse(a.battle_time))
     .slice(0, 100);
   const scored = window.filter(row => usableProbability(row, modelVersion));
-  const favorableLosses = scored.filter(row => (row.friend_result ?? row.result) === 'loss' && row.expected_win_probability! >= 0.6)
+  const favorableLosses = scored.filter(row => (row.friend_result ?? row.result) === 'loss')
     .sort((a, b) => b.expected_win_probability! - a.expected_win_probability! || Date.parse(b.battle_time) - Date.parse(a.battle_time))
     .slice(0, 5).map(highlight);
-  const toughWins = scored.filter(row => (row.friend_result ?? row.result) === 'win' && row.expected_win_probability! < 0.4)
+  const toughWins = scored.filter(row => (row.friend_result ?? row.result) === 'win')
     .sort((a, b) => a.expected_win_probability! - b.expected_win_probability! || Date.parse(b.battle_time) - Date.parse(a.battle_time))
     .slice(0, 5).map(highlight);
   const dates = window.map(row => row.battle_time).filter(date => Number.isFinite(Date.parse(date))).sort((a, b) => Date.parse(a) - Date.parse(b));

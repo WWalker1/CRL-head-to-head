@@ -4,6 +4,7 @@ import { NextRequest } from 'next/server';
 const mock = {
   auth: { getUser: jest.fn() },
   from: jest.fn(),
+  rpc: jest.fn(),
 };
 jest.mock('@supabase/supabase-js', () => ({ createClient: jest.fn(() => mock) }));
 jest.mock('@/lib/clashRoyaleApi', () => ({ getPlayerBattleLog: jest.fn() }));
@@ -19,6 +20,7 @@ function battle(type: string, modeId: number) {
 function request(body: unknown, authorization = 'Bearer token') { return new NextRequest('http://localhost/api/friend-decks', { method: 'POST', headers: { authorization, 'content-type': 'application/json' }, body: JSON.stringify(body) }); }
 function setupDb(friendRow: any = friend) {
   mock.auth.getUser.mockResolvedValue({ data: { user: { id: 'owner' } }, error: null });
+  mock.rpc.mockResolvedValue({ data: 0, error: null });
   mock.from.mockImplementation((table: string) => {
     const chain: any = { select: jest.fn(() => chain), eq: jest.fn(() => chain), order: jest.fn(() => chain), limit: jest.fn(() => Promise.resolve({ data: [], error: null })), maybeSingle: jest.fn(() => Promise.resolve({ data: table === 'tracked_friends' ? friendRow : null, error: null })), upsert: jest.fn(() => Promise.resolve({ error: null })) };
     return chain;

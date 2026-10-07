@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as sessionClient } from '@/lib/supabase-server';
 import { createClient as createSupabase } from '@supabase/supabase-js';
 import { summarizeFriendHistory } from '@/lib/friend-history';
+import { withAllTimeDecks } from '@/lib/history-insights';
 import { createShareId, createSnapshot } from '@/lib/rivalry-sharing';
 import { getPublicRivalrySnapshot } from '@/lib/rivalry-public';
 
@@ -26,8 +27,12 @@ export async function POST(request: NextRequest) {
   const client = db()!; let body: any; try { body = await request.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
   const { data: friend } = await client.from('tracked_friends').select('id,friend_name,friend_player_tag,total_wins,total_losses,created_at').eq('id', body.friendId).eq('user_id', user.id).maybeSingle();
   if (!friend) return NextResponse.json({ error: 'Friend not found' }, { status: 404 });
-  const { data: rows } = await client.from('friend_match_history').select('physical_match_id,battle_time,mode,friend_result,friend_deck,opponent_deck').eq('tracked_friend_id', friend.id).order('battle_time', { ascending: false }).limit(100);
-  const snapshot = createSnapshot(friend, summarizeFriendHistory(rows || []), body.includeDecks === true);
+  const { data: rows, error: historyError } = await client.from('friend_match_history').select('physical_match_id,battle_time,mode,friend_result,friend_deck,opponent_deck').eq('tracked_friend_id', friend.id).order('battle_time', { ascending: false }).limit(100);
+  if (historyError) return NextResponse.json({ error: 'History unavailable' }, { status: 503 });
+  let summary;
+  try { summary = await withAllTimeDecks(client, { userId: user.id, playerTag: friend.friend_player_tag, friendId: friend.id }, summarizeFriendHistory(rows || [])); }
+  catch { return NextResponse.json({ error: 'Deck totals unavailable' }, { status: 503 }); }
+  const snapshot = createSnapshot(friend, summary, body.includeDecks === true);
   const shareId = createShareId(); const { error } = await client.from('rivalry_shares').insert({ share_id: shareId, owner_user_id: user.id, tracked_friend_id: friend.id, snapshot });
   if (error) return NextResponse.json({ error: 'Unable to create share' }, { status: 503 });
   const shareOrigin = process.env.RIVALRY_PUBLIC_ORIGIN || new URL(request.url).origin;
