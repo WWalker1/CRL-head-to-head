@@ -49,6 +49,33 @@ jest.mock('@supabase/supabase-js', () => {
 
 // Access mock store after mocks are set up
 const mockStore = (globalThis as any).__mockStore || {};
+const tableFixtures = new Map<string, Array<(table: string) => any>>();
+const createDefaultTableQuery = (table: string) => {
+  const result = { data: [], error: null };
+  const query: any = {
+    select: jest.fn(() => query), eq: jest.fn(() => query), limit: jest.fn(() => query),
+    order: jest.fn(() => query), update: jest.fn(() => query), insert: jest.fn(() => query),
+    upsert: jest.fn(() => query), delete: jest.fn(() => query),
+    single: jest.fn().mockResolvedValue({ data: null, error: table === 'battles' ? { code: 'PGRST116' } : null }),
+    in: jest.fn().mockResolvedValue({ data: null, error: null, count: 0 }),
+    then: (resolve: (value: any) => unknown, reject: (reason: unknown) => unknown) => Promise.resolve(result).then(resolve, reject),
+  };
+  return query;
+};
+const installTableAwareFrom = () => {
+  tableFixtures.clear();
+  mockStore.supabase.from.mockImplementation((table: string) => {
+    const next = tableFixtures.get(table)?.shift();
+    return next ? next(table) : createDefaultTableQuery(table);
+  });
+};
+const mockTableOnce = (table: string, factory: (table: string) => any) => {
+  const queue = tableFixtures.get(table) || [];
+  queue.push(factory);
+  tableFixtures.set(table, queue);
+};
+installTableAwareFrom();
+
 
 const createUserRatingSelectMock = (
   elo: number = 1500,
@@ -78,24 +105,14 @@ describe('battleProcessor', () => {
     // Reset mocks
     jest.clearAllMocks();
 
-    // Reset mockSupabase implementations
-    mockStore.supabase.from.mockImplementation((table: string) => {
-      if (table === 'tracked_friends') {
-        return createQueryBuilder();
-      } else if (table === 'battles') {
-        return createQueryBuilder();
-      } else if (table === 'user_ratings') {
-        return createUserRatingSelectMock();
-      } 
-      return createQueryBuilder();
-    });
+    installTableAwareFrom();
     mockStore.supabase.rpc.mockResolvedValue(null);
   });
 
   describe('syncBattlesForUser', () => {
     it('should skip battles that are not 1v1', async () => {
       // Mock friend data
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('tracked_friends', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
           data: [{ friend_player_tag: '#FRIEND1' }],
@@ -104,10 +121,11 @@ describe('battleProcessor', () => {
       }));
 
       // Mock cleanup - no battles to delete
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
           data: [],
           error: null,
         }),
@@ -134,7 +152,7 @@ describe('battleProcessor', () => {
 
     it('should skip battles against untracked friends', async () => {
       // Mock friend data (no friends tracked)
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('tracked_friends', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
           data: [],
@@ -143,10 +161,11 @@ describe('battleProcessor', () => {
       }));
 
       // Mock cleanup - no battles to delete
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
           data: [],
           error: null,
         }),
@@ -166,7 +185,9 @@ describe('battleProcessor', () => {
 
       const result = await syncBattlesForUser(userId, playerTag);
 
-      expect(result.battlesProcessed).toBe(0);
+      // This counter reports eligible 1v1 battles from the fetched log, including
+      // opponents we do not track. New records and friend totals stay untouched.
+      expect(result.battlesProcessed).toBe(1);
       expect(result.newBattles).toBe(0);
       expect(result.recordsUpdated).toBe(0);
     });
@@ -182,7 +203,7 @@ describe('battleProcessor', () => {
 
     it('should skip already processed battles', async () => {
       // Mock friend data
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('tracked_friends', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
           data: [{ friend_player_tag: '#FRIEND1' }],
@@ -197,21 +218,21 @@ describe('battleProcessor', () => {
       });
 
       // Mock battles check - battle already exists
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnValue({
-          single: jest.fn().mockResolvedValue({
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
             data: { id: 'existing-battle-1' },
             error: null,
           }),
-        }),
       }));
 
       // Mock cleanup - no battles to delete
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
           data: [],
           error: null,
         }),
@@ -227,7 +248,7 @@ describe('battleProcessor', () => {
 
     it('should process new battles against tracked friends', async () => {
       // Mock friend data
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('tracked_friends', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
           data: [{ friend_player_tag: '#FRIEND1' }],
@@ -242,26 +263,26 @@ describe('battleProcessor', () => {
       });
 
       // Mock battles check - battle not found (new battle)
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnValue({
-          single: jest.fn().mockResolvedValue({
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
             data: null,
             error: { code: 'PGRST116' }, // Not found
           }),
-        }),
       }));
 
       // Mock battles insert
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         insert: jest.fn().mockResolvedValue({ data: null, error: null }),
       }));
 
       // Mock cleanup - no battles to delete
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
           data: [],
           error: null,
         }),
@@ -282,7 +303,7 @@ describe('battleProcessor', () => {
 
     it('should correctly determine win/loss based on crowns', async () => {
       // Mock friend data
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('tracked_friends', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
           data: [{ friend_player_tag: '#FRIEND1' }],
@@ -298,26 +319,26 @@ describe('battleProcessor', () => {
       });
 
       // Mock battles check - battle not found (new battle)
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnValue({
-          single: jest.fn().mockResolvedValue({
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
             data: null,
             error: { code: 'PGRST116' },
           }),
-        }),
       }));
 
       // Mock battles insert
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         insert: jest.fn().mockResolvedValue({ data: null, error: null }),
       }));
 
       // Mock cleanup - no battles to delete
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
           data: [],
           error: null,
         }),
@@ -336,7 +357,7 @@ describe('battleProcessor', () => {
 
     it('should skip battles with missing opponent data', async () => {
       // Mock friend data
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('tracked_friends', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
           data: [{ friend_player_tag: '#FRIEND1' }],
@@ -345,10 +366,11 @@ describe('battleProcessor', () => {
       }));
 
       // Mock cleanup - no battles to delete
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
           data: [],
           error: null,
         }),
@@ -370,7 +392,7 @@ describe('battleProcessor', () => {
 
     it('should filter only 1v1 battle types', async () => {
       // Mock friend data
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('tracked_friends', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
           data: [{ friend_player_tag: '#FRIEND1' }],
@@ -391,26 +413,26 @@ describe('battleProcessor', () => {
       // Should process 4 1v1 battles, so mock 4 checks and 4 inserts
       for (let i = 0; i < 4; i++) {
         // Mock battle existence check (not found)
-        mockStore.supabase.from.mockImplementationOnce(() => ({
+        mockTableOnce('battles', () => ({
           select: jest.fn().mockReturnThis(),
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
               data: null,
               error: { code: 'PGRST116' },
             }),
-          }),
-        }));
+      }));
         // Mock battle insert
-        mockStore.supabase.from.mockImplementationOnce(() => ({
+        mockTableOnce('battles', () => ({
           insert: jest.fn().mockResolvedValue({ data: null, error: null }),
         }));
       }
 
       // Mock cleanup - no battles to delete
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
           data: [],
           error: null,
         }),
@@ -427,7 +449,7 @@ describe('battleProcessor', () => {
 
     it('should call cleanupOldBattles after processing', async () => {
       // Mock friend data
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('tracked_friends', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
           data: [],
@@ -436,10 +458,11 @@ describe('battleProcessor', () => {
       }));
 
       // Mock cleanup - return empty battles
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
           data: [],
           error: null,
         }),
@@ -458,7 +481,7 @@ describe('battleProcessor', () => {
   describe('cleanupOldBattles (via syncBattlesForUser)', () => {
     it('should keep all battles when 25 or fewer exist', async () => {
       // Mock friend data
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('tracked_friends', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
           data: [],
@@ -471,10 +494,11 @@ describe('battleProcessor', () => {
         id: `battle-${i}`,
       }));
 
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
           data: battles,
           error: null,
         }),
@@ -487,9 +511,9 @@ describe('battleProcessor', () => {
       expect(result.deletedBattles).toBe(0);
     });
 
-    it('should keep exactly 25 battles when more than 25 exist', async () => {
+    it('should keep exactly 50 battles when more than 50 exist', async () => {
       // Mock friend data
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('tracked_friends', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
           data: [],
@@ -497,34 +521,35 @@ describe('battleProcessor', () => {
         }),
       }));
 
-      // Mock cleanup - 30 battles (more than 25)
-      const battles = Array.from({ length: 30 }, (_, i) => ({
+      // Mock cleanup - 60 battles (more than the 50 retained)
+      const battles = Array.from({ length: 60 }, (_, i) => ({
         id: `battle-${i}`,
       }));
 
       const deleteMock = jest.fn().mockResolvedValue({
         data: null,
         error: null,
-        count: 5,
+        count: 10,
       });
 
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
           data: battles,
           error: null,
         }),
       }));
 
       // Mock delete operation
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         delete: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         in: jest.fn().mockResolvedValue({
           data: null,
           error: null,
-          count: 5,
+          count: 10,
         }),
       }));
 
@@ -532,12 +557,12 @@ describe('battleProcessor', () => {
 
       const result = await syncBattlesForUser(userId, playerTag);
 
-      expect(result.deletedBattles).toBe(5);
+      expect(result.deletedBattles).toBe(10);
     });
 
     it('should delete oldest battles correctly (ordered by battle_time DESC)', async () => {
       // Mock friend data
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('tracked_friends', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
           data: [],
@@ -545,45 +570,45 @@ describe('battleProcessor', () => {
         }),
       }));
 
-      // Mock cleanup - 50 battles
-      const battles = Array.from({ length: 50 }, (_, i) => ({
+      // Mock cleanup - 70 battles
+      const battles = Array.from({ length: 70 }, (_, i) => ({
         id: `battle-${i}`,
       }));
 
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
           data: battles,
           error: null,
         }),
       }));
 
-      // Mock delete operation - should delete 25 battles (50 - 25 = 25)
+      // Keep the newest 50 and delete the remaining 20.
       const deleteInMock = jest.fn().mockResolvedValue({
         data: null,
         error: null,
-        count: 25,
+        count: 20,
       });
 
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         delete: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         in: deleteInMock,
       }));
-
       (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([]);
 
       const result = await syncBattlesForUser(userId, playerTag);
 
-      expect(result.deletedBattles).toBe(25);
+      expect(result.deletedBattles).toBe(20);
       // Verify order was called with descending
       expect(mockStore.supabase.from).toHaveBeenCalledWith('battles');
     });
 
     it('should handle batch deletion for large numbers of battles', async () => {
       // Mock friend data
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('tracked_friends', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnValue({
           data: [],
@@ -596,50 +621,45 @@ describe('battleProcessor', () => {
         id: `battle-${i}`,
       }));
 
-      mockStore.supabase.from.mockImplementationOnce(() => ({
+      mockTableOnce('battles', () => ({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
           data: battles,
           error: null,
         }),
       }));
 
-      // Mock delete operation - should delete 175 battles in batches
+      // Mock delete operation - should delete 150 battles in batches
       let deleteCallCount = 0;
       const deleteInMock = jest.fn().mockImplementation(() => {
         deleteCallCount++;
         return Promise.resolve({
           data: null,
           error: null,
-          count: deleteCallCount === 1 ? 100 : 75, // First batch 100, second batch 75
+          count: deleteCallCount === 1 ? 100 : 50, // First batch 100, second batch 50
         });
       });
 
-      mockStore.supabase.from.mockImplementation((table: string) => {
-        if (table === 'battles') {
-          return {
-            delete: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockReturnThis(),
-            in: deleteInMock,
-          };
-        }
-        return {
-          select: jest.fn().mockReturnThis(),
-          eq: jest.fn().mockReturnThis(),
-          order: jest.fn().mockResolvedValue({
-            data: battles,
-            error: null,
-          }),
-        };
-      });
+      mockTableOnce('battles', () => ({
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        in: deleteInMock,
+      }));
+      // The cleanup deletes 150 stale IDs in two independent queries.
+      mockTableOnce('battles', () => ({
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        in: deleteInMock,
+      }));
 
       (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([]);
 
       const result = await syncBattlesForUser(userId, playerTag);
 
-      expect(result.deletedBattles).toBe(175);
-      // Should be called multiple times for batching (175 battles / 100 batch size = 2 batches)
+      expect(result.deletedBattles).toBe(150);
+      // Should be called twice for batching (150 battles / 100 batch size = 2 batches)
       expect(deleteInMock).toHaveBeenCalledTimes(2);
     });
   });

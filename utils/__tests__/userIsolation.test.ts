@@ -23,6 +23,33 @@ jest.mock('@supabase/supabase-js', () => {
 
 // Access mock store after mocks are set up
 const mockStore = (globalThis as any).__mockStore || {};
+const tableFixtures = new Map<string, Array<(table: string) => any>>();
+const createDefaultTableQuery = (table: string) => {
+  const result = { data: [], error: null };
+  const query: any = {
+    select: jest.fn(() => query), eq: jest.fn(() => query), limit: jest.fn(() => query),
+    order: jest.fn(() => query), update: jest.fn(() => query), insert: jest.fn(() => query),
+    upsert: jest.fn(() => query), delete: jest.fn(() => query),
+    single: jest.fn().mockResolvedValue({ data: null, error: table === 'battles' ? { code: 'PGRST116' } : null }),
+    in: jest.fn().mockResolvedValue({ data: null, error: null, count: 0 }),
+    then: (resolve: (value: any) => unknown, reject: (reason: unknown) => unknown) => Promise.resolve(result).then(resolve, reject),
+  };
+  return query;
+};
+const installTableAwareFrom = () => {
+  tableFixtures.clear();
+  mockStore.supabase.from.mockImplementation((table: string) => {
+    const next = tableFixtures.get(table)?.shift();
+    return next ? next(table) : createDefaultTableQuery(table);
+  });
+};
+const mockTableOnce = (table: string, factory: (table: string) => any) => {
+  const queue = tableFixtures.get(table) || [];
+  queue.push(factory);
+  tableFixtures.set(table, queue);
+};
+installTableAwareFrom();
+
 
 // Import battleProcessor AFTER mocks are set up
 import { syncBattlesForUser } from '../battleProcessor';
@@ -36,11 +63,12 @@ describe('User Isolation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockStore.supabase.rpc = jest.fn().mockResolvedValue(null);
+    installTableAwareFrom();
   });
 
   it('should allow two users to track completely different sets of friends', async () => {
     // Mock User A's tracked friends
-    mockStore.supabase.from.mockImplementationOnce((table: string) => {
+    mockTableOnce('tracked_friends', (table: string) => {
       if (table === 'tracked_friends') {
         return {
           select: jest.fn().mockReturnThis(),
@@ -53,7 +81,8 @@ describe('User Isolation', () => {
       return {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({ data: [], error: null }),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
       };
     });
 
@@ -64,26 +93,26 @@ describe('User Isolation', () => {
     });
 
     // Mock User A's battles check - battle not found
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
           data: null,
           error: { code: 'PGRST116' },
         }),
-      }),
     }));
 
     // Mock User A's battle insert
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       insert: jest.fn().mockResolvedValue({ data: null, error: null }),
     }));
 
     // Mock User A's cleanup
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockResolvedValue({ data: [], error: null }),
+      order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
     }));
 
     (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([battleA]);
@@ -94,9 +123,10 @@ describe('User Isolation', () => {
 
     // Reset mocks for User B
     jest.clearAllMocks();
+    installTableAwareFrom();
 
     // Mock User B's tracked friends (completely different)
-    mockStore.supabase.from.mockImplementationOnce((table: string) => {
+    mockTableOnce('tracked_friends', (table: string) => {
       if (table === 'tracked_friends') {
         return {
           select: jest.fn().mockReturnThis(),
@@ -109,7 +139,8 @@ describe('User Isolation', () => {
       return {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({ data: [], error: null }),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
       };
     });
 
@@ -120,26 +151,26 @@ describe('User Isolation', () => {
     });
 
     // Mock User B's battles check - battle not found
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
           data: null,
           error: { code: 'PGRST116' },
         }),
-      }),
     }));
 
     // Mock User B's battle insert
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       insert: jest.fn().mockResolvedValue({ data: null, error: null }),
     }));
 
     // Mock User B's cleanup
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockResolvedValue({ data: [], error: null }),
+      order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
     }));
 
     (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([battleB]);
@@ -159,7 +190,7 @@ describe('User Isolation', () => {
     const sharedFriendTag = '#SHAREDFRIEND';
 
     // Mock User A's tracked friends
-    mockStore.supabase.from.mockImplementationOnce((table: string) => {
+    mockTableOnce('tracked_friends', (table: string) => {
       if (table === 'tracked_friends') {
         return {
           select: jest.fn().mockReturnThis(),
@@ -172,7 +203,8 @@ describe('User Isolation', () => {
       return {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({ data: [], error: null }),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
       };
     });
 
@@ -183,26 +215,26 @@ describe('User Isolation', () => {
     });
 
     // Mock User A's battles check - battle not found
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
           data: null,
           error: { code: 'PGRST116' },
         }),
-      }),
     }));
 
     // Mock User A's battle insert
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       insert: jest.fn().mockResolvedValue({ data: null, error: null }),
     }));
 
     // Mock User A's cleanup
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockResolvedValue({ data: [], error: null }),
+      order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
     }));
 
     (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([battleA]);
@@ -218,9 +250,10 @@ describe('User Isolation', () => {
     // Reset mocks for User B
     jest.clearAllMocks();
     mockStore.supabase.rpc = jest.fn().mockResolvedValue(null);
+    installTableAwareFrom();
 
     // Mock User B's tracked friends (same friend)
-    mockStore.supabase.from.mockImplementationOnce((table: string) => {
+    mockTableOnce('tracked_friends', (table: string) => {
       if (table === 'tracked_friends') {
         return {
           select: jest.fn().mockReturnThis(),
@@ -233,7 +266,8 @@ describe('User Isolation', () => {
       return {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({ data: [], error: null }),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
       };
     });
 
@@ -244,26 +278,26 @@ describe('User Isolation', () => {
     });
 
     // Mock User B's battles check - battle not found
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
           data: null,
           error: { code: 'PGRST116' },
         }),
-      }),
     }));
 
     // Mock User B's battle insert
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       insert: jest.fn().mockResolvedValue({ data: null, error: null }),
     }));
 
     // Mock User B's cleanup
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockResolvedValue({ data: [], error: null }),
+      order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
     }));
 
     (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([battleB]);
@@ -280,7 +314,7 @@ describe('User Isolation', () => {
 
   it('should process battles for User A without affecting User B\'s tracked_friends records', async () => {
     // Mock User A's tracked friends
-    mockStore.supabase.from.mockImplementationOnce((table: string) => {
+    mockTableOnce('tracked_friends', (table: string) => {
       if (table === 'tracked_friends') {
         return {
           select: jest.fn().mockReturnThis(),
@@ -293,7 +327,8 @@ describe('User Isolation', () => {
       return {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockResolvedValue({ data: [], error: null }),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
       };
     });
 
@@ -304,26 +339,26 @@ describe('User Isolation', () => {
     });
 
     // Mock User A's battles check - battle not found
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
           data: null,
           error: { code: 'PGRST116' },
         }),
-      }),
     }));
 
     // Mock User A's battle insert
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       insert: jest.fn().mockResolvedValue({ data: null, error: null }),
     }));
 
     // Mock User A's cleanup
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockResolvedValue({ data: [], error: null }),
+      order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
     }));
 
     (getPlayerBattleLog as jest.Mock).mockResolvedValueOnce([battle]);
@@ -345,7 +380,7 @@ describe('User Isolation', () => {
 
   it('should cleanup battles for User A without affecting User B\'s battles', async () => {
     // Mock User A's tracked friends
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('tracked_friends', () => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnValue({
         data: [],
@@ -353,15 +388,16 @@ describe('User Isolation', () => {
       }),
     }));
 
-    // Mock User A's battles (30 battles - will trigger cleanup)
-    const userABattles = Array.from({ length: 30 }, (_, i) => ({
+    // Mock User A's battles (55 battles - will trigger cleanup past the 50 retained)
+    const userABattles = Array.from({ length: 55 }, (_, i) => ({
       id: `battle-a-${i}`,
     }));
 
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockResolvedValue({
+      order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
         data: userABattles,
         error: null,
       }),
@@ -374,7 +410,7 @@ describe('User Isolation', () => {
       count: 5,
     });
 
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       delete: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
       in: deleteInMock,
@@ -392,10 +428,10 @@ describe('User Isolation', () => {
 
     // Reset for User B
     jest.clearAllMocks();
-    mockStore.supabase.from = jest.fn();
+    installTableAwareFrom();
 
     // Mock User B's tracked friends
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('tracked_friends', () => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnValue({
         data: [],
@@ -408,10 +444,11 @@ describe('User Isolation', () => {
       id: `battle-b-${i}`,
     }));
 
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockResolvedValue({
+      order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({
         data: userBBattles,
         error: null,
       }),
@@ -427,7 +464,7 @@ describe('User Isolation', () => {
 
   it('should not process User A\'s battles for User B', async () => {
     // Mock User B's tracked friends
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('tracked_friends', () => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnValue({
         data: [{ friend_player_tag: '#FRIEND1' }],
@@ -436,10 +473,11 @@ describe('User Isolation', () => {
     }));
 
     // Mock cleanup for User B
-    mockStore.supabase.from.mockImplementationOnce(() => ({
+    mockTableOnce('battles', () => ({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockResolvedValue({ data: [], error: null }),
+      order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
     }));
 
     // Battle where User A is the opponent (not User B)

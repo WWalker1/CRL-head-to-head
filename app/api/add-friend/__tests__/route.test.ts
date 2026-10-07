@@ -247,6 +247,7 @@ describe('Add Friend Route', () => {
           error: { code: 'PGRST116' },
         }),
         insert: insertMock,
+        upsert: jest.fn().mockResolvedValue({ data: null, error: null }),
       });
 
       const response = await POST(mockRequest);
