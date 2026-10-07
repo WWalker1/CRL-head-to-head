@@ -52,7 +52,7 @@ Run `models/.venv/Scripts/python.exe -m unittest discover -s models -p 'test_*.p
 
 Collection reached501455 games (371827UC,116968Royal,12660Grand). Frozen expanded export: `data/training/20260921T223412Z-a6dffa9e`,486362 usable after excluding15040 old test IDs and53 ties. Train389089, combined validation/calibration48635, test48638. Run `data/runs/20260921T223438Z` is the corresponding experiment; read its metrics file to establish completion. Do not substitute the earlier `20260921T223049Z-a6dffa9e` export: it unintentionally excluded lower leagues and is not the expanded experiment.
 
-`daily_ingest.py` is the daily idempotent wrapper. Codex local scheduled task `rival-daily-ranked-ingestion` at03:00 local invokes it with200000 new games and a one-hour bound using gpt-5.6-luna. Computer awake/app running/network/usage needed. No Windows scheduled task or cloud worker is configured. See DAILY_INGESTION.md. User explicitly declined supplying specific test decks; do not request them again or tune to a few subjective examples. Judge generalization on broad held-out data.
+`daily_ingest.py` is the idempotent research wrapper. Codex local scheduled task `rival-daily-ranked-ingestion` is paused as of October 6, 2026; the research archive also has a `STOP` file. Do not restart this high-volume collector without a new request. The separate Vercel nightly user sync remains enabled. See DAILY_INGESTION.md. User explicitly declined supplying specific test decks; do not request them again or tune to a few subjective examples. Judge generalization on broad held-out data.
 
 ## Community seeds and depth results
 

@@ -1,6 +1,6 @@
 # Daily Ranked ingestion
 
-The Codex scheduled job **Rival daily Ranked ingestion** runs at 03:00 local time using gpt-5.6-luna. It invokes an ordinary Python collector; the language model does not make a separate decision for each API request.
+The Codex scheduled job **Rival daily Ranked ingestion** is paused as of October 6, 2026. Its former schedule was 03:00 local time. The research archive's `STOP` file also prevents the Python collector from running if the task is accidentally invoked. This is separate from the live Vercel nightly user sync, which remains enabled.
 
 Run manually from the project root:
 

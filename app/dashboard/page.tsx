@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
 import { TrackedFriend } from '@/lib/types';
 import FriendCard from '@/components/FriendCard';
 import AddFriendModal from '@/components/AddFriendModal';
 import SyncButton from '@/components/SyncButton';
 import EloDisplay from '@/components/EloDisplay';
-import PlayerHistoryInsights from '@/components/PlayerHistoryInsights';
 import toast from 'react-hot-toast';
 
 export default function DashboardPage() {
@@ -19,7 +19,6 @@ export default function DashboardPage() {
   const [userTag, setUserTag] = useState('');
   const [userElo, setUserElo] = useState(1500);
   const [averageElo, setAverageElo] = useState<number | null>(null);
-  const [historyRevision, setHistoryRevision] = useState(0);
 
   useEffect(() => {
     fetchFriends();
@@ -173,7 +172,6 @@ export default function DashboardPage() {
     
     // Refresh friends list after sync
     await fetchFriends();
-    setHistoryRevision(value => value + 1);
     
     return result;
   };
@@ -280,7 +278,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Friends List */}
-        {process.env.NEXT_PUBLIC_MODEL_TOOLS_ENABLED === '1' && <PlayerHistoryInsights revision={historyRevision} />}
+        {process.env.NEXT_PUBLIC_MODEL_TOOLS_ENABLED === '1' && <Link href="/stats" className="mb-6 flex min-h-11 items-center justify-between gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"><span>Review your matchup skill and recent games</span><span aria-hidden="true">→</span></Link>}
         <div className="mb-8">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-2xl font-bold text-white">Your Friends</h2>
