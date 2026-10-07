@@ -32,37 +32,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    // Log all headers for debugging
-    const allHeaders: Record<string, string> = {};
-    request.headers.forEach((value, key) => {
-      allHeaders[key] = value;
-    });
-    console.log('[ALL HEADERS]', JSON.stringify(allHeaders, null, 2));
-
-    // Verify request is from Vercel Cron
-    // Vercel sends x-vercel-cron header with value "1" for cron jobs
-    // OR we can check User-Agent: vercel-cron/1.0 as fallback
-    const cronHeader = request.headers.get('x-vercel-cron') || request.headers.get('X-Vercel-Cron');
-    const userAgent = request.headers.get('user-agent') || request.headers.get('User-Agent') || '';
-    const cronSecret = request.headers.get('authorization')?.replace('Bearer ', '');
+    // Vercel Cron sends this configured secret in the Authorization header.
+    // Request headers and user agents that identify cron jobs can be forged.
     const expectedSecret = process.env.CRON_SECRET;
-
-    // Check multiple ways Vercel might identify cron jobs
-    // User-Agent contains 'vercel-cron' is a reliable indicator
-    const isVercelCron = cronHeader === '1' || userAgent.includes('vercel-cron');
-    const isValidSecret = expectedSecret && cronSecret === expectedSecret;
-
-    console.log('[CRON AUTH]', {
-      hasCronHeader: !!cronHeader,
-      cronHeaderValue: cronHeader,
-      userAgent,
-      isVercelCron,
-      hasCronSecret: !!cronSecret,
-      hasExpectedSecret: !!expectedSecret,
-      isValidSecret,
-    });
-
-    if (!isVercelCron && !isValidSecret) {
+    if (!expectedSecret || request.headers.get('authorization') !== `Bearer ${expectedSecret}`) {
       console.error('[CRON AUTH] Unauthorized - missing valid auth');
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -77,13 +50,6 @@ export async function GET(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
-    console.log('[SUPABASE CLIENT]', {
-      hasUrl: !!supabaseUrl,
-      hasServiceRoleKey: !!serviceRoleKey,
-      serviceRoleKeyLength: serviceRoleKey?.length || 0,
-      serviceRoleKeyPrefix: serviceRoleKey?.substring(0, 10) || 'missing',
-    });
-
     if (!supabaseUrl || !serviceRoleKey) {
       console.error('[SUPABASE CLIENT] Missing required environment variables');
       return NextResponse.json(

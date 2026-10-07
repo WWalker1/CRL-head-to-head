@@ -35,9 +35,13 @@ import { GET } from '../route';
 
 describe('Cron Sync All Users Route', () => {
   let mockRequest: NextRequest;
+  const originalUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const originalServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role';
 
     // Create a mock request
     mockRequest = {
@@ -45,8 +49,15 @@ describe('Cron Sync All Users Route', () => {
     } as NextRequest;
   });
 
+  afterAll(() => {
+    if (originalUrl === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    else process.env.NEXT_PUBLIC_SUPABASE_URL = originalUrl;
+    if (originalServiceKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    else process.env.SUPABASE_SERVICE_ROLE_KEY = originalServiceKey;
+  });
+
   describe('Authentication', () => {
-    it('should require x-vercel-cron header or CRON_SECRET', async () => {
+    it('should require CRON_SECRET', async () => {
       // No headers
       const response = await GET(mockRequest);
       const data = await response.json();
@@ -55,19 +66,18 @@ describe('Cron Sync All Users Route', () => {
       expect(data.error).toBe('Unauthorized');
     });
 
-    it('should accept x-vercel-cron header with value "1"', async () => {
-      // Vercel sends x-vercel-cron with value "1"
+    it('should reject a cron header without the secret', async () => {
       mockRequest.headers.set('x-vercel-cron', '1');
-
-      mockStore.auth.admin.listUsers.mockResolvedValue({
-        data: { users: [] },
-        error: null,
-      });
-
       const response = await GET(mockRequest);
+      expect(response.status).toBe(401);
+      expect(mockStore.auth.admin.listUsers).not.toHaveBeenCalled();
+    });
 
-      expect(response.status).toBe(200);
-      expect(mockStore.auth.admin.listUsers).toHaveBeenCalled();
+    it('should reject a cron user agent without the secret', async () => {
+      mockRequest.headers.set('user-agent', 'vercel-cron/1.0');
+      const response = await GET(mockRequest);
+      expect(response.status).toBe(401);
+      expect(mockStore.auth.admin.listUsers).not.toHaveBeenCalled();
     });
 
     it('should accept CRON_SECRET in authorization header', async () => {
@@ -103,8 +113,11 @@ describe('Cron Sync All Users Route', () => {
 
   describe('User Processing', () => {
     beforeEach(() => {
-      mockRequest.headers.set('x-vercel-cron', '1');
+      process.env.CRON_SECRET = 'test-secret';
+      mockRequest.headers.set('authorization', 'Bearer test-secret');
     });
+
+    afterEach(() => { delete process.env.CRON_SECRET; });
 
     it('should process all users with player_tag', async () => {
       const users = [

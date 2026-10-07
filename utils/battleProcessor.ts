@@ -1,6 +1,7 @@
 import { ClashRoyaleBattle } from '@/lib/types';
 import { createClient } from '@supabase/supabase-js';
 import { getPlayerBattleLog } from '@/lib/clashRoyaleApi';
+import { captureUserHistory } from '@/lib/history-storage';
 
 const DEFAULT_ELO = 1500;
 const K_FACTOR = Number(process.env.ELO_K_FACTOR ?? 32);
@@ -247,12 +248,16 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
     // Get tracked friends (just for the tags, not for Elo ratings)
     const { data: friends, error: friendsError } = await supabase
       .from('tracked_friends')
-      .select('friend_player_tag')
+      .select('id,friend_player_tag')
       .eq('user_id', userId);
 
     if (friendsError) {
       result.errors.push('Failed to fetch tracked friends');
       return result;
+    }
+
+    if (process.env.MATCH_HISTORY_ENABLED === '1') {
+      result.errors.push(...await captureUserHistory(supabase, userId, playerTag, battles, friends || []));
     }
 
     const trackedTags = new Set(friends?.map(f => f.friend_player_tag) || []);
