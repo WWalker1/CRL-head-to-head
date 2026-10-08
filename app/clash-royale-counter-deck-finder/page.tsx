@@ -43,6 +43,10 @@ const faqs = [
     question: 'What should I do after finding a promising deck?',
     answer: 'Check that the deck fits your card collection and play style, compare its complete-deck matchup, and practice its defense and rotation. Use a candidate as a starting point and reassess it after meaningful balance changes.',
   },
+  {
+    question: 'How do I know if my Clash Royale deck is good?',
+    answer: 'Look at how the full deck handles common threats, supports its win condition, and fits your levels and play style. Rival Royale can compare supported complete decks and rank a limited set of counter candidates, but its estimates are model guidance rather than observed win rates or guarantees.',
+  },
 ];
 
 const structuredData = {

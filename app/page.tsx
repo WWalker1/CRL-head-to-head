@@ -21,6 +21,8 @@ const faqs = [
   { question: 'Is battle tracking automatic?', answer: 'When tracking is enabled, recent eligible battles can be synced from the game API and refreshed from the dashboard. The API may omit older battles, so the tracker cannot promise a complete lifetime record.' },
   { question: 'What types of battles are tracked?', answer: 'The head-to-head tracker focuses on eligible 1v1 battles. Team battles and unsupported modes are excluded.' },
   { question: 'Are deck matchup estimates guaranteed results?', answer: 'No. Estimates are produced by a model for supported complete decks. They are not guarantees or a player’s personal win rate. In-game decisions, balance changes, and model coverage affect how useful they are.' },
+  { question: 'How do I know if I’m good at Clash Royale?', answer: 'A win rate is one clue, but it depends on who you face and which decks you use. Rival Royale’s optional matchup skill view compares recorded results with supported deck estimates and highlights tough wins and favored losses. It is a model-relative snapshot, not a complete measure of skill.' },
+  { question: 'Am I better than my friend at Clash Royale?', answer: 'Compare your recorded head-to-head wins and losses, then look at the decks each of you plays. If matchup skill is enabled, you can also compare each player’s model-relative performance. Available battle history may be incomplete, so the record is only as complete as the matches the game API provides.' },
 ];
 
 export default async function Home() {

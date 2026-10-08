@@ -8,6 +8,7 @@ import { counter } from './model-tools/api';
 import type { Deck, ModelResult } from './model-tools/types';
 import CardArtwork from './CardArtwork';
 import { cardDisplay } from '@/lib/card-display';
+import { browserAuthHeaders } from '@/lib/browser-auth-headers';
 
 function modelDeck(usage: DeckUsage): Deck | null {
   if (usage.cards.length !== 8) return null;
@@ -39,14 +40,15 @@ export default function FriendDeckPageExperience({ friendId }: { friendId: strin
   const [error, setError] = useState('');
 
   const load = async (method: 'GET' | 'POST', signal?: AbortSignal) => {
+    const authHeaders = await browserAuthHeaders();
     const response = await fetch(method === 'GET' ? `/api/friend-decks?friendId=${encodeURIComponent(friendId)}` : '/api/friend-decks', {
-      method, signal, credentials: 'same-origin', headers: method === 'POST' ? { 'content-type': 'application/json' } : {},
+      method, signal, credentials: 'same-origin', headers: method === 'POST' ? { ...authHeaders, 'content-type': 'application/json' } : authHeaders,
       ...(method === 'POST' ? { body: JSON.stringify({ friendId }) } : {}),
     });
     if (!response.ok) throw new Error(response.status === 401 ? 'Sign in to see your friend’s decks.' : 'Could not load this friend’s deck history.');
     let payload = await response.json();
     if (method === 'GET' && !payload.summary?.recordedMatches) {
-      const refreshed = await fetch('/api/friend-decks', { method: 'POST', signal, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ friendId }) });
+      const refreshed = await fetch('/api/friend-decks', { method: 'POST', signal, credentials: 'same-origin', headers: { ...authHeaders, 'content-type': 'application/json' }, body: JSON.stringify({ friendId }) });
       if (refreshed.ok) payload = await refreshed.json();
     }
     setSummary(payload.summary);
@@ -92,7 +94,7 @@ export default function FriendDeckPageExperience({ friendId }: { friendId: strin
 
   return <section className="space-y-6 text-slate-900" aria-label={`${friendName} most played decks and counters`}>
     <header className="flex flex-wrap items-start justify-between gap-3">
-      <div><p className="text-sm font-semibold text-violet-700">Friend decks</p><h1 className="mt-1 text-2xl font-bold sm:text-3xl">{friendName}&apos;s most-played decks</h1><p className="mt-1 text-sm text-slate-600">{friendTag || 'Tracked 1v1 matches'} · choose a deck to see a counter.</p></div>
+      <div><p className="text-sm font-semibold text-violet-700">Friend decks</p><h1 className="mt-1 text-2xl font-bold sm:text-3xl">{friendName}&apos;s most-played decks</h1><p className="mt-1 text-sm text-slate-600">{friendTag || 'Tracked 1v1 matches'} · choose a deck to see a counter.</p><Link href={`/friend-skill/${encodeURIComponent(friendId)}`} className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-violet-700 underline">See {friendName}&apos;s skill score →</Link></div>
       <button type="button" onClick={refresh} disabled={loading} className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Refresh history</button>
     </header>
     {error && <p role="alert" className="rounded-lg bg-orange-50 p-3 text-sm text-orange-800">{error}</p>}

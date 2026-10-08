@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Clash Royale Matchup Skill Score',
-  description: 'See how your recorded 1v1 wins compare with model estimates for your deck matchups.',
+  title: 'Am I Good at Clash Royale? Matchup Skill Score',
+  description: 'See whether your Clash Royale results beat matchup expectations, revisit tough wins, and compare your recent play with tracked friends.',
   alternates: { canonical: '/clash-royale-skill-score' },
 };
 
@@ -13,8 +13,8 @@ export default function SkillScoreLandingPage() {
       <div className="grid items-center gap-9 lg:grid-cols-[1fr_0.9fr] lg:gap-14">
         <div>
           <span className="inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-violet-800">Matchup skill</span>
-          <h1 className="mt-4 max-w-xl text-4xl font-black leading-tight tracking-tight sm:text-6xl">How do your wins stack up?</h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">See a score out of 100 based on how your recorded 1v1 results compare with the model&apos;s deck matchup estimates.</p>
+          <h1 className="mt-4 max-w-xl text-4xl font-black leading-tight tracking-tight sm:text-6xl">Are you good at Clash Royale?</h1>
+          <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">See a score out of 100 based on how your recorded 1v1 results compare with deck matchup expectations. Revisit the tough wins that made you feel unstoppable.</p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row"><Link href="/signup" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-violet-700 px-6 font-bold text-white shadow-lg shadow-violet-700/20 hover:bg-violet-800">Sign up to see your score</Link><Link href="/stats" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-violet-300 bg-white px-5 font-semibold text-violet-800 hover:border-violet-500">Already signed in?</Link></div>
         </div>
         <div className="rounded-3xl border border-violet-100 bg-white p-5 shadow-2xl shadow-violet-200/70 sm:p-7" aria-label="Illustrative matchup skill example">
@@ -27,6 +27,7 @@ export default function SkillScoreLandingPage() {
         </div>
       </div>
       <div className="mt-12 grid gap-3 sm:grid-cols-3"><p className="rounded-2xl border border-violet-100 bg-white p-4 text-sm text-slate-700"><strong className="block text-base text-slate-900">Sync your battles</strong>Latest 100 recorded constructed 1v1 games, across opponents.</p><p className="rounded-2xl border border-violet-100 bg-white p-4 text-sm text-slate-700"><strong className="block text-base text-slate-900">Compare results</strong>Supported deck matchups after the model training cutoff.</p><p className="rounded-2xl border border-violet-100 bg-white p-4 text-sm text-slate-700"><strong className="block text-base text-slate-900">Explore highlights</strong>Review your best win, toughest loss, and tracked friends.</p></div>
+      <div className="mt-8 rounded-2xl border border-violet-100 bg-white p-5 sm:p-6"><h2 className="text-xl font-bold text-slate-950">Better than your friend?</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">Track your head-to-head wins and losses, then open a friend&apos;s skill page to compare recent results against deck expectations. Their most-played decks are one tap away when you want to find a counter.</p><Link href="/signup" className="mt-3 inline-flex min-h-11 items-center font-semibold text-violet-700 underline underline-offset-2">Start tracking friends →</Link></div>
       <p className="mt-5 text-xs leading-5 text-slate-500">The score compares outcomes with deck estimates; it does not isolate player decisions or opponent skill. When estimates are unavailable, the app shows a recent record score.</p>
     </div>
   </main>;

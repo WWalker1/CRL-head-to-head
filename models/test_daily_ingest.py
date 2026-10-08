@@ -2,6 +2,7 @@ import json
 import sqlite3
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -75,7 +76,7 @@ class DailyIngestTests(unittest.TestCase):
     def test_daily_lock_refuses_wrapper_race(self):
         daily = self.root / 'data' / 'daily'
         daily.mkdir()
-        daily.joinpath('2026-09-21.lock').write_text('999', encoding='utf-8')
+        daily.joinpath(datetime.now(timezone.utc).strftime('%Y-%m-%d') + '.lock').write_text('999', encoding='utf-8')
         with patch.object(daily_ingest, 'ROOT', self.root), \
              patch('sys.argv', ['daily_ingest.py', '--new-games', '3']), \
              patch('daily_ingest.subprocess.run') as run:
