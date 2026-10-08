@@ -2,6 +2,8 @@
 
 Updated 2026-10-07. Read LAUNCH_HANDOFF_2026-10-07.md for the current release checklist and deployment state. The older dated details below document implementation history. The user authorized production promotion after the launch checks pass.
 
+October 8 security follow-up: main contains the verified security release `0bc7dce`; migration 017 is live. The public beta security source is now `codex/security-beta` (`d221f92`) with its no-cron configuration. The older beta branch below predates the fixes; do not redeploy it unchanged. Read the latest launch handoff for deployment status and live verification.
+
 ## Goal and current state
 Add calibrated Clash Royale deck matchup inference, constrained counter search, iterative deck completion, friend deck histories and shareable rivalry pages to the existing Next.js/Supabase application. Vercel remains the web host; a separate Railway CPU service is planned for inference.
 

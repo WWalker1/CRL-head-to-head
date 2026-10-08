@@ -12,6 +12,8 @@ Verification: 163 JavaScript tests across 29 suites, TypeScript checking, a prod
 
 The original findings below describe the pre-fix state.
 
+Production commit `0bc7dce` was confirmed Ready at `rival-royale.com`. A disposable signed-in account with an exhausted budget received HTTP 429 from sync, friend refresh, and friend addition before upstream game API work. Anonymous counter RPCs returned 401; direct score updates returned 403; authenticated owner reads returned 200. Public landing pages and the model catalog returned 200, and an unauthenticated cron request returned 401. The test account and its records were removed. Beta is being updated from `codex/security-beta` (`d221f92`) with a no-cron configuration to close the same API-abuse paths on the public beta host.
+
 Reviewed local `main` commit `b386710432708c931564f9bc8571f198ee52be2d`, matching the local `origin/main` reference for WWalker1/CRL-head-to-head. Scope: web API authorization, Supabase policies and functions, model-service boundaries, dependency advisories, and credential-file tracking. GitHub's web page could not be fetched; this is a review of the matching local repository, not an independently refreshed remote checkout.
 
 Production database checks used read-only catalog queries. No exploit was executed against user records, no database or deployment changes were made, and no credential values were collected in this report.
