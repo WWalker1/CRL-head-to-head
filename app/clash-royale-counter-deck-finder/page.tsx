@@ -24,6 +24,18 @@ export const metadata: Metadata = {
 
 const faqs = [
   {
+    question: 'How do I find decks in Clash Royale?',
+    answer: 'Start with a complete example deck or choose the eight cards in a deck you want to beat. Rival Royale finds ranked candidate counter decks for that target, shows all eight cards, and lets you export one to Clash Royale. The tool is free; it does not rank every deck in the game.',
+  },
+  {
+    question: 'How do I find counter decks?',
+    answer: 'Enter the opponent’s full eight-card deck in the counter finder and select Find counters. Review the complete candidate decks and their matchup estimates, then export one you want to try. The search compares a bounded set of candidates.',
+  },
+  {
+    question: 'How do I know how to counter a deck?',
+    answer: 'Identify the opponent’s win condition, support cards, and pressure pattern. Check whether your deck can defend those threats, cycle back to key answers, and turn defense into a counter-push. A favorable deck estimate is a starting point; placement, timing, card levels, and the opponent’s decisions still matter.',
+  },
+  {
     question: 'What is a Clash Royale counter deck?',
     answer: 'A counter deck is a deck chosen to address the threats and game plan of a particular opposing deck. A useful response considers how its cards defend, create counter-pushes, and handle multiple threats; one favorable interaction alone does not guarantee a favorable full match.',
   },

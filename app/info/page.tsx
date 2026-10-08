@@ -95,7 +95,7 @@ export default function InfoPage() {
                   </h3>
                   <p className="text-gray-700">
                     Once you're signed up, add your friends' player tags to start tracking battles. 
-                    You can add as many friends as you want, and each will have their own statistics card 
+                    You can track up to 15 friends, and each will have their own statistics card
                     showing your win/loss record against them.
                   </p>
                 </div>
