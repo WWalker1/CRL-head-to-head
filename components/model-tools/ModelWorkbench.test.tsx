@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ModelWorkbench, { normalizeExamples } from './ModelWorkbench';
 
-jest.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams() }));
+let mockSearchParams = '';
+jest.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams(mockSearchParams) }));
 
 const cards = Array.from({ length: 9 }, (_, index) => ({ key: `2600000${index + 1}:0`, card_id: 26000001 + index, form: 0, name: `Card ${index + 1}`, min_level: 1 }));
 const deck = { cards: cards.slice(0, 8).map((card) => ({ key: card.key, level: 14 })), tower_id: 159000000, tower_level: 14 };
@@ -13,7 +14,7 @@ async function chooseCard(slot: number, name: string) {
 }
 
 describe('ModelWorkbench', () => {
-  beforeEach(() => { jest.restoreAllMocks(); });
+  beforeEach(() => { jest.restoreAllMocks(); mockSearchParams = ''; });
 
   it('accepts the catalog examples shape and preserves card levels', () => {
     const parsed = normalizeExamples([{ name: 'Fixture', decks: [deck, deck] }]);
@@ -60,6 +61,25 @@ describe('ModelWorkbench', () => {
     expect(exportLinks).toHaveLength(3);
     expect(exportLinks[0].getAttribute('href')).toBe(`https://link.clashroyale.com/deck/en?deck=${cards.slice(0, 8).map((card) => card.card_id).join(';')}`);
     expect(screen.getAllByText(/Check Evolution and Hero forms/)).toHaveLength(3);
+  });
+
+  it('loads a tracked friend deck when its stored identity is a hash', async () => {
+    mockSearchParams = 'friendId=friend-1&deck=0123456789abcdef';
+    const storedDeck = {
+      key: '0123456789abcdef',
+      cards: deck.cards.map((card) => ({ id: card.key.split(':')[0], form: '0', level: 14 })),
+      tower: '159000000', towerLevel: 14, count: 4,
+    };
+    global.fetch = jest.fn((input) => {
+      const url = String(input);
+      if (url.endsWith('/catalog')) return Promise.resolve(response({ variants: cards, towers: [{ id: 159000000, name: 'Tower Princess' }] }));
+      if (url.endsWith('/examples')) return Promise.resolve(response([]));
+      if (url.startsWith('/api/friend-decks?')) return Promise.resolve(response({ summary: { topDecks: [storedDeck] } }));
+      return Promise.resolve(response({}, 404));
+    });
+    render(<ModelWorkbench mode="counter" title="Test" description="Test" />);
+    await waitFor(() => expect(screen.getByText(/Comparing against 1 recorded deck/)).toBeTruthy());
+    expect(screen.getByRole('button', { name: 'Card 1: Card 1' })).toBeTruthy();
   });
 
   it.each([false, true])('preserves mandatory cards and rejects invalid completion (invalid=%s)', async (invalid) => {

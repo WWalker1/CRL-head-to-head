@@ -158,4 +158,23 @@ describe('readHistoryInsights', () => {
     expect(result.summary.topDecks).toHaveLength(5);
     expect(result.summary.coverage).toBe(190 / 200);
   });
+
+  it('scores only the latest 100 friend games against any opponent within the owner scope', async () => {
+    const rows = Array.from({ length: 101 }, (_, index) => historyRow(`match-${index}`, new Date(Date.UTC(2026, 9, 6) - index * 60000).toISOString(), 'win', {
+      mode: 'other', opponent_tag: `#OTHER${index}`, expected_win_probability: 0.2,
+      prediction_model_version: 'model-v2', prediction_eligible: true,
+    }));
+    const { client } = database(rows);
+    global.fetch = jest.fn().mockResolvedValue(response(metadata)) as unknown as typeof fetch;
+
+    const result = await readHistoryInsights(client, { userId: 'owner', playerTag: '#FRIEND', friendId: 'friend-1' });
+    const historyQuery = client.from.mock.results[0].value;
+    expect(client.from).toHaveBeenCalledWith('friend_match_history');
+    expect(historyQuery.eq).toHaveBeenCalledWith('user_id', 'owner');
+    expect(historyQuery.eq).toHaveBeenCalledWith('tracked_friend_id', 'friend-1');
+    expect(historyQuery.limit).toHaveBeenCalledWith(100);
+    expect(result.skill.scoredMatches).toBe(100);
+    expect(result.stats.toughWins).toHaveLength(5);
+    expect(result.stats.windowMatches).toBe(100);
+  });
 });

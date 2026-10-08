@@ -9,7 +9,7 @@ const row = (id: string, result: 'win' | 'loss' | 'draw', probability: number, o
 });
 
 describe('buildPlayerStats', () => {
-  it('ranks the strongest supported wins and most model-favored losses, excluding other modes', () => {
+  it('ranks the strongest supported wins and most model-favored losses across constructed 1v1 modes', () => {
     const rows = [
       row('fav-1', 'loss', 0.82), row('fav-2', 'loss', 0.64), row('under-threshold', 'loss', 0.59),
       row('tough-1', 'win', 0.12), row('tough-2', 'win', 0.39), row('over-threshold', 'win', 0.4),
@@ -23,13 +23,13 @@ describe('buildPlayerStats', () => {
       row('other-upset', 'win', 0, { mode: 'other' }),
     ];
     const result = buildPlayerStats(rows, 'v1', skill);
-    expect(result.favorableLosses.map(match => match.id)).toEqual(['ladder', 'challenge-fav', 'fav-1', 'fav-2', 'under-threshold']);
-    expect(result.toughWins.map(match => match.id)).toEqual(['challenge-upset', 'tough-1', 'tough-2', 'over-threshold']);
-    expect(result.scoredMatches).toBe(9);
+    expect(result.favorableLosses.map(match => match.id)).toEqual(['other-fav', 'ladder', 'challenge-fav', 'fav-1', 'fav-2']);
+    expect(result.toughWins.map(match => match.id)).toEqual(['other-upset', 'challenge-upset', 'tough-1', 'tough-2', 'over-threshold']);
+    expect(result.scoredMatches).toBe(11);
     expect(result.modelVersion).toBe('v1');
   });
 
-  it('limits the analysis to the latest 100 eligible 1v1 matches and excludes other modes', () => {
+  it('limits the analysis to the latest 100 eligible 1v1 matches, including other constructed modes', () => {
     const rows = Array.from({ length: 101 }, (_, index) => row(`m-${index}`, 'loss', 0.9, {
       mode: index === 100 ? 'challenge' : 'ranked',
       battle_time: new Date(Date.UTC(2026, 0, 1 + index)).toISOString(),
@@ -38,8 +38,8 @@ describe('buildPlayerStats', () => {
     const result = buildPlayerStats(rows, 'v1', skill);
     expect(result.windowMatches).toBe(100);
     expect(result.favorableLosses).toHaveLength(5);
-    expect(result.firstMatch).toBe(rows[1].battle_time);
-    expect(result.lastMatch).toBe(rows[100].battle_time);
-    expect(result.favorableLosses.some(match => match.id === 'special-other')).toBe(false);
+    expect(result.firstMatch).toBe(rows[2].battle_time);
+    expect(result.lastMatch).toBe('2026-12-31T00:00:00.000Z');
+    expect(result.favorableLosses.some(match => match.id === 'special-other')).toBe(true);
   });
 });

@@ -15,7 +15,7 @@ export default function MatchupSkill({ skill, status, dark = false }: { skill: M
         </div>
       </div>
       <div className="min-w-0 flex-1">
-        <p className={`text-xs font-bold uppercase tracking-[0.18em] ${dark ? 'text-orange-300' : 'text-violet-700'}`}>{modelScore ? 'Matchup skill · beta' : 'Recent battle record'}</p>
+        <p className={`text-xs font-bold uppercase tracking-[0.18em] ${dark ? 'text-orange-300' : 'text-violet-700'}`}>{modelScore ? 'Matchup skill' : 'Recent battle record'}</p>
         <h2 className="mt-2 text-xl font-bold sm:text-2xl">{score === null ? 'Play to get your score' : modelScore ? 'Results vs expectation' : 'Your last 100 games'}</h2>
         <p className={`mt-2 text-sm ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{modelScore ? `${skill.actualWins} wins · ${skill.winsAboveExpected >= 0 ? '+' : ''}${skill.winsAboveExpected.toFixed(1)} vs expected` : score !== null ? `${skill.recordWins} wins · ${skill.recordLosses} losses` : 'Sync your battles to see your results.'}</p>
         {modelScore && <p className={`mt-1 text-sm ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{skill.toughWins} wins in {skill.toughMatches} tough matchups</p>}

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getPlayerInfo } from '@/lib/clashRoyaleApi';
 
 const DEFAULT_ELO = 1500;
+export const MAX_TRACKED_FRIENDS = 15;
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,6 +29,17 @@ export async function POST(request: NextRequest) {
 
     if (!friendTag) {
       return NextResponse.json({ error: 'Friend tag is required' }, { status: 400 });
+    }
+
+    const { count, error: countError } = await supabase
+      .from('tracked_friends')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+    if (countError || typeof count !== 'number') {
+      return NextResponse.json({ error: 'Failed to check friend limit' }, { status: 503 });
+    }
+    if (count >= MAX_TRACKED_FRIENDS) {
+      return NextResponse.json({ error: `You can track up to ${MAX_TRACKED_FRIENDS} friends. Remove one before adding another.` }, { status: 409 });
     }
 
     // Validate friend exists in Clash Royale
@@ -57,6 +69,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
+      if (error.code === '23514' && error.message?.includes('Tracked friend limit reached')) {
+        return NextResponse.json({ error: `You can track up to ${MAX_TRACKED_FRIENDS} friends. Remove one before adding another.` }, { status: 409 });
+      }
       return NextResponse.json({ error: 'Failed to add friend' }, { status: 500 });
     }
 

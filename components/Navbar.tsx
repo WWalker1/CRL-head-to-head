@@ -8,12 +8,11 @@ export default async function Navbar() {
 
   const links = (
     <>
-      {showDeckTools && <Link href="/counter-deck" className="inline-flex min-h-11 items-center text-white hover:text-orange-200 text-sm font-medium">Deck tools</Link>}
-      {showDeckTools && <Link href="/clash-royale-counter-deck-finder" className="inline-flex min-h-11 items-center text-white hover:text-orange-200 text-sm font-medium">Counter guide</Link>}
+      {showDeckTools && <Link href="/counter-deck" className="inline-flex min-h-11 items-center text-white hover:text-orange-200 text-sm font-medium">Counter finder</Link>}
+      {showDeckTools && <Link href={user ? '/stats' : '/clash-royale-skill-score'} className="inline-flex min-h-11 items-center text-white hover:text-orange-200 text-sm font-medium">Skill score</Link>}
       <Link href="/info" className="inline-flex min-h-11 items-center text-white hover:text-orange-200 text-sm font-medium">How It Works</Link>
       {user ? (
         <>
-          {showDeckTools && <Link href="/stats" className="inline-flex min-h-11 items-center text-white hover:text-orange-200 text-sm font-medium">Your stats</Link>}
           <Link href="/dashboard" className="inline-flex min-h-11 items-center bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 text-sm font-medium">Dashboard</Link>
         </>
       ) : (

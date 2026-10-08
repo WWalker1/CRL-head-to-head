@@ -23,9 +23,11 @@ export interface MatchupSkillSummary {
   modelVersion: string | null;
 }
 
-export const SKILL_MODES = new Set(['ladder', 'ranked', 'challenge']);
+// Every normalized constructed 1v1 mode is eligible, including matches outside
+// ladder, ranked, and challenge. A friend need not have played the account owner.
+export const SKILL_MODES = new Set(['ladder', 'ranked', 'challenge', 'other']);
 
-/** Compare recent standard 1v1 results with a supported deck model. */
+/** Compare recent constructed 1v1 results with a supported deck model. */
 export function summarizeMatchupSkill(
   rows: MatchupSkillRow[],
   modelVersion: string | null,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { isLocalModelPreview, MODEL_READ_ACTIONS, MODEL_WRITE_ACTIONS, readModelBody } from '@/lib/model-access';
+import { checkAnonymousRateLimit } from '@/lib/anonymous-rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,27 +23,37 @@ async function forward(request: NextRequest, context: { params: Promise<{ action
   }
   try {
     let body: string | undefined;
+    if (reading && !isLocalModelPreview(request.url)) {
+      const limited = await checkAnonymousRateLimit(request, 'model_read');
+      if (limited) return limited;
+    }
     if (!reading) {
       const origin = request.headers.get('origin');
       if (origin && origin !== new URL(process.env.NEXT_PUBLIC_SITE_URL || request.url).origin) {
         return NextResponse.json({ error: 'Cross-site requests are not allowed.' }, { status: 403 });
       }
+      body = await readModelBody(request);
       if (!isLocalModelPreview(request.url)) {
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
           return NextResponse.json({ error: 'Sign-in is not configured.' }, { status: 503 });
         }
         const supabase = await createClient();
         const { data: { user }, error } = await supabase.auth.getUser();
-        if (error || !user) return NextResponse.json({ error: 'Sign in to use model predictions.' }, { status: 401 });
-        const { data: allowed, error: quotaError } = await supabase.rpc('consume_model_quota', {
-          operation: action === 'predict' ? 'predict' : 'search',
-        });
-        if (quotaError) return NextResponse.json({ error: 'Model quota service is unavailable.' }, { status: 503 });
-        if (!allowed) return NextResponse.json({ error: 'Usage limit reached. Try again in a minute.' }, {
-          status: 429, headers: { 'Retry-After': '60' },
-        });
+        if (error || !user) {
+          if (action !== 'counter') return NextResponse.json({ error: 'Sign in to use model predictions.' }, { status: 401 });
+          if (!origin) return NextResponse.json({ error: 'A same-site origin is required.' }, { status: 403 });
+          const limited = await checkAnonymousRateLimit(request, 'counter_search');
+          if (limited) return limited;
+        } else {
+          const { data: allowed, error: quotaError } = await supabase.rpc('consume_model_quota', {
+            operation: action === 'predict' ? 'predict' : 'search',
+          });
+          if (quotaError) return NextResponse.json({ error: 'Model quota service is unavailable.' }, { status: 503 });
+          if (!allowed) return NextResponse.json({ error: 'Usage limit reached. Try again in a minute.' }, {
+            status: 429, headers: { 'Retry-After': '60' },
+          });
+        }
       }
-      body = await readModelBody(request);
     }
     const response = await fetch(`${serviceUrl.replace(/\/$/, '')}/${action}`, {
       method: reading ? 'GET' : 'POST',

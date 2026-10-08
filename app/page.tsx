@@ -2,310 +2,78 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
 import Link from 'next/link';
 import Image from 'next/image';
-import AnimatedSection from '@/components/AnimatedSection';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Rival Royale: Clash Royale Matchups, Counters & Friend Stats",
-  description: "Compare Clash Royale decks, explore model-ranked counter candidates, and track recorded results against friends. See matchup estimates with their limitations clearly explained.",
+  title: 'Track Clash Royale Wins Against Friends | Rival Royale',
+  description: 'Track recorded Clash Royale wins and losses against friends. Add player tags, see head-to-head records, and explore deck counters.',
   alternates: { canonical: '/' },
-  openGraph: {
-    title: "Rival Royale: Clash Royale Matchups, Counters & Friend Stats",
-    description: "Compare decks, explore supported counter candidates, and track head-to-head results with friends in Clash Royale.",
-  },
+  openGraph: { title: 'Track Clash Royale Wins Against Friends | Rival Royale', description: 'Add friends by player tag and see your recorded Clash Royale head-to-head results.' },
 };
+
+const steps = [
+  { image: '/images/find-tag-step1.png', title: 'Open your profile', description: 'Tap your player name at the top of the Clash Royale home screen.' },
+  { image: '/images/find-tag-step2.png', title: 'Find your tag', description: 'Your player tag appears below your name on your profile.' },
+  { image: '/images/find-tag-step3.png', title: 'Copy your tag', description: 'Tap Copy Tag, then paste it when you create your account.' },
+];
+const faqs = [
+  { question: 'How can I track Clash Royale wins against friends?', answer: 'Create an account with your Clash Royale player tag, add a friend’s tag, and sync eligible recent 1v1 battles available from the game API. Rival Royale summarizes recorded head-to-head results; available history may be limited.' },
+  { question: 'Is battle tracking automatic?', answer: 'When tracking is enabled, recent eligible battles can be synced from the game API and refreshed from the dashboard. The API may omit older battles, so the tracker cannot promise a complete lifetime record.' },
+  { question: 'What types of battles are tracked?', answer: 'The head-to-head tracker focuses on eligible 1v1 battles. Team battles and unsupported modes are excluded.' },
+  { question: 'Are deck matchup estimates guaranteed results?', answer: 'No. Estimates are produced by a model for supported complete decks. They are not guarantees or a player’s personal win rate. In-game decisions, balance changes, and model coverage affect how useful they are.' },
+];
 
 export default async function Home() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    redirect('/dashboard');
-  }
-
-  const faqStructuredData = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "How can I track Clash Royale wins against friends?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-        "text": "Create an account with your Clash Royale player tag, add a friend's tag, and sync the eligible recent 1v1 battles available from the game API. Rival Royale summarizes the recorded head-to-head results; available history may be limited."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Is the battle tracking automatic?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-        "text": "When tracking is enabled, recent eligible battles can be synced from the game API and refreshed from the dashboard. The API may omit older battles, so the tracker cannot promise a complete lifetime record."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What types of battles are tracked?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-        "text": "The head-to-head tracker focuses on eligible 1v1 battles. Team battles and unsupported modes are excluded from that record."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Are Clash Royale deck matchup estimates guaranteed results?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "No. Estimates are produced by a model for supported complete decks. They are not guarantees or a player's personal win rate, and in-game decisions, balance changes, and model coverage affect how useful they are."
-        }
-      }
-    ]
-  };
-
-  return (
-    <main className="relative min-h-[calc(100vh-73px)] overflow-hidden bg-[#0d1024] text-white">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }} />
-      <div aria-hidden="true" className="pointer-events-none absolute -right-36 -top-28 h-[30rem] w-[30rem] rounded-full bg-violet-600/20 blur-3xl" />
-      <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 -left-32 h-[28rem] w-[28rem] rounded-full bg-orange-500/15 blur-3xl" />
-
-      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 sm:pt-12 lg:px-8 lg:pb-16 lg:pt-16">
-        <section className="grid items-center gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12" aria-labelledby="home-heading">
-          <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-violet-300/25 bg-violet-300/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-violet-200">
-              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-orange-400" /> Clash Royale deck tools
-            </p>
-            <h1 id="home-heading" className="mt-5 max-w-2xl text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Make your next matchup make sense.
-            </h1>
-            <p className="mt-4 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
-              Compare complete decks, explore counter candidates, and track your results against friends.
-            </p>
-            <p className="mt-4 text-sm text-slate-400">
-              Already have an account? <Link href="/login" className="font-semibold text-orange-200 underline decoration-orange-300/60 underline-offset-4 hover:text-white">Sign in</Link>
-            </p>
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect('/dashboard');
+  const faqStructuredData = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map(({ question, answer }) => ({ '@type': 'Question', name: question, acceptedAnswer: { '@type': 'Answer', text: answer } })) };
+  return <main className="min-h-[calc(100vh-73px)] bg-gradient-to-b from-[#f2edff] via-[#fff9f2] to-white text-slate-900">
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }} />
+    <div className="mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 lg:px-8 lg:pt-16">
+      <section aria-labelledby="home-heading" className="grid items-center gap-8 lg:grid-cols-[0.88fr_1.12fr] lg:gap-12">
+        <div>
+          <p className="text-sm font-bold uppercase tracking-[0.16em] text-violet-700">Rival Royale</p>
+          <h1 id="home-heading" className="mt-3 text-4xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">Track your Clash Royale wins against friends</h1>
+          <p className="mt-5 max-w-xl text-lg leading-8 text-slate-700">Add your friends by player tag and see your recorded wins, losses, and head-to-head history in one place.</p>
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <Link href="/signup" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-violet-700 px-6 font-bold text-white shadow-lg shadow-violet-700/20 transition hover:bg-violet-800">Start tracking friends</Link>
+            <Link href="/login" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-violet-300 bg-white px-5 font-semibold text-violet-800 transition hover:border-violet-500">Sign in</Link>
           </div>
-
-          <div className="relative mx-auto w-full max-w-2xl">
-            <div aria-hidden="true" className="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-violet-500/30 via-blue-500/10 to-orange-500/30 blur-xl" />
-            <figure className="relative overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-br from-blue-900 to-violet-950 p-2 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-3">
-              <div className="relative aspect-[16/10] overflow-hidden rounded-xl bg-slate-950/30 sm:rounded-2xl">
-                <Image
-                  src="/images/dashboard-screenshot.png"
-                  alt="Rival Royale friend dashboard showing recorded Clash Royale wins, losses, and win rates"
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 55vw"
-                  className="object-cover object-left"
-                />
-              </div>
-              <figcaption className="flex flex-wrap items-center justify-between gap-2 px-2 pb-1 pt-3 text-xs text-blue-100 sm:px-3 sm:text-sm">
-                <span className="font-semibold">Friend matchups at a glance</span>
-                <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1">Recorded results</span>
-              </figcaption>
-            </figure>
-          </div>
-        </section>
-
-        <nav aria-label="Explore Rival Royale" className="mt-8 grid gap-3 sm:grid-cols-3 lg:mt-10">
-          <Link href="/counter-deck" className="group flex min-h-24 items-center gap-4 rounded-2xl border border-orange-300/25 bg-gradient-to-br from-orange-500/15 to-orange-900/10 p-4 transition hover:-translate-y-0.5 hover:border-orange-200/60 hover:bg-orange-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200 sm:p-5">
-            <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-400/15 text-orange-200">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path d="M4 5.5 9 4l5 1.5L20 4v14.5L14 20l-5-1.5L4 20V5.5Z" /><path d="M9 4v14.5M14 5.5V20" /><path d="m15.5 9 1.2 1.2 2.3-2.4" /></svg>
-            </span>
-            <span className="min-w-0 flex-1"><strong className="block text-base font-bold text-white sm:text-lg">Counter finder</strong><span className="mt-1 block text-sm text-slate-300">Explore candidate decks</span></span>
-            <span aria-hidden="true" className="text-xl text-orange-200 transition-transform group-hover:translate-x-1">→</span>
-          </Link>
-          <Link href="/matchup" className="group flex min-h-24 items-center gap-4 rounded-2xl border border-violet-300/25 bg-gradient-to-br from-violet-500/15 to-violet-900/10 p-4 transition hover:-translate-y-0.5 hover:border-violet-200/60 hover:bg-violet-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-200 sm:p-5">
-            <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-400/15 text-violet-200">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path d="M4 6.5h6v11H4zM14 6.5h6v11h-6z" /><path d="M10 12h4M11.5 10.5 10 12l1.5 1.5M12.5 10.5 14 12l-1.5 1.5" /></svg>
-            </span>
-            <span className="min-w-0 flex-1"><strong className="block text-base font-bold text-white sm:text-lg">Deck matchup</strong><span className="mt-1 block text-sm text-slate-300">Compare two full decks</span></span>
-            <span aria-hidden="true" className="text-xl text-violet-200 transition-transform group-hover:translate-x-1">→</span>
-          </Link>
-          <Link href="/signup" className="group flex min-h-24 items-center gap-4 rounded-2xl border border-orange-300/25 bg-gradient-to-br from-violet-500/10 to-orange-500/10 p-4 transition hover:-translate-y-0.5 hover:border-orange-200/60 hover:bg-violet-500/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200 sm:p-5">
-            <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-400/15 text-orange-200">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path d="M4 19V5M4 19h17" /><path d="m7 15 4-4 3 2 5-6" /><path d="M16 7h3v3" /></svg>
-            </span>
-            <span className="min-w-0 flex-1"><strong className="block text-base font-bold text-white sm:text-lg">Your stats</strong><span className="mt-1 block text-sm text-slate-300">Track results with friends</span></span>
-            <span aria-hidden="true" className="text-xl text-orange-200 transition-transform group-hover:translate-x-1">→</span>
-          </Link>
-        </nav>
-
-        <section className="mx-auto mt-10 max-w-4xl space-y-3 lg:mt-12" aria-label="More information">
-          <details className="group rounded-2xl border border-white/10 bg-white/[0.04] px-4 sm:px-5">
-            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 font-semibold text-white marker:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 [&::-webkit-details-marker]:hidden">
-              How matchup estimates and battle history work
-              <span aria-hidden="true" className="text-xl text-violet-200 transition-transform group-open:rotate-45">+</span>
-            </summary>
-            <div className="max-w-3xl space-y-3 pb-5 text-sm leading-6 text-slate-300">
-              <p>Matchup estimates compare supported complete decks with a trained model. Counter search checks a bounded candidate set, so suggestions are not guaranteed counters, live rankings, or observed win rates.</p>
-              <p>Friend stats summarize eligible 1v1 battles available through the game API. The API may omit older matches, so recorded results may not cover every game you have played.</p>
-              <p><Link href="/models" className="font-semibold text-violet-200 underline underline-offset-4 hover:text-white">Read the model methodology</Link> for assumptions and limitations.</p>
-            </div>
-          </details>
-          <details className="group rounded-2xl border border-white/10 bg-white/[0.04] px-4 sm:px-5">
-            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 font-semibold text-white marker:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 [&::-webkit-details-marker]:hidden">
-              Frequently asked questions
-              <span aria-hidden="true" className="text-xl text-violet-200 transition-transform group-open:rotate-45">+</span>
-            </summary>
-            <div className="pb-2"><FAQSection /></div>
-          </details>
-          <details className="group rounded-2xl border border-white/10 bg-white/[0.04] px-4 sm:px-5">
-            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 font-semibold text-white marker:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 [&::-webkit-details-marker]:hidden">
-              How to find your Clash Royale player tag
-              <span aria-hidden="true" className="text-xl text-violet-200 transition-transform group-open:rotate-45">+</span>
-            </summary>
-            <div className="pb-2"><MobileTutorialSection /></div>
-          </details>
-        </section>
-
-        <p className="mt-8 text-center text-xs text-slate-500">Rival Royale is an independent Clash Royale companion. Model estimates are guidance, not guarantees.</p>
-      </div>
-    </main>
-  );
-}
-
-// FAQ Section component
-function FAQSection() {
-  return (
-    <AnimatedSection delay={1000}>
-      <div className="bg-white rounded-xl md:rounded-2xl shadow-2xl p-6 md:p-8 mb-8 md:mb-16 max-w-4xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 text-center">
-          Frequently Asked Questions
-        </h2>
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
-              How can I track Clash Royale wins against friends?
-            </h3>
-            <p className="text-gray-600 text-sm md:text-base">
-              Create an account with your player tag, add a friend's tag, and sync the recent eligible 1v1 battles available through the game API. Rival Royale summarizes the recorded results; history availability can vary.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
-              Is the battle tracking automatic?
-            </h3>
-            <p className="text-gray-600 text-sm md:text-base">
-              When history sync is enabled, eligible recent battles can be refreshed from the dashboard. The game API may omit older battles, so a tracker record may not cover every match you have played.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
-              What battle types are tracked?
-            </h3>
-            <p className="text-gray-600 text-sm md:text-base">
-              The head-to-head record focuses on eligible 1v1 battles. Team battles and unsupported modes are excluded.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
-              Are the matchup estimates guaranteed results?
-            </h3>
-            <p className="text-gray-600 text-sm md:text-base">
-              No. Estimates apply to the model and its supported complete-deck inputs. They are not guarantees or a personal win rate; player decisions, current balance, and model coverage can affect how closely an estimate matches a real battle. Read the <Link href="/models" className="text-blue-700 underline">methodology</Link> for more detail.
-            </p>
-          </div>
+          <p className="mt-4 text-sm leading-6 text-slate-600">Tracks eligible 1v1 battles available from the game API. Older matches may be unavailable.</p>
         </div>
-      </div>
-    </AnimatedSection>
-  );
-}
-
-// Mobile-friendly tutorial section component
-function MobileTutorialSection() {
-  return (
-    <AnimatedSection delay={600}>
-      <div className="bg-white rounded-xl md:rounded-2xl shadow-2xl p-4 md:p-8 mb-6 md:mb-12 max-w-5xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 text-center">
-          How to Find Your Player Tag
-        </h2>
-        <p className="text-sm md:text-base text-gray-600 text-center mb-4 md:mb-8">
-          You'll need your Clash Royale player tag to get started. Here's how to find it:
-        </p>
-        
-        {/* Desktop: Show all 3 steps */}
-        <div className="hidden md:grid md:grid-cols-3 gap-6 mb-8">
-          <TutorialStep 
-            stepNumber={1}
-            imageSrc="/images/find-tag-step1.png"
-            title="Select player name"
-            description="Tap on your player name at the top of the game screen"
-          />
-          <TutorialStep 
-            stepNumber={2}
-            imageSrc="/images/find-tag-step2.png"
-            title="Select player tag"
-            description="Your player tag will be displayed below your name (e.g., #COG20PR2)"
-          />
-          <TutorialStep 
-            stepNumber={3}
-            imageSrc="/images/find-tag-step3.png"
-            title="Copy Tag"
-            description="Tap the &quot;Copy Tag&quot; button to copy your player tag to your clipboard"
-          />
-        </div>
-
-        {/* Mobile: Show only first step with link to expand */}
-        <div className="md:hidden space-y-4 mb-4">
-          <TutorialStep 
-            stepNumber={1}
-            imageSrc="/images/find-tag-step1.png"
-            title="Select player name"
-            description="Tap on your player name at the top of the game screen"
-          />
-          <div className="text-center">
-            <p className="text-sm text-gray-600 mb-2">
-              Need help? Open the full tutorial here.
-            </p>
-            <p className="text-xs text-gray-500">
-              Steps 2 & 3: Find your tag below your name and tap &quot;Copy Tag&quot;
-            </p>
+        <figure className="overflow-hidden rounded-2xl border border-violet-200 bg-white p-3 shadow-xl shadow-violet-900/10 sm:p-4">
+          <div className="aspect-[4/3] overflow-hidden rounded-lg sm:aspect-auto">
+            <Image src="/images/dashboard-screenshot.png" alt="Rival Royale dashboard showing recorded Clash Royale wins and losses against friends" width={1888} height={520} priority sizes="(max-width: 640px) 1100px, (max-width: 1024px) 100vw, 55vw" className="h-full w-auto max-w-none sm:h-auto sm:w-full sm:max-w-full" />
           </div>
+          <figcaption className="pt-3 text-sm font-semibold text-slate-700">Your friend records at a glance</figcaption>
+        </figure>
+      </section>
+      <section className="mt-14 rounded-3xl border border-violet-100 bg-white p-5 shadow-lg shadow-violet-900/5 sm:p-8" aria-labelledby="tag-heading">
+        <p className="text-sm font-bold uppercase tracking-[0.14em] text-orange-700">Get started</p>
+        <h2 id="tag-heading" className="mt-2 text-3xl font-black tracking-tight text-slate-950">Find your player tag in three steps</h2>
+        <p className="mt-3 max-w-2xl leading-7 text-slate-600">You’ll use your tag when you sign up, then add a friend’s tag to track your battles together.</p>
+        <div className="mt-7 grid gap-8 lg:grid-cols-3 lg:gap-5">{steps.map((step, index) => <div key={step.image} className="min-w-0">
+          <div className="overflow-hidden rounded-xl border border-violet-100 bg-[#f4f0fb]"><Image src={step.image} alt={`Step ${index + 1}: ${step.title} in Clash Royale`} width={688} height={566} sizes="(max-width: 1024px) 100vw, 33vw" className="h-auto w-full" /></div>
+          <h3 className="mt-4 text-xl font-bold text-slate-900"><span className="mr-2 text-violet-700">{index + 1}.</span>{step.title}</h3>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{step.description}</p>
+        </div>)}</div>
+        <p className="mt-8 rounded-xl bg-violet-50 px-4 py-3 text-sm text-violet-950">A player tag starts with <strong>#</strong>. Copy it directly from the game so every character is correct.</p>
+      </section>
+      <section className="mt-14" aria-labelledby="tools-heading">
+        <h2 id="tools-heading" className="text-2xl font-black tracking-tight">Explore your decks</h2>
+        <p className="mt-2 max-w-2xl text-slate-600">Compare complete decks and explore possible counters for your next matchup.</p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <Link href="/counter-deck" className="rounded-2xl border border-orange-200 bg-orange-50 p-5 transition hover:border-orange-400 hover:shadow-md"><strong className="block text-lg text-slate-950">Find a counter deck →</strong><span className="mt-1 block text-sm leading-6 text-slate-700">Choose a target deck and see ranked candidate decks you can export.</span></Link>
+          <Link href="/matchup" className="rounded-2xl border border-violet-200 bg-violet-50 p-5 transition hover:border-violet-400 hover:shadow-md"><strong className="block text-lg text-slate-950">Compare two decks →</strong><span className="mt-1 block text-sm leading-6 text-slate-700">See a model estimate for a complete deck matchup.</span></Link>
         </div>
-
-        <div className="bg-blue-50 rounded-lg p-3 md:p-4 text-center border-2 border-blue-100">
-          <p className="text-xs md:text-sm text-gray-700 mb-2">
-            <span className="font-semibold">Example Player Tag:</span>
-          </p>
-          <code className="text-base md:text-lg font-mono font-semibold text-blue-600 bg-white px-3 md:px-4 py-1 md:py-2 rounded border border-blue-200">
-            #COG20PR2
-          </code>
-        </div>
-      </div>
-    </AnimatedSection>
-  );
-}
-
-// Tutorial step component
-function TutorialStep({ 
-  stepNumber, 
-  imageSrc, 
-  title, 
-  description 
-}: { 
-  stepNumber: number; 
-  imageSrc: string; 
-  title: string; 
-  description: string;
-}) {
-  return (
-    <div className="text-center">
-      <div className="mb-4 relative w-full aspect-[688/560] bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-300 shadow-md hover:shadow-lg transition-shadow">
-        <Image 
-          src={imageSrc} 
-          alt={`Step ${stepNumber}: ${title}`}
-          fill
-          className="object-cover"
-        />
-      </div>
-      <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
-        {stepNumber}. {title}
-      </h3>
-      <p className="text-xs md:text-sm text-gray-600">
-        {description}
-      </p>
+      </section>
+      <section className="mt-14" aria-labelledby="faq-heading">
+        <h2 id="faq-heading" className="text-2xl font-black tracking-tight">Frequently asked questions</h2>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">{faqs.map(({ question, answer }) => <article key={question} className="rounded-2xl border border-slate-200 bg-white p-5"><h3 className="font-bold text-slate-950">{question}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{answer}</p></article>)}</div>
+        <p className="mt-5 text-sm text-slate-600">Learn more about <Link href="/models" className="font-semibold text-violet-700 underline underline-offset-2">model methodology and limitations</Link>.</p>
+      </section>
+      <p className="mt-12 text-center text-xs text-slate-500">Rival Royale is an independent Clash Royale companion.</p>
     </div>
-  );
+  </main>;
 }

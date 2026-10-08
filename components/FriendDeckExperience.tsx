@@ -8,6 +8,7 @@ import { counter, fetchCatalog } from './model-tools/api';
 import type { CatalogVariant, Deck, ModelResult } from './model-tools/types';
 import MatchupSkill from './MatchupSkill';
 import type { MatchupSkillSummary } from '@/lib/matchup-skill';
+import type { PlayerStats } from '@/lib/player-stats';
 import RivalryShareControl from './RivalryShareControl';
 
 function toModelDeck(usage: DeckUsage): Deck | null {
@@ -26,6 +27,7 @@ export default function FriendDeckExperience({ friendId, friendName, friendTag, 
   const [summary, setSummary] = useState<FriendHistorySummary | null>(null);
   const [skill, setSkill] = useState<MatchupSkillSummary | null>(null);
   const [skillStatus, setSkillStatus] = useState('');
+  const [stats, setStats] = useState<PlayerStats | null>(null);
   const [name, setName] = useState(friendName ?? 'Friend');
   const [variants, setVariants] = useState<CatalogVariant[]>([]);
   const [selected, setSelected] = useState(0);
@@ -42,7 +44,7 @@ export default function FriendDeckExperience({ friendId, friendName, friendTag, 
       const latest = await fetch('/api/friend-decks', { method: 'POST', signal, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ friendId }) });
       if (latest.ok) payload = await latest.json();
     }
-    setSummary(payload.summary); setSkill(payload.skill ?? null); setSkillStatus(payload.skillStatus ?? ''); setName(payload.friend?.friend_name || friendName || 'Friend'); setSelected(0); setResult(null);
+    setSummary(payload.summary); setSkill(payload.skill ?? null); setSkillStatus(payload.skillStatus ?? ''); setStats(payload.stats ?? null); setName(payload.friend?.friend_name || friendName || 'Friend'); setSelected(0); setResult(null);
   };
 
   useEffect(() => {
@@ -74,7 +76,7 @@ export default function FriendDeckExperience({ friendId, friendName, friendTag, 
     <div className="flex flex-wrap items-start justify-between gap-2"><div><h2 className={`${compact ? 'text-base' : 'text-2xl'} font-bold`}>{name}&apos;s deck</h2><p className="text-xs text-gray-500">{friendTag || 'Recent recorded 1v1 matches'}</p></div><button type="button" onClick={refresh} disabled={loading} className="min-h-11 rounded-lg border border-blue-200 px-3 text-xs font-semibold text-blue-700 disabled:opacity-50">Refresh history</button></div>
     {loading && <p role="status" className="text-sm text-gray-600">Loading recorded decks…</p>}
     {error && <p role="alert" className="rounded-lg bg-orange-50 p-2 text-sm text-orange-800">{error}</p>}
-    {!loading && skill && <MatchupSkill skill={skill} status={skillStatus} />}
+    {!loading && skill && <><MatchupSkill skill={skill} status={skillStatus} />{stats && (stats.toughWins[0] || stats.favorableLosses[0]) && <div className="grid gap-2 sm:grid-cols-2" aria-label="Friend matchup highlights">{[{ title: 'Best win', row: stats.toughWins[0] }, { title: 'Toughest loss', row: stats.favorableLosses[0] }].map(({ title, row }) => <div key={title} className="rounded-lg border border-violet-100 bg-violet-50 p-3"><p className="text-xs font-bold uppercase tracking-wider text-violet-700">{title}</p><p className="mt-1 text-sm text-slate-700">{row ? `${Math.round(row.expectedWinProbability * 100)}% model matchup chance · ${new Date(row.date).toLocaleDateString()}` : 'No supported match yet'}</p></div>)}</div>}</>}
     {!loading && summary && <><RivalryShareControl friendId={friendId} friendName={name} /><p className="text-xs text-gray-600">Showing the latest {summary.recordedMatches} full match records (up to 100). Up to five decks are ranked across {summary.allTimeMatches} tracked matches since tracking began.</p>{summary.topDecks.length === 0 ? <p className="text-sm text-gray-600">No eligible deck history yet. Refresh after your friend plays a standard 1v1 match.</p> : <>
       {summary.topDecks.length > 1 && <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Most-played decks since tracking began">{summary.topDecks.map((deck, index) => <button type="button" key={deck.key} onClick={() => { setSelected(index); setError(''); }} aria-pressed={selected === index} className={`min-h-11 shrink-0 rounded-lg px-3 text-xs font-semibold ${selected === index ? 'bg-blue-700 text-white' : 'bg-blue-50 text-blue-800'}`}>Deck {index + 1} · {deck.count} {deck.count === 1 ? 'match' : 'matches'}</button>)}</div>}
       {target ? <Cards deck={target} variants={variants} /> : <p className="text-sm text-orange-700">This deck has a form the model cannot score yet.</p>}

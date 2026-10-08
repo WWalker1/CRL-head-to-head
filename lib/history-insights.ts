@@ -10,7 +10,7 @@ function modelDeck(deck: any) {
   return { cards, tower_id: Number(deck.tower), tower_level: deck.towerLevel };
 }
 
-/** Full match rows are capped at 100; deck counts continue without keeping old games. */
+/** Keep 100 full matches, up to 1,000 deck summaries, and an exact lifetime match total. */
 export async function withAllTimeDecks(client: any, subject: HistorySubject, recent: FriendHistorySummary): Promise<FriendHistorySummary> {
   const subjectType = subject.friendId ? 'friend' : 'player';
   const subjectId = subject.friendId || subject.playerTag;
@@ -67,7 +67,7 @@ export async function readHistoryInsights(client: any, subject: HistorySubject) 
         const byId = new Map(updated.map(row => [row.physical_match_id, row]));
         rows = rows.map(row => byId.get(row.physical_match_id) ?? row);
       }
-      skillStatus = 'Standard 1v1 matches after the model training cutoff; unsupported decks and draws are excluded.';
+      skillStatus = 'Recorded constructed 1v1 matches after the model training cutoff; unsupported decks and draws are excluded.';
     } catch {
       skillStatus = 'Some matchup estimates are unavailable. Previously scored matches are shown when the model version is known.';
     }

@@ -10,7 +10,7 @@ jest.mock('@supabase/supabase-js', () => ({ createClient: jest.fn(() => mock) })
 jest.mock('@/lib/clashRoyaleApi', () => ({ getPlayerBattleLog: jest.fn() }));
 
 import { getPlayerBattleLog } from '@/lib/clashRoyaleApi';
-import { POST } from '../route';
+import { GET, POST } from '../route';
 
 const friend = { id: 'friend-1', friend_name: 'Rival', friend_player_tag: '#RIVAL', total_wins: 7, total_losses: 3 };
 const cards = Array.from({ length: 8 }, (_, i) => ({ id: i + 1, name: `Card ${i + 1}`, rarity: 'common', level: 16, evolutionLevel: i === 0 ? 2 : 0 }));
@@ -42,6 +42,16 @@ describe('friend-decks refresh route', () => {
     const response = await POST(request({ friendId: 'other-friend' }));
     expect(response.status).toBe(404);
     expect(getPlayerBattleLog).not.toHaveBeenCalled();
+  });
+
+  it('keeps dashboard score reads private to the authenticated owner', async () => {
+    setupDb(null);
+    const response = await GET(new NextRequest('http://localhost/api/friend-decks?friendId=other-friend', { headers: { authorization: 'Bearer token' } }));
+    expect(response.status).toBe(404);
+    const friendQuery = mock.from.mock.results.find(result => result.value?.maybeSingle?.mock.calls.length)?.value;
+    expect(friendQuery.eq).toHaveBeenCalledWith('user_id', 'owner');
+    expect(friendQuery.eq).toHaveBeenCalledWith('id', 'other-friend');
+    expect(mock.from).not.toHaveBeenCalledWith('friend_match_history');
   });
 
   it('ignores fabricated body.logs and persists only normalized authoritative battles', async () => {

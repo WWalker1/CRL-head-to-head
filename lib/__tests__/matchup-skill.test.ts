@@ -37,11 +37,11 @@ describe('summarizeMatchupSkill', () => {
     expect(result.score).toBe(50);
   });
 
-  it('ignores draws, special other modes, ineligible predictions, bad probabilities and other models', () => {
+  it('ignores draws, unsupported modes, ineligible predictions, bad probabilities and other models', () => {
     const rows = [
       row('draw', 'draw', 0.2),
       row('ladder', 'win', 0.1, { mode: 'ladder', prediction_eligible: false }),
-      row('special-other', 'win', 0.1, { mode: 'other' }),
+      row('unsupported', 'win', 0.1, { mode: 'draft' }),
       row('excluded', 'win', 0.1, { prediction_eligible: false }),
       row('wrong-model', 'win', 0.1, { prediction_model_version: 'model-v2' }),
       row('nan', 'win', Number.NaN),
@@ -63,9 +63,9 @@ describe('summarizeMatchupSkill', () => {
       row('draw', 'draw', 0.4),
       row('ladder', 'win', 0.4, { mode: 'ladder', prediction_eligible: false }),
       row('challenge', 'win', null, { mode: 'challenge' }),
-      row('other', 'win', 0.4, { mode: 'other' }),
+      row('other', 'win', 0.4, { mode: 'other', prediction_eligible: false }),
     ], version);
-    expect(result.eligibleMatches).toBe(4);
+    expect(result.eligibleMatches).toBe(5);
     expect(result.scoredMatches).toBe(0);
   });
 
@@ -76,7 +76,7 @@ describe('summarizeMatchupSkill', () => {
     const partial = summarizeMatchupSkill([
       row('ladder-win', 'win', 0.8, { mode: 'ladder' }),
       row('challenge-loss', 'loss', 0.2, { mode: 'challenge' }),
-      row('special-other', 'win', 0.01, { mode: 'other' }),
+      row('unsupported', 'win', 0.01, { mode: 'draft' }),
       row('draw', 'draw', 0.5),
     ], null);
     expect(partial.score).toBeNull();
@@ -86,21 +86,21 @@ describe('summarizeMatchupSkill', () => {
     expect(partial.recordScore).toBe(50);
   });
 
-  it('scores eligible Ladder, Ranked, and challenge matches while excluding other special games', () => {
+  it('scores every normalized constructed 1v1 mode, including other opponents and modes', () => {
     const result = summarizeMatchupSkill([
       row('ladder-win', 'win', 0.6, { mode: 'ladder' }),
       row('ranked-loss', 'loss', 0.7),
       row('challenge-upset', 'win', 0.2, { mode: 'challenge' }),
-      row('special-other', 'win', 0.01, { mode: 'other' }),
+      row('constructed-other', 'win', 0.01, { mode: 'other' }),
       row('challenge-draw', 'draw', 0.1, { mode: 'challenge' }),
     ], version);
 
-    expect(result.eligibleMatches).toBe(3);
-    expect(result.scoredMatches).toBe(3);
-    expect(result.actualWins).toBe(2);
-    expect(result.expectedWins).toBeCloseTo(1.5);
-    expect(result.toughMatches).toBe(1);
-    expect(result.toughWins).toBe(1);
+    expect(result.eligibleMatches).toBe(4);
+    expect(result.scoredMatches).toBe(4);
+    expect(result.actualWins).toBe(3);
+    expect(result.expectedWins).toBeCloseTo(1.51);
+    expect(result.toughMatches).toBe(2);
+    expect(result.toughWins).toBe(2);
   });
 
   it('deduplicates physical matches before scoring and reports tough-match wins', () => {
