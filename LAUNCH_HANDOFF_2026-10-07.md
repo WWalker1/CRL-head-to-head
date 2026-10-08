@@ -2,6 +2,8 @@
 
 ## October 8 verification update
 
+- **Security follow-up:** Migration 017 is applied and live privileges were verified. Security release code protects user-triggered game API requests with shared durable budgets, a per-account refresh cooldown, and expiring request locks; removes tag-based cross-account rating writes; and preserves existing ratings when adding friends. The production nightly cron is unchanged. See `SECURITY_REVIEW_2026-10-08.md` and `MIGRATION_REPORT.md`. Verification passed 163 JavaScript tests, TypeScript, the production build, 12 Python service tests, and rollback SQL checks. Recheck Vercel's deployment SHA when resuming.
+
 - **Production release completed:** commit `fd2e66d` is on `origin/main` and Vercel deployment `dpl_8QbAFm11QcfaJ116sQqmXc7zmxD8` is Ready at <https://rival-royale.com>. Live smoke checks returned HTTP 200 for `/`, `/counter-deck`, `/clash-royale-skill-score`, `/api/model/catalog`, `/api/model/examples`, `/sitemap.xml`, and `/robots.txt`.
 - Vercel still reports one production cron, `/api/cron/sync-all-users` at `0 2 * * *`. Watch its next automatic run; the successful manual run below is the current evidence for the end-to-end sync. A signed-in friend skill page walkthrough and a new counter POST remain useful follow-up checks; the anonymous browser could not perform the former, and the shared tester IP had reached its three-search quota for the latter.
 

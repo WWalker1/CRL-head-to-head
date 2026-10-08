@@ -2,6 +2,9 @@
  * @jest-environment node
  */
 import { NextRequest } from 'next/server';
+import { reserveGameApi } from '@/lib/game-api-budget';
+jest.mock('@/lib/game-api-budget', () => ({ reserveGameApi: jest.fn() }));
+
 import { getPlayerInfo } from '@/lib/clashRoyaleApi';
 import { createMockPlayer } from '@/utils/__tests__/testHelpers';
 
@@ -38,6 +41,7 @@ describe('Add Friend Route', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (reserveGameApi as jest.Mock).mockResolvedValue({ release: jest.fn().mockResolvedValue(undefined) });
 
     // Create a mock request
     mockRequest = {

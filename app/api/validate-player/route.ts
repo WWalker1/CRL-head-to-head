@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPlayerInfo } from '@/lib/clashRoyaleApi';
 import { checkAnonymousRateLimit } from '@/lib/anonymous-rate-limit';
+import { reserveGameApi } from '@/lib/game-api-budget';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +13,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Player tag is required' }, { status: 400 });
     }
 
+    const reservation = await reserveGameApi(request, null, 'validate');
+    if (reservation.response) return reservation.response;
     const playerInfo = await getPlayerInfo(playerTag);
     
     return NextResponse.json({ valid: true, playerInfo });

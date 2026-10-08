@@ -4,6 +4,7 @@ import { createClient as createSupabase } from '@supabase/supabase-js';
 import { getPlayerBattleLog } from '@/lib/clashRoyaleApi';
 import { persistHistory } from '@/lib/history-storage';
 import { readHistoryInsights } from '@/lib/history-insights';
+import { reserveGameApi } from '@/lib/game-api-budget';
 
 export const maxDuration = 30;
 
@@ -33,11 +34,15 @@ export async function POST(request: NextRequest) {
   const client = db()!; let body: any; try { body = await request.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
   if (typeof body?.friendId !== 'string') return NextResponse.json({ error: 'friendId is required' }, { status: 400 });
   const { data: friend } = await friendFor(client, user.id, body.friendId); if (!friend) return NextResponse.json({ error: 'Friend not found' }, { status: 404 });
-  let battles; try { battles = await getPlayerBattleLog(friend.friend_player_tag); } catch { return NextResponse.json({ error: 'Friend history unavailable' }, { status: 503 }); }
+  const reservation = await reserveGameApi(request, user.id, 'friend_refresh');
+  if (reservation.response) return reservation.response;
   try {
-    const subject = { userId: user.id, playerTag: friend.friend_player_tag, friendId: friend.id };
-    const accepted = await persistHistory(client, subject, battles);
-    const insights = await readHistoryInsights(client, subject);
-    return NextResponse.json({ accepted, friend, ...insights }, { headers: { 'Cache-Control': 'private, no-store' } });
-  } catch { return NextResponse.json({ error: 'History unavailable' }, { status: 503 }); }
+    let battles; try { battles = await getPlayerBattleLog(friend.friend_player_tag); } catch { return NextResponse.json({ error: 'Friend history unavailable' }, { status: 503 }); }
+    try {
+      const subject = { userId: user.id, playerTag: friend.friend_player_tag, friendId: friend.id };
+      const accepted = await persistHistory(client, subject, battles);
+      const insights = await readHistoryInsights(client, subject);
+      return NextResponse.json({ accepted, friend, ...insights }, { headers: { 'Cache-Control': 'private, no-store' } });
+    } catch { return NextResponse.json({ error: 'History unavailable' }, { status: 503 }); }
+  } finally { await reservation.release(); }
 }

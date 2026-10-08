@@ -1,5 +1,8 @@
 /** @jest-environment node */
 import { NextRequest } from 'next/server';
+import { reserveGameApi } from '@/lib/game-api-budget';
+jest.mock('@/lib/game-api-budget', () => ({ reserveGameApi: jest.fn() }));
+
 
 const mock = {
   auth: { getUser: jest.fn() },
@@ -28,7 +31,8 @@ function setupDb(friendRow: any = friend) {
 }
 
 describe('friend-decks refresh route', () => {
-  beforeEach(() => { jest.clearAllMocks(); process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co'; process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key'; });
+  beforeEach(() => { jest.clearAllMocks();
+    (reserveGameApi as jest.Mock).mockResolvedValue({ release: jest.fn().mockResolvedValue(undefined) }); process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co'; process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key'; });
 
   it('rejects unauthenticated refreshes before touching the database', async () => {
     const response = await POST(request({ friendId: 'friend-1' }, ''));

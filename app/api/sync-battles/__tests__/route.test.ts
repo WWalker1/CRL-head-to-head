@@ -2,6 +2,9 @@
  * @jest-environment node
  */
 import { NextRequest } from 'next/server';
+import { reserveGameApi } from '@/lib/game-api-budget';
+jest.mock('@/lib/game-api-budget', () => ({ reserveGameApi: jest.fn() }));
+
 
 // Mock the dependencies BEFORE importing the route
 jest.mock('@supabase/supabase-js', () => {
@@ -36,6 +39,7 @@ describe('Sync Battles Route', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (reserveGameApi as jest.Mock).mockResolvedValue({ release: jest.fn().mockResolvedValue(undefined) });
 
     // Create a mock request
     mockRequest = {

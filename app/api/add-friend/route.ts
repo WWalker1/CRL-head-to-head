@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getPlayerInfo } from '@/lib/clashRoyaleApi';
+import { reserveGameApi } from '@/lib/game-api-budget';
 
 const DEFAULT_ELO = 1500;
 export const MAX_TRACKED_FRIENDS = 15;
@@ -11,6 +12,7 @@ const supabase = createClient(
 );
 
 export async function POST(request: NextRequest) {
+  let release: (() => Promise<void>) | undefined;
   try {
     // Get user from auth header
     const authHeader = request.headers.get('authorization');
@@ -43,6 +45,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate friend exists in Clash Royale
+    const reservation = await reserveGameApi(request, user.id, 'add_friend');
+    if (reservation.response) return reservation.response;
+    release = reservation.release;
     const friendInfo = await getPlayerInfo(friendTag);
 
     // Check if already tracking this friend
@@ -77,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     const { error: ratingUpsertError } = await supabase
       .from('user_ratings')
-      .upsert({ user_id: user.id, elo_rating: DEFAULT_ELO }, { onConflict: 'user_id' });
+      .upsert({ user_id: user.id, elo_rating: DEFAULT_ELO }, { onConflict: 'user_id', ignoreDuplicates: true });
 
     if (ratingUpsertError) {
       console.error('Failed to initialize user rating:', ratingUpsertError);
@@ -90,6 +95,6 @@ export async function POST(request: NextRequest) {
     }
     console.error('Error adding friend:', error);
     return NextResponse.json({ error: 'Failed to add friend' }, { status: 500 });
-  }
+  } finally { await release?.(); }
 }
 

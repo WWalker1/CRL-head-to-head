@@ -65,8 +65,7 @@ interface UserRatingData {
   updated_at: string | null;
 }
 
-// Gets user rating data - if player_tag exists, use that rating (shared across all users with same tag)
-// Otherwise create a new entry for this user_id
+// Ratings belong to accounts; selecting a public game tag grants no ownership.
 async function getUserRatingData(userId: string, playerTag?: string): Promise<UserRatingData> {
   // First, check if this user already has a rating entry
   const { data: existingUserData, error: userError } = await supabase
@@ -94,43 +93,7 @@ async function getUserRatingData(userId: string, playerTag?: string): Promise<Us
     };
   }
 
-  // User doesn't have an entry yet
-  // If player_tag is provided, check if any entry exists for this player_tag
-  // (Multiple users can have the same player_tag, so we use the first one's rating)
-  if (playerTag) {
-    const { data: existingTagData } = await supabase
-      .from('user_ratings')
-      .select('elo_rating, num_ranked_games, updated_at')
-      .eq('player_tag', playerTag)
-      .limit(1)
-      .single();
-
-    if (existingTagData) {
-      // Player_tag already exists - create entry for this user with same rating values
-      const { data: newData, error: insertError } = await supabase
-        .from('user_ratings')
-        .insert({
-          user_id: userId,
-          elo_rating: existingTagData.elo_rating ?? DEFAULT_ELO,
-          player_tag: playerTag,
-          num_ranked_games: existingTagData.num_ranked_games ?? 0,
-        })
-        .select('elo_rating, num_ranked_games, updated_at')
-        .single();
-
-      if (insertError) {
-        throw insertError;
-      }
-
-      return {
-        elo_rating: newData?.elo_rating ?? DEFAULT_ELO,
-        num_ranked_games: newData?.num_ranked_games ?? 0,
-        updated_at: newData?.updated_at ?? null,
-      };
-    }
-  }
-
-  // No existing entry for this player_tag - create new one
+  // Initialize this account independently of other accounts with the same tag.
   const { data: upsertData, error: upsertError } = await supabase
     .from('user_ratings')
     .insert({ 
@@ -323,40 +286,7 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         const opponentCrowns = opponent.crowns || 0;
         const isWin = userCrowns > opponentCrowns;
 
-        // Check if another user with the same player_tag already processed this battle
-        // If so, we'll still insert the battle for this user but skip Elo/win-loss updates
-        let alreadyProcessedBySameTag = false;
-        if (playerTag) {
-          // Get all user_ids with the same player_tag (limit to reasonable number)
-          // Most player_tags will have 1-2 users, but limit to prevent issues
-          const { data: sameTagUsers } = await supabase
-            .from('user_ratings')
-            .select('user_id')
-            .eq('player_tag', playerTag)
-            .limit(100); // Reasonable limit - if more than 100 users share a tag, something's wrong
-
-          if (sameTagUsers && sameTagUsers.length > 0) {
-            const sameTagUserIds = sameTagUsers.map(u => u.user_id).filter(id => id !== userId);
-            
-            if (sameTagUserIds.length > 0) {
-              // Check if any OTHER user with the same player_tag already processed this battle
-              const { data: existingBattleForTag } = await supabase
-                .from('battles')
-                .select('id')
-                .in('user_id', sameTagUserIds)
-                .eq('battle_time', battle.battleTime)
-                .eq('battle_type', battle.type)
-                .limit(1)
-                .single();
-
-              if (existingBattleForTag) {
-                alreadyProcessedBySameTag = true;
-              }
-            }
-          }
-        }
-
-        // Store battle record for current user (always insert, even if another user with same tag processed it)
+        // Store the battle independently for the authenticated account.
         const { error: insertError } = await supabase
           .from('battles')
           .insert({
@@ -377,12 +307,6 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
         }
 
         result.newBattles++;
-
-        // If another user with the same player_tag already processed this battle,
-        // skip Elo updates and win/loss increments (they were already done)
-        if (alreadyProcessedBySameTag) {
-          continue; // Skip to next battle - Elo and win/loss were already updated
-        }
 
         // Update current user's friend record (only if we're the first to process)
         if (isWin) {
@@ -407,7 +331,7 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           : 0;
 
         // Check if opponent has an account and get their rating from user_ratings
-        // Multiple users can have the same player_tag, so get the first one (they should all have same rating)
+        // Opponent ratings are read-only context; only this account is updated.
         const { data: opponentRatingData } = await supabase
           .from('user_ratings')
           .select('elo_rating, num_ranked_games, updated_at')
@@ -417,7 +341,6 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
 
         // Get opponent's rating from user_ratings (actual current rating, not cached in tracked_friends)
         const opponentRating = opponentRatingData?.elo_rating ?? DEFAULT_ELO;
-        const opponentHasAccount = !!opponentRatingData;
 
         // Calculate Elo change for current user
         const newUserRating = calculateEloChange(
@@ -428,81 +351,19 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
           daysSinceLastBattle
         );
 
-        // Update current user's rating and increment game count
-        // Elo rating is shared across all users with same player_tag, but num_ranked_games is per-user
-        if (playerTag) {
-          // Update elo_rating for all entries with this player_tag (keep them in sync)
-          const { error: eloUpdateError } = await supabase
-            .from('user_ratings')
-            .update({ elo_rating: newUserRating })
-            .eq('player_tag', playerTag);
-
-          // Update num_ranked_games only for this specific user
-          const { error: gamesUpdateError } = await supabase
-            .from('user_ratings')
-            .update({ num_ranked_games: userNumRankedGames + 1 })
-            .eq('user_id', userId);
-
-          if (eloUpdateError || gamesUpdateError) {
-            console.error('Error updating user rating:', eloUpdateError || gamesUpdateError);
-            result.errors.push('Failed to update player rating');
-          } else {
-            userRating = newUserRating;
-            userNumRankedGames = userNumRankedGames + 1;
-            // Update updated_at for next battle calculation (use battle time, not current time)
-            userRatingData.updated_at = battle.battleTime;
-          }
+        // Game tags are unverified selections. Never authorize a write to a
+        // different account using a tag, even when accounts select the same tag.
+        const { error: ratingUpdateError } = await supabase
+          .from('user_ratings')
+          .update({ elo_rating: newUserRating, num_ranked_games: userNumRankedGames + 1 })
+          .eq('user_id', userId);
+        if (ratingUpdateError) {
+          console.error('Error updating user rating:', ratingUpdateError);
+          result.errors.push('Failed to update player rating');
         } else {
-          // No player_tag, just update by user_id
-          const { error: userRatingUpdateError } = await supabase
-            .from('user_ratings')
-            .update({ 
-              elo_rating: newUserRating,
-              num_ranked_games: userNumRankedGames + 1
-            })
-            .eq('user_id', userId);
-
-          if (userRatingUpdateError) {
-            console.error('Error updating user rating:', userRatingUpdateError);
-            result.errors.push('Failed to update player rating');
-          } else {
-            userRating = newUserRating;
-            userNumRankedGames = userNumRankedGames + 1;
-            userRatingData.updated_at = battle.battleTime;
-          }
-        }
-
-        // If opponent has an account, update their Elo rating too
-        // Update ALL records with this player_tag to keep them in sync
-        if (opponentHasAccount && opponentRatingData) {
-          const opponentDaysSinceLastBattle = opponentRatingData.updated_at
-            ? Math.floor((battleTime - new Date(opponentRatingData.updated_at).getTime()) / (1000 * 60 * 60 * 24))
-            : 0;
-
-          // Calculate Elo change for opponent
-          const newOpponentRating = calculateEloChange(
-            opponentRatingData.elo_rating,
-            userRating,
-            isWin ? 0 : 1,
-            opponentRatingData.num_ranked_games ?? 0,
-            opponentDaysSinceLastBattle
-          );
-
-          // Update ALL user_ratings records with this player_tag to keep elo_rating in sync
-          // Note: We don't update opponent's num_ranked_games here - they'll do that when they sync
-          // We don't update opponent's tracked_friends record here either - they'll do that when they sync
-          // This prevents double-counting battles while still allowing double Elo changes
-          const { error: opponentRatingUpdateError } = await supabase
-            .from('user_ratings')
-            .update({ 
-              elo_rating: newOpponentRating
-            })
-            .eq('player_tag', opponent.tag);
-
-          if (opponentRatingUpdateError) {
-            console.error('Error updating opponent rating:', opponentRatingUpdateError);
-            result.errors.push(`Failed to update opponent rating for ${opponent.tag}`);
-          }
+          userRating = newUserRating;
+          userNumRankedGames += 1;
+          userRatingData.updated_at = battle.battleTime;
         }
       } catch (err: any) {
         result.errors.push(`Failed to process battle: ${err.message}`);
