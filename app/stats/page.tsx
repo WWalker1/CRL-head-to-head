@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import PlayerStatsView from '@/components/PlayerStatsView';
 
 export const metadata: Metadata = {
-  title: 'Matchup Skill | Rival Royale',
+  title: 'Matchup Skill',
   description: 'See your model-relative matchup skill score and recent battle highlights.',
   alternates: { canonical: '/stats' },
   robots: { index: false, follow: false },

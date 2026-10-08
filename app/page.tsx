@@ -5,7 +5,7 @@ import Image from 'next/image';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Track Clash Royale Wins Against Friends | Rival Royale',
+  title: 'Track Clash Royale Wins Against Friends',
   description: 'Track recorded Clash Royale wins and losses against friends. Add player tags, see head-to-head records, and explore deck counters.',
   alternates: { canonical: '/' },
   openGraph: { title: 'Track Clash Royale Wins Against Friends | Rival Royale', description: 'Add friends by player tag and see your recorded Clash Royale head-to-head results.' },

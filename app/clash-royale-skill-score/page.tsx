@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Clash Royale Matchup Skill Score | Rival Royale',
+  title: 'Clash Royale Matchup Skill Score',
   description: 'See how your recorded 1v1 wins compare with model estimates for your deck matchups.',
   alternates: { canonical: '/clash-royale-skill-score' },
 };

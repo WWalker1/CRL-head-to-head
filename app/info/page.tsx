@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: "Track Clash Royale Battles Against Friends: Rival Royale Guide",
+  title: "Track Clash Royale Battles Against Friends",
   description: "Learn how Rival Royale records eligible Clash Royale 1v1 results against tracked friends, refreshes available history, and helps you explore decks and matchups.",
   openGraph: {
     title: "Track Clash Royale Battles Against Friends | Rival Royale",

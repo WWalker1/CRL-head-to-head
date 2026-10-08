@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import ModelWorkbench from '@/components/model-tools/ModelWorkbench';
 
 export const metadata: Metadata = {
-  title: 'Clash Royale Counter Deck Finder | Rival Royale',
+  title: 'Clash Royale Counter Deck Finder',
   description: 'Find Clash Royale counter deck candidates. Choose an eight-card opponent deck, search model-ranked options, and export a suggested deck to the game.',
   alternates: { canonical: '/counter-deck' },
   openGraph: { title: 'Clash Royale Counter Deck Finder | Rival Royale', description: 'Choose a target deck and explore model-ranked counter deck candidates.' },
