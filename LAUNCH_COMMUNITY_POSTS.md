@@ -2,6 +2,8 @@
 
 These are drafts for the public launch, not posts to publish from the beta. Replace the placeholders with a real tested matchup, a screenshot that reads well on a phone, and the production URL. Disclose that the author built the tool. Check each community's current rules and ask moderators first where self-promotion is restricted; do not repeat the same link across communities or present model estimates as observed win rates.
 
+October 7 direction for the next drafting pass: make one post answer “How do I know if I'm good at Clash Royale?” through best tough win, costly loss, and a model-relative score. Make another answer “Am I better than my friend?” through tracked head-to-head records, friend skill, favorite decks, and counter suggestions. Keep each post conversational and useful without a link if the community disallows self-promotion. Mirror those questions in concise, visible public website copy rather than a wall of SEO text. The scheduled 12:15 a.m. Eastern continuation should revise the drafts after the friend skill flow is verified; nothing here authorizes posting.
+
 ## Deck discussion community
 
 **Title:** I made a Clash Royale counter deck finder — what matchup should I test next?

@@ -1,5 +1,5 @@
 # Agent entry point
 
-Read AGENT_HANDOFF.md first, then IMPLEMENTATION_REPORT.md for the current checklist, LOCAL_DEVELOPMENT.md to run the app, and IMPLEMENTATION_PLAN.md for the design. Research-specific guidance is in models/AGENTS.md.
+Read LAUNCH_HANDOFF_2026-10-07.md first for the current launch state, then AGENT_HANDOFF.md and IMPLEMENTATION_PLAN.md for detail, DEPLOYMENT_SETUP.md for hosting, and TESTING.md for verification. Research-specific guidance is in models/AGENTS.md.
 
-The model product beta lives on codex/rival-model-product. Keep production main unchanged until integration is requested. No live database migration or deployment has been performed. Do not infer live schema from migration files. Keep secrets, player datasets, checkpoints and local environments out of Git. Never print credential values. Do not launch duplicate collectors. The user prefers concise communication and limited token usage.
+The model product beta lives on codex/rival-model-product and beta.rival-royale.com. Production is on main; the user requested promotion after the October 7 launch gate passes. Migrations 007–012 are live, Railway serves the model, and Vercel hosts beta and production. Do not infer live schema solely from migration files. Keep secrets, player datasets, checkpoints and local environments out of Git. Never print credential values. Do not launch duplicate collectors or disable the production nightly cron. The user prefers concise communication and limited token usage.
