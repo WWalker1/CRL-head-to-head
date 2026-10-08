@@ -258,7 +258,7 @@ describe('Cron Sync All Users Route', () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.success).toBe(true);
+      expect(data.success).toBe(false);
       expect(data.usersSucceeded).toBe(2);
       expect(data.usersFailed).toBe(1);
       expect(data.results).toHaveLength(3);
@@ -266,6 +266,52 @@ describe('Cron Sync All Users Route', () => {
       expect(data.results[1].success).toBe(false);
       expect(data.results[1].error).toBe('Sync failed for user2');
       expect(data.results[2].success).toBe(true);
+    });
+
+    it('counts returned sync errors as failed users without exposing email', async () => {
+      mockStore.auth.admin.listUsers.mockResolvedValue({
+        data: { users: [
+          { id: 'user1', email: 'private1@test.com', user_metadata: { player_tag: '#USER1' } },
+          { id: 'user2', email: 'private2@test.com', user_metadata: { player_tag: '#USER2' } },
+        ] },
+        error: null,
+      });
+      (syncBattlesForUser as jest.Mock)
+        .mockResolvedValueOnce({ battlesProcessed: 0, recordsUpdated: 0, newBattles: 0, errors: ['Failed to sync battles: Clash Royale API error: 401'] })
+        .mockResolvedValueOnce({ battlesProcessed: 0, recordsUpdated: 0, newBattles: 0, errors: [] });
+
+      const response = await GET(mockRequest);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toMatchObject({ success: false, usersProcessed: 2, usersSucceeded: 1, usersFailed: 1 });
+      expect(data.errors).toEqual(['1 of 2 processed user syncs failed']);
+      expect(data.results[0]).toMatchObject({ success: false, error: 'Failed to sync battles: Clash Royale API error: 401' });
+      expect(data.results[1].success).toBe(true);
+      expect(JSON.stringify(data)).not.toContain('private1@test.com');
+      expect(JSON.stringify(data)).not.toContain('private2@test.com');
+    });
+
+    it('returns a failure status when every user sync reports an error', async () => {
+      mockStore.auth.admin.listUsers.mockResolvedValue({
+        data: { users: [
+          { id: 'user1', user_metadata: { player_tag: '#USER1' } },
+          { id: 'user2', user_metadata: { player_tag: '#USER2' } },
+        ] },
+        error: null,
+      });
+      (syncBattlesForUser as jest.Mock).mockResolvedValue({
+        battlesProcessed: 0, recordsUpdated: 0, newBattles: 0,
+        errors: ['Failed to sync battles: Clash Royale API error: 401'],
+      });
+
+      const response = await GET(mockRequest);
+      const data = await response.json();
+
+      expect(response.status).toBe(502);
+      expect(data).toMatchObject({ success: false, usersProcessed: 2, usersSucceeded: 0, usersFailed: 2 });
+      expect(data.errors).toEqual(['2 of 2 processed user syncs failed']);
+      expect(data.results.every((result: { success: boolean }) => result.success === false)).toBe(true);
     });
 
     it('should process users sequentially', async () => {
@@ -328,7 +374,7 @@ describe('Cron Sync All Users Route', () => {
       expect(data).toHaveProperty('results');
       expect(data).toHaveProperty('errors');
       expect(data.results[0]).toHaveProperty('userId');
-      expect(data.results[0]).toHaveProperty('email');
+      expect(data.results[0]).not.toHaveProperty('email');
       expect(data.results[0]).toHaveProperty('playerTag');
       expect(data.results[0]).toHaveProperty('success');
       expect(data.results[0]).toHaveProperty('result');

@@ -4,7 +4,6 @@ import { syncBattlesForUser } from '@/utils/battleProcessor';
 
 interface UserSyncResult {
   userId: string;
-  email?: string;
   playerTag?: string;
   success: boolean;
   result?: {
@@ -220,12 +219,18 @@ export async function GET(request: NextRequest) {
         playerTag,
         success: false,
       };
+      const recordSyncResult = (syncResult: Awaited<ReturnType<typeof syncBattlesForUser>>) => {
+        userResult.result = syncResult;
+        userResult.success = Array.isArray(syncResult.errors) && syncResult.errors.length === 0;
+        if (!userResult.success) {
+          userResult.error = syncResult.errors?.[0] || 'Battle sync returned an invalid result';
+        }
+        return userResult;
+      };
 
       try {
         const syncResult = await syncBattlesForUser(userId, playerTag);
-        userResult.success = true;
-        userResult.result = syncResult;
-        return userResult;
+        return recordSyncResult(syncResult);
       } catch (error: any) {
         // If it's a 429 error, wait 0.25s and retry once
         if (isRateLimitError(error)) {
@@ -234,10 +239,9 @@ export async function GET(request: NextRequest) {
           
           try {
             const syncResult = await syncBattlesForUser(userId, playerTag);
-            userResult.success = true;
-            userResult.result = syncResult;
-            console.log(`Retry succeeded for user ${userId}`);
-            return userResult;
+            const retryResult = recordSyncResult(syncResult);
+            if (retryResult.success) console.log(`Retry succeeded for user ${userId}`);
+            return retryResult;
           } catch (retryError: any) {
             console.error(`Retry failed for user ${userId}:`, retryError);
             userResult.error = retryError.message || 'Unknown error';
@@ -296,10 +300,6 @@ export async function GET(request: NextRequest) {
           const playerTag = user.user_metadata.player_tag;
           const result = await syncUserWithRetry(user.id, playerTag);
           
-          // Set email and playerTag if not already set
-          if (!result.email) result.email = user.email;
-          if (!result.playerTag) result.playerTag = playerTag;
-          
           if (result.success) {
             usersSucceeded++;
             console.log(
@@ -339,22 +339,26 @@ export async function GET(request: NextRequest) {
     console.log(`Users succeeded: ${usersSucceeded}`);
     console.log(`Users failed: ${usersFailed}`);
 
+    const completedAllUsers = usersProcessed === usersWithPlayerTag.length;
+    const responseErrors: string[] = [];
+    if (usersFailed > 0) responseErrors.push(`${usersFailed} of ${usersProcessed} processed user syncs failed`);
+    if (!completedAllUsers) responseErrors.push(`${usersWithPlayerTag.length - usersProcessed} users were not processed before the time limit`);
     const response: CronSyncResponse = {
-      success: true,
+      success: usersFailed === 0 && completedAllUsers,
       totalUsers: users.length,
       usersWithPlayerTag: usersWithPlayerTag.length,
       usersProcessed: usersProcessed, // Report actual count processed (may be less than total if time limit reached)
       usersSucceeded,
       usersFailed,
       results,
-      errors: [],
+      errors: responseErrors,
     };
 
     console.log(
       `Daily sync completed: ${usersProcessed} processed, ${usersSucceeded} succeeded, ${usersFailed} failed`
     );
 
-    return NextResponse.json(response);
+    return NextResponse.json(response, { status: usersProcessed > 0 && usersFailed === usersProcessed ? 502 : 200 });
   } catch (error: any) {
     console.error('Error in cron sync:', error);
     return NextResponse.json(
