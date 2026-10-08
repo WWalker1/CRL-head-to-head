@@ -61,7 +61,10 @@ export function summarizeMatchupSkill(
   return {
     score: scoredMatches === 0
       ? null
-      : Math.round(Math.max(0, Math.min(100, 50 + 50 * winsAboveExpected / (scoredMatches + 20))) * 10) / 10,
+      // Twenty percentage points above the model's expected win rate maps to
+      // 70/100. Keep the estimate vivid even in a short window; the UI labels
+      // those windows provisional instead of silently pulling them toward 50.
+      : Math.round(Math.max(0, Math.min(100, 50 + 100 * winsAboveExpected / scoredMatches)) * 10) / 10,
     recordScore: decisive.length === 0 ? null : Math.round(1000 * (recordWins + 5) / (decisive.length + 10)) / 10,
     recordWins,
     recordLosses,

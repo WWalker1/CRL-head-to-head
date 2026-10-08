@@ -15,9 +15,9 @@ function row(id: string, result: 'win' | 'loss' | 'draw', probability: number | 
 
 describe('summarizeMatchupSkill', () => {
   it('rewards wins against tougher predictions more', () => {
-    const toughWin = summarizeMatchupSkill([row('tough', 'win', 0.2)], version);
-    const expectedWin = summarizeMatchupSkill([row('even', 'win', 0.5)], version);
-    expect(toughWin.winsAboveExpected).toBeCloseTo(0.8);
+    const toughWin = summarizeMatchupSkill([row('tough', 'win', 0.2), row('loss', 'loss', 0.5)], version);
+    const expectedWin = summarizeMatchupSkill([row('even', 'win', 0.5), row('loss', 'loss', 0.5)], version);
+    expect(toughWin.winsAboveExpected).toBeCloseTo(0.3);
     expect(toughWin.score).toBeGreaterThan(expectedWin.score!);
   });
 
@@ -116,11 +116,25 @@ describe('summarizeMatchupSkill', () => {
     expect(result.toughWins).toBe(1);
   });
 
-  it('shrinks low-sample results toward 50 and becomes non-provisional at 30 scored matches', () => {
-    const one = summarizeMatchupSkill([row('one', 'win', 0)], version);
-    const thirty = summarizeMatchupSkill(Array.from({ length: 30 }, (_, i) => row(`m${i}`, 'win', 0)), version);
-    expect(one.score).toBe(52.4);
-    expect(thirty.score).toBe(80);
+  it('maps twenty percentage points above expectation to 70 even in a provisional window', () => {
+    const eight = summarizeMatchupSkill([
+      ...Array.from({ length: 5 }, (_, i) => row(`win${i}`, 'win', 0.425)),
+      ...Array.from({ length: 3 }, (_, i) => row(`loss${i}`, 'loss', 0.425)),
+    ], version);
+    expect(eight.actualWins).toBe(5);
+    expect(eight.expectedWins).toBeCloseTo(3.4);
+    expect(eight.winsAboveExpected).toBeCloseTo(1.6);
+    expect(eight.score).toBe(70);
+    expect(eight.provisional).toBe(true);
+  });
+
+  it('shows an upset boldly, clamps extremes, and becomes non-provisional at 30 matches', () => {
+    const one = summarizeMatchupSkill([row('one', 'win', 0.22)], version);
+    const oneLoss = summarizeMatchupSkill([row('one', 'loss', 0.8)], version);
+    const thirty = summarizeMatchupSkill(Array.from({ length: 30 }, (_, i) => row(`m${i}`, i < 21 ? 'win' : 'loss', 0.5)), version);
+    expect(one.score).toBe(100);
+    expect(oneLoss.score).toBe(0);
+    expect(thirty.score).toBe(70);
     expect(one.provisional).toBe(true);
     expect(thirty.provisional).toBe(false);
   });

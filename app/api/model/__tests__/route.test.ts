@@ -1,8 +1,10 @@
 /** @jest-environment node */
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
+import { createClient as createSupabase } from '@supabase/supabase-js';
 import { GET, POST } from '../[action]/route';
 jest.mock('@/lib/supabase-server', () => ({ createClient: jest.fn() }));
+jest.mock('@supabase/supabase-js', () => ({ createClient: jest.fn() }));
 jest.mock('@/lib/anonymous-rate-limit', () => ({ checkAnonymousRateLimit: jest.fn() }));
 import { checkAnonymousRateLimit } from '@/lib/anonymous-rate-limit';
 
@@ -14,6 +16,7 @@ describe('model proxy', () => {
     process.env = { ...oldEnv, NODE_ENV: 'production', MODEL_TOOLS_ENABLED: '1', MODEL_SERVICE_URL: 'http://model:8768', MODEL_SERVICE_TOKEN: 'test-only-token', NEXT_PUBLIC_SITE_URL: 'https://rival.example', NEXT_PUBLIC_SUPABASE_URL: 'http://db', NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-only' };
     jest.resetAllMocks();
     (createClient as jest.Mock).mockResolvedValue(client);
+    (createSupabase as jest.Mock).mockReturnValue(client);
     (checkAnonymousRateLimit as jest.Mock).mockResolvedValue(null);
     client.auth.getUser.mockResolvedValue({ data: { user: { id: 'user' } }, error: null });
     client.rpc.mockResolvedValue({ data: true, error: null });
@@ -54,6 +57,19 @@ describe('model proxy', () => {
     expect(checkAnonymousRateLimit).not.toHaveBeenCalled();
     client.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
     expect((await POST(request(), context('predict'))).status).toBe(401);
+    expect(checkAnonymousRateLimit).not.toHaveBeenCalled();
+  });
+  it('accepts a refreshed browser bearer token for a signed-in counter search', async () => {
+    const authenticated = new NextRequest('https://rival.example/api/model/counter', {
+      method: 'POST', body: '{"target":{}}',
+      headers: { origin: 'https://rival.example', authorization: 'Bearer refreshed-token' },
+    });
+    expect((await POST(authenticated, context('counter'))).status).toBe(200);
+    expect(client.auth.getUser).toHaveBeenCalledWith('refreshed-token');
+    expect(createSupabase).toHaveBeenCalledWith('http://db', 'test-only', expect.objectContaining({
+      global: { headers: { Authorization: 'Bearer refreshed-token' } },
+    }));
+    expect(client.rpc).toHaveBeenCalledWith('consume_model_quota', { operation: 'search' });
     expect(checkAnonymousRateLimit).not.toHaveBeenCalled();
   });
   it('rejects anonymous counter requests without a same-site origin or valid bounded body', async () => {

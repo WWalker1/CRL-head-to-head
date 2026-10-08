@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { DeckUsage, FriendHistorySummary } from '@/lib/friend-history';
 import { buildClashDeckLink, CLASH_DECK_IMPORT_NOTICE } from '@/lib/clash-deck-link';
-import { counter, fetchCatalog } from './model-tools/api';
-import type { CatalogVariant, Deck, ModelResult } from './model-tools/types';
+import { counter } from './model-tools/api';
+import type { Deck, ModelResult } from './model-tools/types';
+import CardArtwork from './CardArtwork';
+import { cardDisplay } from '@/lib/card-display';
 import MatchupSkill from './MatchupSkill';
 import type { MatchupSkillSummary } from '@/lib/matchup-skill';
 import type { PlayerStats } from '@/lib/player-stats';
@@ -18,9 +20,8 @@ function toModelDeck(usage: DeckUsage): Deck | null {
   return { cards, tower_id: Number(usage.tower) || 159000000, tower_level: usage.towerLevel ?? 16 };
 }
 
-function Cards({ deck, variants }: { deck: Deck; variants: CatalogVariant[] }) {
-  const lookup = new Map(variants.map(variant => [variant.key, variant]));
-  return <div className="grid grid-cols-4 gap-2" aria-label="Eight deck cards">{deck.cards.map((card, index) => { const variant = lookup.get(card.key); return <div key={`${card.key}-${index}`} className="min-w-0 overflow-hidden rounded-lg border border-blue-100 bg-blue-50 text-center">{variant?.image ? <img src={variant.image} alt="" loading="lazy" className="mx-auto aspect-[3/4] w-full object-contain" /> : <div className="flex aspect-[3/4] items-center justify-center px-1 text-xs text-blue-600">{variant?.name ?? card.key.split(':')[0]}</div>}<span className="block truncate px-1 py-1 text-[10px] text-gray-700">{variant?.name ?? card.key.split(':')[0]}</span></div>; })}</div>;
+function Cards({ deck }: { deck: Deck }) {
+  return <div className="grid grid-cols-4 gap-2" aria-label="Eight deck cards">{deck.cards.map((card, index) => <div key={`${card.key}-${index}`} className="min-w-0 overflow-hidden rounded-lg border border-blue-100 bg-blue-50 text-center"><CardArtwork cardKey={card.key} className="aspect-[3/4] w-full" fallbackClassName="text-blue-600" /><span className="block truncate px-1 py-1 text-[10px] text-gray-700">{cardDisplay(card.key).name}</span></div>)}</div>;
 }
 
 export default function FriendDeckExperience({ friendId, friendName, friendTag, compact = false }: { friendId: string; friendName?: string; friendTag?: string; compact?: boolean }) {
@@ -29,7 +30,6 @@ export default function FriendDeckExperience({ friendId, friendName, friendTag, 
   const [skillStatus, setSkillStatus] = useState('');
   const [stats, setStats] = useState<PlayerStats | null>(null);
   const [name, setName] = useState(friendName ?? 'Friend');
-  const [variants, setVariants] = useState<CatalogVariant[]>([]);
   const [selected, setSelected] = useState(0);
   const [result, setResult] = useState<ModelResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,12 +49,10 @@ export default function FriendDeckExperience({ friendId, friendName, friendTag, 
 
   useEffect(() => {
     const controller = new AbortController();
-    Promise.allSettled([loadHistory('GET', controller.signal), fetchCatalog(controller.signal)]).then(([history, catalog]) => {
+    loadHistory('GET', controller.signal).then(() => {
       if (controller.signal.aborted) return;
-      if (history.status === 'rejected') setError(history.reason instanceof Error ? history.reason.message : 'Could not load history.');
-      if (catalog.status === 'fulfilled') setVariants(catalog.value.variants ?? []);
       setLoading(false);
-    });
+    }).catch(reason => { if (!controller.signal.aborted) { setError(reason instanceof Error ? reason.message : 'Could not load history.'); setLoading(false); } });
     return () => controller.abort();
   }, [friendId]);
 
@@ -79,9 +77,9 @@ export default function FriendDeckExperience({ friendId, friendName, friendTag, 
     {!loading && skill && <><MatchupSkill skill={skill} status={skillStatus} />{stats && (stats.toughWins[0] || stats.favorableLosses[0]) && <div className="grid gap-2 sm:grid-cols-2" aria-label="Friend matchup highlights">{[{ title: 'Best win', row: stats.toughWins[0] }, { title: 'Toughest loss', row: stats.favorableLosses[0] }].map(({ title, row }) => <div key={title} className="rounded-lg border border-violet-100 bg-violet-50 p-3"><p className="text-xs font-bold uppercase tracking-wider text-violet-700">{title}</p><p className="mt-1 text-sm text-slate-700">{row ? `${Math.round(row.expectedWinProbability * 100)}% model matchup chance · ${new Date(row.date).toLocaleDateString()}` : 'No supported match yet'}</p></div>)}</div>}</>}
     {!loading && summary && <><RivalryShareControl friendId={friendId} friendName={name} /><p className="text-xs text-gray-600">Showing the latest {summary.recordedMatches} full match records (up to 100). Up to five decks are ranked across {summary.allTimeMatches} tracked matches since tracking began.</p>{summary.topDecks.length === 0 ? <p className="text-sm text-gray-600">No eligible deck history yet. Refresh after your friend plays a standard 1v1 match.</p> : <>
       {summary.topDecks.length > 1 && <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Most-played decks since tracking began">{summary.topDecks.map((deck, index) => <button type="button" key={deck.key} onClick={() => { setSelected(index); setError(''); }} aria-pressed={selected === index} className={`min-h-11 shrink-0 rounded-lg px-3 text-xs font-semibold ${selected === index ? 'bg-blue-700 text-white' : 'bg-blue-50 text-blue-800'}`}>Deck {index + 1} · {deck.count} {deck.count === 1 ? 'match' : 'matches'}</button>)}</div>}
-      {target ? <Cards deck={target} variants={variants} /> : <p className="text-sm text-orange-700">This deck has a form the model cannot score yet.</p>}
+      {target ? <Cards deck={target} /> : <p className="text-sm text-orange-700">This deck has a form the model cannot score yet.</p>}
       <p className="text-xs text-gray-600">Played {usage?.count} of {summary.allTimeMatches} tracked matches ({Math.round((usage?.share ?? 0) * 100)}%) since tracking began.</p>
-      <div className="border-t border-blue-100 pt-3"><h3 className="text-base font-bold text-blue-900">Best model counter</h3>{scoring && <p role="status" className="mt-2 text-sm text-gray-600">Finding a supported counter…</p>}{best?.deck && <><p className="my-2 text-sm text-gray-700">Estimated matchup: {Math.round((best.probability ?? 0) * 100)}% · {best.support ?? 'model candidate'}</p><Cards deck={best.deck} variants={variants} /><div className="mt-3 flex flex-col gap-2 sm:flex-row">{exportUrl && <a href={exportUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-center rounded-lg bg-orange-600 px-4 text-sm font-bold text-white hover:bg-orange-700">Export to Clash Royale</a>}<Link href={`/friend-decks/${encodeURIComponent(friendId)}`} className="flex min-h-11 items-center justify-center rounded-lg border border-blue-200 px-4 text-sm font-semibold text-blue-800">View deck page</Link></div><p className="mt-2 text-xs text-gray-500">Model estimate, not a measured win rate. {CLASH_DECK_IMPORT_NOTICE}</p></>}</div>
+      <div className="border-t border-blue-100 pt-3"><h3 className="text-base font-bold text-blue-900">Best model counter</h3>{scoring && <p role="status" className="mt-2 text-sm text-gray-600">Finding a supported counter…</p>}{best?.deck && <><p className="my-2 text-sm text-gray-700">Estimated matchup: {Math.round((best.probability ?? 0) * 100)}% · {best.support ?? 'model candidate'}</p><Cards deck={best.deck} /><div className="mt-3 flex flex-col gap-2 sm:flex-row">{exportUrl && <a href={exportUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-center rounded-lg bg-orange-600 px-4 text-sm font-bold text-white hover:bg-orange-700">Export to Clash Royale</a>}<Link href={`/friend-decks/${encodeURIComponent(friendId)}`} className="flex min-h-11 items-center justify-center rounded-lg border border-blue-200 px-4 text-sm font-semibold text-blue-800">View deck page</Link></div><p className="mt-2 text-xs text-gray-500">Model estimate, not a measured win rate. {CLASH_DECK_IMPORT_NOTICE}</p></>}</div>
       {!compact && <Link href={`/counter-deck?friendId=${encodeURIComponent(friendId)}&deck=${encodeURIComponent(usage?.key ?? '')}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700 underline">Explore more counter options</Link>}
     </>}</>}
     {compact && <Link href={`/friend-decks/${encodeURIComponent(friendId)}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-700 underline">Open full deck page</Link>}

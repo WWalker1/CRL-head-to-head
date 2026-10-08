@@ -114,7 +114,7 @@ describe('readHistoryInsights', () => {
       prediction_eligible: true,
     });
     expect(result.skill).toMatchObject({ modelVersion: 'model-v2', scoredMatches: 1, actualWins: 1, expectedWins: 0.7 });
-    expect(result.skill.score).toBe(50.7);
+    expect(result.skill.score).toBe(80);
   });
 
   it('preserves stored history and returns no invented score when the model is unavailable', async () => {

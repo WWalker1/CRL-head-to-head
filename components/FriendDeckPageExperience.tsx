@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { DeckUsage, FriendHistorySummary } from '@/lib/friend-history';
 import { buildClashDeckLink, CLASH_DECK_IMPORT_NOTICE } from '@/lib/clash-deck-link';
-import { counter, fetchCatalog } from './model-tools/api';
-import type { CatalogVariant, Deck, ModelResult } from './model-tools/types';
+import { counter } from './model-tools/api';
+import type { Deck, ModelResult } from './model-tools/types';
+import CardArtwork from './CardArtwork';
+import { cardDisplay } from '@/lib/card-display';
 
 function modelDeck(usage: DeckUsage): Deck | null {
   if (usage.cards.length !== 8) return null;
@@ -14,14 +16,13 @@ function modelDeck(usage: DeckUsage): Deck | null {
   return { cards, tower_id: Number(usage.tower) || 159000000, tower_level: usage.towerLevel ?? 16 };
 }
 
-function DeckCards({ deck, variants }: { deck: Deck; variants: CatalogVariant[] }) {
-  const lookup = new Map(variants.map(variant => [variant.key, variant]));
+function DeckCards({ deck }: { deck: Deck }) {
   return <div className="grid grid-cols-4 gap-2 sm:gap-3" aria-label="Eight deck cards">
     {deck.cards.map((card, index) => {
-      const variant = lookup.get(card.key);
+      const display = cardDisplay(card.key);
       return <div key={`${card.key}-${index}`} className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-center">
-        {variant?.image ? <img src={variant.image} alt="" loading="lazy" className="mx-auto aspect-[3/4] w-full object-contain" /> : <div className="flex aspect-[3/4] items-center justify-center px-1 text-xs text-slate-600">{variant?.name ?? card.key.split(':')[0]}</div>}
-        <span className="block truncate px-1 py-1.5 text-[10px] text-slate-700 sm:text-xs">{variant?.name ?? card.key.split(':')[0]}</span>
+        <CardArtwork cardKey={card.key} className="aspect-[3/4] w-full" fallbackClassName="text-slate-600" />
+        <span className="block truncate px-1 py-1.5 text-[10px] text-slate-700 sm:text-xs">{display.name}</span>
       </div>;
     })}
   </div>;
@@ -31,7 +32,6 @@ export default function FriendDeckPageExperience({ friendId }: { friendId: strin
   const [summary, setSummary] = useState<FriendHistorySummary | null>(null);
   const [friendName, setFriendName] = useState('Friend');
   const [friendTag, setFriendTag] = useState('');
-  const [variants, setVariants] = useState<CatalogVariant[]>([]);
   const [selected, setSelected] = useState(0);
   const [result, setResult] = useState<ModelResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,12 +58,10 @@ export default function FriendDeckPageExperience({ friendId }: { friendId: strin
 
   useEffect(() => {
     const controller = new AbortController();
-    Promise.allSettled([load('GET', controller.signal), fetchCatalog(controller.signal)]).then(([history, catalog]) => {
+    load('GET', controller.signal).then(() => {
       if (controller.signal.aborted) return;
-      if (history.status === 'rejected') setError(history.reason instanceof Error ? history.reason.message : 'Could not load deck history.');
-      if (catalog.status === 'fulfilled') setVariants(catalog.value.variants ?? []);
       setLoading(false);
-    });
+    }).catch(reason => { if (!controller.signal.aborted) { setError(reason instanceof Error ? reason.message : 'Could not load deck history.'); setLoading(false); } });
     return () => controller.abort();
   }, [friendId]);
 
@@ -105,15 +103,15 @@ export default function FriendDeckPageExperience({ friendId }: { friendId: strin
         <nav aria-label="Most played decks since tracking began" className="grid gap-2 sm:grid-cols-3">
           {summary.topDecks.map((deck, index) => <button key={deck.key} type="button" onClick={() => { setSelected(index); setError(''); }} aria-pressed={selected === index} className={`min-h-16 rounded-xl border p-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-600 ${selected === index ? 'border-violet-600 bg-violet-50 ring-1 ring-violet-600' : 'border-slate-200 bg-white hover:border-violet-300 hover:bg-slate-50'}`}>
             <span className="block text-sm font-bold text-slate-900">Deck {index + 1} · {deck.count} {deck.count === 1 ? 'match' : 'matches'}</span>
-            <span className="mt-1 block truncate text-xs text-slate-600">{deck.cards.slice(0, 3).map(card => variants.find(variant => variant.key === `${card.id}:${Number(card.form ?? 0)}`)?.name ?? card.name ?? 'Card').join(' · ')}</span>
-            <span className="mt-2 flex gap-1" aria-hidden="true">{deck.cards.slice(0, 4).map((card, cardIndex) => { const variant = variants.find(item => item.key === `${card.id}:${Number(card.form ?? 0)}`); return variant?.image ? <img key={`${card.id}-${cardIndex}`} src={variant.image} alt="" loading="lazy" className="h-12 w-9 rounded object-contain" /> : <span key={`${card.id}-${cardIndex}`} className="flex h-12 w-9 items-center justify-center rounded bg-slate-100 text-[9px] text-slate-500">{card.name?.slice(0, 2) ?? '?'}</span>; })}</span>
+            <span className="mt-1 block truncate text-xs text-slate-600">{deck.cards.slice(0, 3).map(card => cardDisplay(`${card.id}:${Number(card.form ?? 0)}`, card.name).name).join(' · ')}</span>
+            <span className="mt-2 flex gap-1" aria-hidden="true">{deck.cards.slice(0, 4).map((card, cardIndex) => <CardArtwork key={`${card.id}:${Number(card.form ?? 0)}-${cardIndex}`} cardKey={`${card.id}:${Number(card.form ?? 0)}`} name={card.name} className="h-12 w-9 rounded bg-slate-100" fallbackClassName="text-slate-600" />)}</span>
             <span className="mt-2 block text-xs font-medium text-violet-700">{Math.round(deck.share * 100)}% of tracked matches · See counter →</span>
           </button>)}
         </nav>
         {target ? <>
           <section className="rounded-2xl border border-slate-200 p-4 sm:p-5" aria-labelledby="played-deck-heading">
             <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2"><div><p className="text-xs font-semibold uppercase tracking-wide text-violet-700">Deck {selected + 1}</p><h2 id="played-deck-heading" className="text-lg font-bold">Played {usage?.count} of {summary.allTimeMatches} tracked matches</h2></div><span className="text-sm text-slate-600">{Math.round((usage?.share ?? 0) * 100)}% since tracking began</span></div>
-            <DeckCards deck={target} variants={variants} />
+            <DeckCards deck={target} />
           </section>
           <section className="rounded-2xl border border-violet-200 bg-violet-50/60 p-4 sm:p-5" aria-labelledby="counter-heading">
             <div><p className="text-xs font-semibold uppercase tracking-wide text-violet-700">Suggested response</p><h2 id="counter-heading" className="mt-1 text-xl font-bold">A counter for this deck</h2><p className="mt-1 text-sm text-slate-600">Ranked by the matchup model. This is an estimate, not a measured win rate.</p></div>
@@ -121,7 +119,7 @@ export default function FriendDeckPageExperience({ friendId }: { friendId: strin
             {!scoring && !best?.deck && !error && <p className="mt-4 text-sm text-slate-600">No supported counter is available for this deck yet.</p>}
             {best?.deck && <div className="mt-4">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">Top counter candidate</h3><span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-violet-800">{Math.round((best.probability ?? 0) * 100)}% model estimate</span></div>
-              <DeckCards deck={best.deck} variants={variants} />
+              <DeckCards deck={best.deck} />
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 {exportUrl && <a href={exportUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-orange-600 px-4 text-sm font-bold text-white hover:bg-orange-700">Open in Clash Royale</a>}
                 <Link href={`/counter-deck?friendId=${encodeURIComponent(friendId)}&deck=${encodeURIComponent(usage?.key ?? '')}`} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-violet-300 bg-white px-4 text-sm font-semibold text-violet-800 hover:bg-violet-50">Explore more counters</Link>

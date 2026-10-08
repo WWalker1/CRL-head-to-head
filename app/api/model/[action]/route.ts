@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { isLocalModelPreview, MODEL_READ_ACTIONS, MODEL_WRITE_ACTIONS, readModelBody } from '@/lib/model-access';
 import { checkAnonymousRateLimit } from '@/lib/anonymous-rate-limit';
+import { createClient as createSupabase } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,14 +39,21 @@ async function forward(request: NextRequest, context: { params: Promise<{ action
           return NextResponse.json({ error: 'Sign-in is not configured.' }, { status: 503 });
         }
         const supabase = await createClient();
-        const { data: { user }, error } = await supabase.auth.getUser();
+        const bearer = request.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1];
+        const { data: { user }, error } = await supabase.auth.getUser(bearer);
         if (error || !user) {
           if (action !== 'counter') return NextResponse.json({ error: 'Sign in to use model predictions.' }, { status: 401 });
           if (!origin) return NextResponse.json({ error: 'A same-site origin is required.' }, { status: 403 });
           const limited = await checkAnonymousRateLimit(request, 'counter_search');
           if (limited) return limited;
         } else {
-          const { data: allowed, error: quotaError } = await supabase.rpc('consume_model_quota', {
+          // The browser supplies its current token as a fallback when an SSR cookie
+          // has not been refreshed yet (for example, after moving to a preview host).
+          const quotaClient = bearer ? createSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+            global: { headers: { Authorization: `Bearer ${bearer}` } },
+            auth: { persistSession: false, autoRefreshToken: false },
+          }) : supabase;
+          const { data: allowed, error: quotaError } = await quotaClient.rpc('consume_model_quota', {
             operation: action === 'predict' ? 'predict' : 'search',
           });
           if (quotaError) return NextResponse.json({ error: 'Model quota service is unavailable.' }, { status: 503 });
