@@ -1,8 +1,8 @@
 # Rival Royale setup
 
-**October 7 launch state:** Read `LAUNCH_HANDOFF_2026-10-07.md` before deployment. The public beta is `https://beta.rival-royale.com`. The older protected `crl-head-to-head-git-...vercel.app` Preview has an outdated model token and returns `Unauthorized` from its model API. It is not the tester link. The beta UI is not yet on production; production's nightly cron must be preserved during promotion.
+**October 8 release state:** The integrated beta UI is live at `https://rival-royale.com` from main commit `fd2e66d`. The separate test site remains `https://beta.rival-royale.com`. Production keeps the nightly Vercel cron. Read `LAUNCH_HANDOFF_2026-10-07.md` for live checks and outstanding follow-ups; the older protected Preview URL is not a tester link. Some dated paragraphs below describe the earlier setup sequence.
 
-Migrations 007–009 were applied to the existing Clash-Royale Supabase project on October 1, 2026; migrations 010–012 were applied October 6, 2026. See MIGRATION_REPORT.md for the recorded application and verification. The Railway model service is deployed. The existing Vercel project's Preview branch and the separate public beta project are configured. The main production site remains on `main`.
+Migrations 007–009 were applied to the existing Clash-Royale Supabase project on October 1, 2026; migrations 010–012 were applied October 6, 2026, and migrations 013–016 were confirmed present on October 8. The Railway model service and production model proxy are live. Main serves production; beta remains a separate test project.
 
 ## 1. Supabase
 

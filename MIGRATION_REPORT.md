@@ -1,5 +1,7 @@
 # Supabase migration report — 2026-10-01
 
+**October 8 update:** Live catalog inspection confirmed the objects from migrations 013–016, including anonymous search limits, the 15-friend limit, and bounded deck summaries. The observed largest full-history windows were 60 owner games and 69 tracked-friend games, below the database cap of 100 each. See `LAUNCH_HANDOFF_2026-10-07.md` for the current production verification.
+
 Target: the existing Clash-Royale Supabase project. Migrations 007–009 were applied on October 1, 2026, after a rollback test against the live schema.
 
 ## Live catalog findings

@@ -1,6 +1,6 @@
 # Rival Royale Reddit launch drafts
 
-These are unpublished drafts. Replace the bracketed production link and screenshot only after production has passed the launch checks. Post where the community permits project sharing, disclose that the author built the site, and tailor the text to the discussion instead of posting identical links everywhere.
+These are unpublished drafts. The live site is https://rival-royale.com. Add a verified phone screenshot after the signed-in friend flow has been checked. Post where the community permits project sharing, disclose that the author built the site, and tailor the text to the discussion instead of posting identical links everywhere.
 
 ## Post 1 — player skill discussion
 
@@ -10,7 +10,7 @@ I used to look at my win rate and wonder whether I was improving or just queuein
 
 My favorite part is seeing a game I had a low predicted chance to win and remembering how I played it. The score is a snapshot of recent results against deck expectations; it cannot see every decision I made or how good my opponent was.
 
-I built the tool and would love feedback on whether these highlights tell you something useful about your own play. If project links are allowed here: **[PRODUCTION LINK]**. **[OPTIONAL VERIFIED PHONE SCREENSHOT]**. What would you want a skill score to consider besides wins and losses?
+I built the tool and would love feedback on whether these highlights tell you something useful about your own play. If project links are allowed here: **https://rival-royale.com**. **[OPTIONAL VERIFIED PHONE SCREENSHOT]**. What would you want a skill score to consider besides wins and losses?
 
 ## Post 2 — friend rivalry discussion
 
@@ -20,7 +20,7 @@ Our group kept arguing about who actually wins our games. I built Rival Royale t
 
 The head-to-head record is the fun part. The skill score adds another angle: it compares recent results with deck matchup expectations and calls out a tough win and a favored loss. Neither number settles every argument, especially if older games are missing from the API, but it gives us something better to talk about than screenshots of one lucky match.
 
-I built this site. If sharing tools is allowed here, it is at **[PRODUCTION LINK]**. **[OPTIONAL VERIFIED PHONE SCREENSHOT]**. How do you and your friends decide who is better?
+I built this site. If sharing tools is allowed here, it is at **https://rival-royale.com**. **[OPTIONAL VERIFIED PHONE SCREENSHOT]**. How do you and your friends decide who is better?
 
 ## Before posting
 

@@ -1,5 +1,7 @@
 # Rival Royale: model-powered product implementation and agent handoff
 
+**October 8 update:** The integrated UI is live on production at `https://rival-royale.com` from main commit `fd2e66d`. Migrations 013–016 were confirmed present; the cron remains enabled. See `LAUNCH_HANDOFF_2026-10-07.md` for current verification and remaining live checks. The dated plan below records earlier decisions.
+
 Plan date: 2026-09-23. Updated: 2026-10-07. Current release status and the user's latest requests are in LAUNCH_HANDOFF_2026-10-07.md. Friend deck and counter flow are implemented; migrations 007–012 were applied; constructed 1v1 history capture and compact deck totals are implemented; Railway model service, protected Vercel Preview and public `beta.rival-royale.com` are deployed. Production remains on `main`; the live Vercel nightly sync remains enabled and the separate local research ingestion job is paused. The iterative deck builder is tabled: its route returns 404 and its web API action is disabled. Sections below retain the full design plan and dated feedback, not a claim that every planned feature is incomplete or awaiting first deployment.
 
 ## Preview release gate

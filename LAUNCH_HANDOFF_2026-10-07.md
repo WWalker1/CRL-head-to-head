@@ -2,6 +2,9 @@
 
 ## October 8 verification update
 
+- **Production release completed:** commit `fd2e66d` is on `origin/main` and Vercel deployment `dpl_8QbAFm11QcfaJ116sQqmXc7zmxD8` is Ready at <https://rival-royale.com>. Live smoke checks returned HTTP 200 for `/`, `/counter-deck`, `/clash-royale-skill-score`, `/api/model/catalog`, `/api/model/examples`, `/sitemap.xml`, and `/robots.txt`.
+- Vercel still reports one production cron, `/api/cron/sync-all-users` at `0 2 * * *`. Watch its next automatic run; the successful manual run below is the current evidence for the end-to-end sync. A signed-in friend skill page walkthrough and a new counter POST remain useful follow-up checks; the anonymous browser could not perform the former, and the shared tester IP had reached its three-search quota for the latter.
+
 - The beta UI is integrated with production's cron retry and history deduplication fixes on `codex/production-launch`. The merge keeps the production `vercel.json` nightly cron. Its Clash API calls combine retry on HTTP 429 with a ten-second request timeout.
 - The integrated branch passed 149 JavaScript tests in 26 suites, TypeScript checking, and a production build with placeholder build credentials. The production dependency audit found zero vulnerabilities. The beta model Python suite passed 51 tests before integration; no Python model files had merge conflicts.
 - The live production cron endpoint was invoked with its configured secret and completed for 1,161 of 1,161 users, with zero failures and 181 new battles. This confirms the endpoint and credentials; the scheduled 02:00 UTC run still needs its next automatic execution observed. Existing friend win/loss totals increased after the run.
