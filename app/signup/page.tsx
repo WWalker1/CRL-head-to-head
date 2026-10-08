@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
+import posthog from 'posthog-js';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -48,6 +49,7 @@ export default function SignupPage() {
       if (signUpError) {
         setError(signUpError.message);
       } else {
+        if (data.user) posthog.capture('user_signed_up');
         // Check if email confirmation is required
         // If user is null, it means they need to confirm their email
         if (!data.user || !data.session) {

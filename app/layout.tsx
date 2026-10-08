@@ -3,6 +3,7 @@ import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import Navbar from "@/components/Navbar";
+import PostHogAuth from "@/components/PostHogAuth";
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
@@ -81,6 +82,7 @@ export default function RootLayout({
         <Navbar />
         {children}
         <Analytics />
+        <PostHogAuth />
         <Toaster position="top-right" />
       </body>
     </html>
