@@ -2,12 +2,5 @@
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "framework": "nextjs",
-  "crons": [
-    {
-      "path": "/api/cron/sync-all-users",
-      "schedule": "0 2 * * *"
-    }
-  ]
+  "framework": "nextjs"
 }
-
