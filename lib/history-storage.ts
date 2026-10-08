@@ -49,7 +49,12 @@ export async function captureUserHistory(client: any, userId: string, playerTag:
     try {
       const recent = friend.friend_player_tag === playerTag ? battles : await sharedBattleLog(friend.friend_player_tag);
       await persistHistory(client, { userId, playerTag: friend.friend_player_tag, friendId: friend.id }, recent);
-    } catch { errors.push(`History unavailable for tracked friend ${friend.id}.`); }
+    } catch (error) {
+      // Keep the public error generic, but retain the cause in server logs so
+      // rate limits and database failures can be distinguished in a cron run.
+      console.error('Tracked friend history capture failed:', error);
+      errors.push(`History unavailable for tracked friend ${friend.id}.`);
+    }
   }
   return errors;
 }
