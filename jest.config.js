@@ -21,6 +21,7 @@ const customJestConfig = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/.next/',
+    '/.local/',
     'testHelpers\\.ts$'
   ],
   // Use node environment for API route tests

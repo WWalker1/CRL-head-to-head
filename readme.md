@@ -1,4 +1,6 @@
-# CRL Tracker
+# Rival Royale (formerly CRL Tracker)
+
+Current release status and data retention are documented in [LAUNCH_HANDOFF_2026-10-07.md](LAUNCH_HANDOFF_2026-10-07.md). The public test site is <https://beta.rival-royale.com>; production remains <https://rival-royale.com> until the release gate passes. Some screenshots and the legacy overview below describe the original tracker UI.
 
 A full-stack web application that allows Clash Royale players to track their head-to-head battle statistics against friends. Built with modern web technologies and designed with data minimization principles at its core.
 
@@ -33,7 +35,7 @@ Automatically track wins and losses against each friend with detailed statistics
 Battles are automatically synced from the Clash Royale API - no manual entry needed. The application runs a daily cron job to keep all statistics up-to-date, and users can manually trigger a sync at any time using the "Sync Battles" button.
 
 #### 3. 1v1 Focus
-Only tracks head-to-head 1v1 battles, keeping your stats clean and accurate. The application intelligently filters out 2v2 battles, challenges, and other game modes to maintain precise statistics.
+Tracks eligible constructed 1v1 battles, including Ranked, Ladder, Classic Challenge, and Grand Challenge. It excludes draft, 2v2, modified decks, and malformed records from deck and skill summaries.
 
 ### Using the Dashboard
 
@@ -81,22 +83,21 @@ This application is designed with privacy and data efficiency as core principles
 1. **User Authentication**: Only essential account information (managed by Supabase Auth)
 2. **Player Tags**: Public identifiers only (e.g., #8VLCRQ9R9) - no passwords or game credentials
 3. **Friend Relationships**: Friend player tags and names (publicly available information)
-4. **Aggregated Statistics**: Only win/loss counts per friend relationship
-5. **Minimal Battle History**: Only the last 25 battles per user are retained for processing purposes
+4. **Aggregated Statistics**: Win/loss counts per friend relationship remain independent of history pruning
+5. **Bounded Battle History**: Up to the newest 100 eligible full matches per tracked subject, with deck snapshots and model estimates where supported
+6. **Compact Deck Totals**: Per-deck usage counts and top-five decks since tracking began; these are not an unbounded archive of match rows
 
 ### What We Don't Store
-- ❌ Full battle logs or detailed match data
-- ❌ Deck compositions or card information
 - ❌ Personal information beyond what's necessary for authentication
 - ❌ Game account credentials or tokens
-- ❌ Historical battle data beyond recent processing needs
+- ❌ Unbounded full-match archives
 
 ### How It Works
 The application uses a **pull-based architecture**:
 - Player tags are the only required input from users (publicly available)
 - Battle data is fetched on-demand from the Clash Royale API
 - Statistics are calculated and aggregated in real-time
-- Old battle records are automatically cleaned up, keeping only the most recent 25 per user
+- Full eligible match rows are pruned to the newest 100 per tracked subject; compact deck usage counts persist separately
 - No sensitive game data is stored locally
 
 This approach ensures the application maintains the **absolute minimum data footprint** while providing full functionality.
@@ -156,3 +157,8 @@ Tests verify:
 ## License
 
 ISC
+
+
+## Model product beta
+
+Start with [AGENT_HANDOFF.md](AGENT_HANDOFF.md) for implementation status, plans, artifact requirements and outstanding tasks. See [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md) to run locally.

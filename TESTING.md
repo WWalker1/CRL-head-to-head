@@ -1,5 +1,7 @@
 # Testing Guide
 
+The current launch gate is in [LAUNCH_HANDOFF_2026-10-07.md](LAUNCH_HANDOFF_2026-10-07.md). Run the full suite, TypeScript check, production build, relevant Python model tests, and signed-in/mobile smoke checks after changes. Historical test counts below are not a current pass result.
+
 ## Running Tests
 
 ### Basic Commands
@@ -68,7 +70,7 @@ Tests are organized in `__tests__` directories:
 ## What Gets Tested
 
 - ✅ Cron job syncs all users
-- ✅ Only 25 most recent battles are kept per user
+- ✅ New full-history retention is bounded to the newest 100 eligible matches per tracked subject; compact deck totals are separate
 - ✅ User isolation (different users track different friends)
 - ✅ Authentication and authorization
 - ✅ Battle processing logic

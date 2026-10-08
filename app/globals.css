@@ -72,3 +72,11 @@ body {
   animation: elo-pulse 2s ease-in-out infinite;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .animated-gradient,
+  .floating,
+  .elo-pulse {
+    animation: none;
+  }
+}
+

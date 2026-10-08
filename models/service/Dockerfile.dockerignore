@@ -1,0 +1,7 @@
+**
+!models
+!models/service
+!models/service/**
+!models/release-bundle
+!models/release-bundle/**
+**/__pycache__/**

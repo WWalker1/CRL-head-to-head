@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
 import { TrackedFriend } from '@/lib/types';
 import FriendCard from '@/components/FriendCard';
@@ -9,6 +10,8 @@ import AddFriendModal from '@/components/AddFriendModal';
 import SyncButton from '@/components/SyncButton';
 import EloDisplay from '@/components/EloDisplay';
 import toast from 'react-hot-toast';
+
+const MAX_TRACKED_FRIENDS = 15;
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -248,9 +251,9 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-700 to-orange-600">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-white">CRL Tracker</h1>
+            <h1 className="text-3xl font-bold text-white sm:text-4xl">CRL Tracker</h1>
             <p className="text-blue-100 mt-1">Tag: {userTag}</p>
             <div className="mt-1 flex items-center gap-2">
               <span className="text-blue-100">Elo:</span>
@@ -277,16 +280,19 @@ export default function DashboardPage() {
         </div>
 
         {/* Friends List */}
+        {process.env.NEXT_PUBLIC_MODEL_TOOLS_ENABLED === '1' && <Link href="/stats" className="mb-6 flex min-h-11 items-center justify-between gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"><span>See your matchup skill score</span><span aria-hidden="true">→</span></Link>}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-white">Your Friends</h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div><h2 className="text-2xl font-bold text-white">Your Friends</h2><p className="text-sm text-blue-100">{friends.length} of {MAX_TRACKED_FRIENDS} tracked</p></div>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-4 py-2 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition-colors shadow-lg"
+              disabled={friends.length >= MAX_TRACKED_FRIENDS}
+              className="min-h-11 px-4 py-2 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition-colors shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
             >
-              + Add Friend
+              {friends.length >= MAX_TRACKED_FRIENDS ? 'Friend limit reached' : '+ Add Friend'}
             </button>
           </div>
+          {friends.length >= MAX_TRACKED_FRIENDS && <p className="mb-4 text-sm text-white">Remove a friend to track someone new.</p>}
 
           {friends.length === 0 ? (
             <div className="bg-white bg-opacity-10 rounded-lg p-8 text-center text-white">

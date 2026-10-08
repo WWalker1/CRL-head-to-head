@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPlayerInfo } from '@/lib/clashRoyaleApi';
+import { checkAnonymousRateLimit } from '@/lib/anonymous-rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const limited = await checkAnonymousRateLimit(request, 'player_validation');
+    if (limited) return limited;
     const { playerTag } = await request.json();
 
     if (!playerTag) {

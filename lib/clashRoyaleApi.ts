@@ -14,6 +14,7 @@ async function fetchFromApi(endpoint: string) {
   // should not leave their history stale until the next daily run.
   for (let attempt = 0; attempt < 3; attempt++) {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      signal: typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(10000) : undefined,
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',

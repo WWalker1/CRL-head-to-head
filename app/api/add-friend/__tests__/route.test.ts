@@ -93,6 +93,7 @@ describe('Add Friend Route', () => {
       (getPlayerInfo as jest.Mock).mockResolvedValue(mockPlayer);
 
       mockStore.supabase.from.mockReturnValue({
+        then: (resolve: any) => Promise.resolve({ count: 0, error: null }).then(resolve),
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
@@ -167,6 +168,7 @@ describe('Add Friend Route', () => {
         });
 
       mockStore.supabase.from.mockReturnValue({
+        then: (resolve: any) => Promise.resolve({ count: 0, error: null }).then(resolve),
         select: selectMock,
         eq: eqMock,
         single: singleMock,
@@ -197,10 +199,35 @@ describe('Add Friend Route', () => {
       (getPlayerInfo as jest.Mock).mockResolvedValue(mockPlayer);
     });
 
+    it('enforces the 15-friend limit for the authenticated user before calling the game API', async () => {
+      (mockRequest.json as jest.Mock).mockResolvedValue({ friendTag: '#FRIEND1' });
+      const query: any = { select: jest.fn(() => query), eq: jest.fn(() => query), then: (resolve: any) => Promise.resolve({ count: 15, error: null }).then(resolve), insert: jest.fn() };
+      mockStore.supabase.from.mockReturnValue(query);
+
+      const response = await POST(mockRequest);
+      expect(response.status).toBe(409);
+      expect((await response.json()).error).toMatch(/up to 15 friends/);
+      expect(query.select).toHaveBeenCalledWith('id', { count: 'exact', head: true });
+      expect(query.eq).toHaveBeenCalledWith('user_id', 'user-id');
+      expect(getPlayerInfo).not.toHaveBeenCalled();
+      expect(query.insert).not.toHaveBeenCalled();
+    });
+
+    it('fails closed when the authenticated friend count is unavailable', async () => {
+      (mockRequest.json as jest.Mock).mockResolvedValue({ friendTag: '#FRIEND1' });
+      const query: any = { select: jest.fn(() => query), eq: jest.fn(() => query), then: (resolve: any) => Promise.resolve({ count: null, error: { message: 'unavailable' } }).then(resolve) };
+      mockStore.supabase.from.mockReturnValue(query);
+
+      const response = await POST(mockRequest);
+      expect(response.status).toBe(503);
+      expect(getPlayerInfo).not.toHaveBeenCalled();
+    });
+
     it('should prevent duplicate friend tracking', async () => {
       (mockRequest.json as jest.Mock).mockResolvedValue({ friendTag: '#FRIEND1' });
 
       mockStore.supabase.from.mockReturnValue({
+        then: (resolve: any) => Promise.resolve({ count: 0, error: null }).then(resolve),
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
@@ -240,6 +267,7 @@ describe('Add Friend Route', () => {
       });
 
       mockStore.supabase.from.mockReturnValue({
+        then: (resolve: any) => Promise.resolve({ count: 0, error: null }).then(resolve),
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
@@ -277,6 +305,7 @@ describe('Add Friend Route', () => {
       });
 
       mockStore.supabase.from.mockReturnValue({
+        then: (resolve: any) => Promise.resolve({ count: 0, error: null }).then(resolve),
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
@@ -293,10 +322,29 @@ describe('Add Friend Route', () => {
       expect(data.error).toBe('Failed to add friend');
     });
 
+    it('reports the database limit when a concurrent insert wins first', async () => {
+      (mockRequest.json as jest.Mock).mockResolvedValue({ friendTag: '#FRIEND1' });
+      const chain: any = {
+        then: (resolve: any) => Promise.resolve({ count: 14, error: null }).then(resolve),
+        select: jest.fn(() => chain), eq: jest.fn(() => chain),
+        single: jest.fn()
+          .mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } })
+          .mockResolvedValueOnce({ data: null, error: { code: '23514', message: 'Tracked friend limit reached' } }),
+        insert: jest.fn(() => chain),
+      };
+      mockStore.supabase.from.mockReturnValue(chain);
+
+      const response = await POST(mockRequest);
+      expect(response.status).toBe(409);
+      expect((await response.json()).error).toMatch(/up to 15 friends/);
+      expect(chain.insert).toHaveBeenCalledTimes(1);
+    });
+
     it('should return appropriate error for general failures', async () => {
       (mockRequest.json as jest.Mock).mockResolvedValue({ friendTag: '#FRIEND1' });
 
       mockStore.supabase.from.mockReturnValue({
+        then: (resolve: any) => Promise.resolve({ count: 0, error: null }).then(resolve),
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockRejectedValue(new Error('Unexpected error')),
@@ -310,4 +358,3 @@ describe('Add Friend Route', () => {
     });
   });
 });
-
