@@ -1,5 +1,13 @@
 # Rival Royale launch handoff — October 7, 2026
 
+## October 9 live audit
+
+- Online `main` was fetched and matched the local checkout at `8ce130e`; no older beta code was redeployed. Vercel production deployment `dpl_7Vn7YsDtybka4yt8FgdMErn3ajdJ` is Ready from that commit. Public beta deployment `dpl_GatyfQdbDw9F4C7YDe9H5iRX9Jmx` is Ready from security beta commit `d221f92`.
+- Vercel reports one deployed production cron at `/api/cron/sync-all-users`, scheduled `0 2 * * *`. The beta project lists that cron only as a **local change pending deploy** when inspected from the production worktree; it is not deployed to beta. Do not deploy the production `vercel.json` to beta.
+- Vercel request-log retention exposed only roughly the latest hour, so the actual October 9 02:00 UTC cron request could not be read. The database shows 1,758 newly observed player match rows across 275 users from 02:30–02:35 UTC, consistent with a multi-user nightly capture; this is supporting evidence, not direct proof of the scheduler invocation. No extra manual collection run was started.
+- Live maximum full histories were 74 owner rows and 100 tracked-friend rows per subject; maximum compact deck summaries were 35, all at or within their caps. Aggregate friend records stood at 43,518 wins and 33,351 losses. Railway `/ready` returned ready and its production service was Online with no recent failures. The user's claimed Railway $10 spending cap remains unverified because the connector does not expose billing limits.
+- The full friend skill view, removal of the raw model version from public stats copy, and all requested skill/deck Q&A are present in current source. Existing security-release verification recorded 163 JavaScript tests, TypeScript, a production build, 12 Python service tests, and SQL regression checks. No source change was required for this audit.
+
 ## October 8 verification update
 
 - **Security follow-up:** Migration 017 is applied and live privileges were verified. Security release code protects user-triggered game API requests with shared durable budgets, a per-account refresh cooldown, and expiring request locks; removes tag-based cross-account rating writes; and preserves existing ratings when adding friends. The production nightly cron is unchanged. See `SECURITY_REVIEW_2026-10-08.md` and `MIGRATION_REPORT.md`. Verification passed 163 JavaScript tests, TypeScript, the production build, 12 Python service tests, and rollback SQL checks. Recheck Vercel's deployment SHA when resuming.
