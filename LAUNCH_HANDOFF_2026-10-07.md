@@ -1,5 +1,11 @@
 # Rival Royale launch handoff — October 7, 2026
 
+## October 10 scheduled check
+
+- Online `main` and the local checkout matched at `eb64f63` before this check. Production and security beta deployments were Ready; their home/tool pages and model catalogs returned HTTP 200. Railway `/ready` returned ready with the expected release model. No code or service setting changed.
+- During the October 10 nightly window, 5,491 new player match rows appeared from 02:32–02:37 UTC across hundreds of accounts. A tracked friend gained six full-history rows later in the same hour. Aggregate friend totals rose from the October 9 check to 43,528 wins and 33,359 losses. This is strong evidence of capture during the scheduled window; Vercel's request logs did not retain the cron invocation itself.
+- Maximum retained full history was 97 rows per owner/player and 100 per tracked friend; maximum compact deck summaries were 44. Production source still schedules `/api/cron/sync-all-users` at `0 2 * * *`; the deployed beta source uses no-cron configuration. No extra manual collection was run. The Railway spending-cap setting and a signed-in browser walkthrough of the friend skill page remain unverified.
+
 ## October 9 live audit
 
 - Online `main` was fetched and matched the local checkout at `8ce130e`; no older beta code was redeployed. Vercel production deployment `dpl_7Vn7YsDtybka4yt8FgdMErn3ajdJ` is Ready from that commit. Public beta deployment `dpl_GatyfQdbDw9F4C7YDe9H5iRX9Jmx` is Ready from security beta commit `d221f92`.
