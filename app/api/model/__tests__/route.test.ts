@@ -97,6 +97,14 @@ describe('model proxy', () => {
     expect(global.fetch).not.toHaveBeenCalled();
     expect(checkAnonymousRateLimit).toHaveBeenCalledWith(expect.any(NextRequest), 'model_read');
   });
+  it('omits build-machine paths from the public catalog', async () => {
+    global.fetch = jest.fn().mockResolvedValue(new Response(JSON.stringify({
+      catalog_source: 'C:\\private\\cards.json', dataset: 'C:\\private\\training', variants: [{ key: 'card' }],
+    }), { status: 200 }));
+    const response = await GET(new NextRequest('https://rival.example/api/model/catalog'), context('catalog'));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ variants: [{ key: 'card' }] });
+  });
   it('limits bodies and hides service tracebacks', async () => {
     expect((await POST(request(JSON.stringify({ x: 'x'.repeat(33000) })), context('predict'))).status).toBe(413);
     global.fetch = jest.fn().mockResolvedValue(new Response('{"trace":"private"}', { status: 500 }));

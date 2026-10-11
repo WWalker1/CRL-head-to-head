@@ -1,5 +1,12 @@
 # Rival Royale launch handoff — October 7, 2026
 
+## October 11 scheduled check
+
+- Online `main` matched the local checkout at `a5ec583` before changes. Production and beta home, counter, skill, and model catalog pages returned HTTP 200; Railway `/ready` reported ready on the expected release model.
+- During the October 11 02:00–03:30 UTC window, 4,877 owner match rows and 23 tracked-friend match rows were newly observed. Friend aggregate totals reached 43,598 wins and 33,401 losses, up from the October 10 check. The largest retained owner and friend histories were both 100 rows per subject; the largest compact deck summary was 48. This supports a successful nightly capture but does not directly identify the scheduler invocation.
+- The public model catalog exposed build-machine path metadata. The Next.js proxy now removes `catalog_source` and `dataset` from successful catalog responses while preserving card data. All 164 JavaScript tests, TypeScript, and a production build passed locally. No collector was started, and the production `0 2 * * *` cron configuration was preserved.
+- Railway's spending cap and a signed-in browser walkthrough of the friend skill page remain unverified. The older `codex/rival-model-product` branch remains unsuitable for redeployment without the production security fixes.
+
 ## October 10 scheduled check
 
 - Online `main` and the local checkout matched at `eb64f63` before this check. Production and security beta deployments were Ready; their home/tool pages and model catalogs returned HTTP 200. Railway `/ready` returned ready with the expected release model. No code or service setting changed.

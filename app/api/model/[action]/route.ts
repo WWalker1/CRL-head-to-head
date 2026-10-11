@@ -71,6 +71,11 @@ async function forward(request: NextRequest, context: { params: Promise<{ action
     const payload = await response.json();
     // Never return upstream tracebacks; FastAPI's structured validation errors remain useful.
     if (response.status >= 500) return NextResponse.json({ error: 'The model service is busy or unavailable. Try again shortly.' }, { status: 503 });
+    if (action === 'catalog' && response.ok && payload && typeof payload === 'object' && !Array.isArray(payload)) {
+      // Bundle metadata can contain build-machine paths; clients only need card data.
+      delete payload.catalog_source;
+      delete payload.dataset;
+    }
     return NextResponse.json(payload, { status: response.status, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     const reason = error instanceof Error ? error.message : '';
