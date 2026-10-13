@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase-server';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
+import AdPlacement from '@/components/ads/AdPlacement';
 
 export const metadata: Metadata = {
   title: 'Track Clash Royale Wins Against Friends',
@@ -70,6 +71,7 @@ export default async function Home() {
           <Link href="/matchup" className="rounded-2xl border border-violet-200 bg-violet-50 p-5 transition hover:border-violet-400 hover:shadow-md"><strong className="block text-lg text-slate-950">Compare two decks →</strong><span className="mt-1 block text-sm leading-6 text-slate-700">See a model estimate for a complete deck matchup.</span></Link>
         </div>
       </section>
+      <AdPlacement placement="home" />
       <section className="mt-14" aria-labelledby="faq-heading">
         <h2 id="faq-heading" className="text-2xl font-black tracking-tight">Frequently asked questions</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2">{faqs.map(({ question, answer }) => <article key={question} className="rounded-2xl border border-slate-200 bg-white p-5"><h3 className="font-bold text-slate-950">{question}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{answer}</p></article>)}</div>

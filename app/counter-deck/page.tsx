@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import ModelWorkbench from '@/components/model-tools/ModelWorkbench';
+import AdPlacement from '@/components/ads/AdPlacement';
 
 export const metadata: Metadata = {
   title: 'Free Clash Royale Counter Deck Finder',
@@ -26,6 +27,7 @@ export default function CounterDeckPage() {
     </Suspense>
     <section className="bg-[#0d1024] px-4 pb-16 text-slate-300 sm:px-6" aria-labelledby="counter-guide-heading">
       <div className="mx-auto max-w-6xl border-t border-white/10 pt-9">
+        <AdPlacement placement="counter" dark />
         <h2 id="counter-guide-heading" className="text-2xl font-bold text-white">How to find a counter deck</h2>
         <ol className="mt-5 grid gap-4 sm:grid-cols-3">
           <li className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"><strong className="text-orange-300">1. Choose a target</strong><p className="mt-2 text-sm leading-6">Enter all eight cards in the opponent deck, or tap an example above.</p></li>

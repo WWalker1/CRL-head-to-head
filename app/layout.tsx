@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
+import Script from 'next/script';
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import Navbar from "@/components/Navbar";
 import PostHogAuth from "@/components/PostHogAuth";
+import { getAdSenseConfig } from '@/lib/adsense';
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 const isPublicBeta = new URL(baseUrl).hostname === 'beta.rival-royale.com';
+const adsense = getAdSenseConfig();
 
 export const metadata: Metadata = {
+  other: adsense.publisherId ? { 'google-adsense-account': adsense.publisherId } : {},
   metadataBase: new URL(baseUrl),
   title: {
     default: "Rival Royale | Clash Royale Matchups, Counter Decks & Friend Stats",
@@ -81,6 +85,12 @@ export default function RootLayout({
       <body className="antialiased">
         <Navbar />
         {children}
+        {adsense.enabled ? <Script
+          id="google-adsense"
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsense.publisherId}`}
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+        /> : null}
         <Analytics />
         <PostHogAuth />
         <Toaster position="top-right" />

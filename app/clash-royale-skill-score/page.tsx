@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import AdPlacement from '@/components/ads/AdPlacement';
 
 export const metadata: Metadata = {
   title: 'Am I Good at Clash Royale? Free Skill Score',
@@ -28,6 +29,7 @@ export default function SkillScoreLandingPage() {
       </div>
       <div className="mt-12 grid gap-3 sm:grid-cols-3"><p className="rounded-2xl border border-violet-100 bg-white p-4 text-sm text-slate-700"><strong className="block text-base text-slate-900">Sync your battles</strong>Latest 100 recorded constructed 1v1 games, across opponents.</p><p className="rounded-2xl border border-violet-100 bg-white p-4 text-sm text-slate-700"><strong className="block text-base text-slate-900">Compare results</strong>Supported deck matchups after the model training cutoff.</p><p className="rounded-2xl border border-violet-100 bg-white p-4 text-sm text-slate-700"><strong className="block text-base text-slate-900">Explore highlights</strong>Review your best win, toughest loss, and tracked friends.</p></div>
       <div className="mt-8 rounded-2xl border border-violet-100 bg-white p-5 sm:p-6"><h2 className="text-xl font-bold text-slate-950">Better than your friend?</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">Track your head-to-head wins and losses, then open a friend&apos;s skill page to compare recent results against deck expectations. Their most-played decks are one tap away when you want to find a counter.</p><Link href="/signup" className="mt-3 inline-flex min-h-11 items-center font-semibold text-violet-700 underline underline-offset-2">Start tracking friends →</Link></div>
+      <AdPlacement placement="skill" />
       <section className="mt-8 grid gap-3 sm:grid-cols-2" aria-label="Clash Royale skill questions">
         <article className="rounded-2xl border border-violet-100 bg-white p-5"><h2 className="text-lg font-bold text-slate-950">How do I know if I&apos;m good at Clash Royale?</h2><p className="mt-2 text-sm leading-6 text-slate-700">Look beyond trophies or one win streak. Compare your results with the matchups you faced: winning a difficult deck matchup tells a different story from winning a favored one. Rival Royale shows your recent results against model expectations and highlights both.</p></article>
         <article className="rounded-2xl border border-violet-100 bg-white p-5"><h2 className="text-lg font-bold text-slate-950">How can I check my skill level in Clash Royale?</h2><p className="mt-2 text-sm leading-6 text-slate-700">Add your player tag, sync eligible 1v1 battles, and open your free matchup skill score. The score uses supported games from your latest 100 recorded matches; it can move quickly with a small sample and does not measure every in-game decision.</p></article>
