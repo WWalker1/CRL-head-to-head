@@ -1,5 +1,11 @@
 # Rival Royale launch handoff — October 7, 2026
 
+## October 13 final launch-reminder check
+
+- Fetched GitHub refs and confirmed local `main` matched `origin/main` at `24e8211` (the separate AdSense work). Production home and model catalog returned HTTP 200; Railway `/ready` reported ready on the expected release model. No application code or hosting configuration was changed in this check.
+- The October 13 02:00–03:30 UTC window added 4,616 owner match rows and 30 tracked-friend rows. Friend aggregates reached 43,998 wins and 33,688 losses. Maximum retained owner and friend full histories were both 100 rows per subject. This supports scheduled capture without proving the individual cron request from retained logs.
+- The `resume-rival-royale-launch-work` Codex reminder was paused after repeated wake-ups because its October 7 launch and promotion instructions are complete and stale. This does **not** change the production Vercel nightly cron, which remains required. Railway's billing cap and a signed-in friend skill browser walkthrough remain unverified.
+
 ## October 13 follow-up (October 12 nightly window)
 
 - Fetched online refs; local and remote `main` matched at `d266f4c`. Production Vercel deployment from that commit is Ready. Production home, counter, skill, catalog, and sitemap returned HTTP 200; the public catalog no longer includes build-machine path fields. Beta home returned HTTP 200; Railway `/ready` was ready on the expected release model.
