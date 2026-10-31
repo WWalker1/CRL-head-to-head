@@ -2,6 +2,14 @@
 
 Review hub: https://beta.rival-royale.com/dev-review
 
+## Verified deployment
+
+Public beta deployment `dpl_7GvZL6rCsGp5GJJBeqEA9k1gaDFM` is READY from dev commit `656c52dc1b25da54e5a2118baa462cb47c773585`. The custom beta domain is assigned to this deployment. Dev review, tools, guides, comparison, privacy, model catalog and model examples returned HTTP 200. The signed-out dashboard correctly rendered the sign-in page after redirect. Review/tool pages contain `noindex`. The review hub was visually inspected in the browser; the public lookup form is visible with the 25-game public / 50-game recorded-history distinction. Authenticated account actions and real-tag/load acceptance remain unchecked.
+
+The dev source's `vercel.json` was fetched from GitHub and confirmed to contain no cron. Online main was independently checked again and remains `c48fffba8f06b5c18956a2448f19d12e73a3697c`. Model catalog/examples success verifies the beta web proxy can authenticate to the configured model service. Documentation-only commits after the deployed SHA do not change this running application build.
+
+Browser validation also submitted an invalid player tag and verified the form returned to its enabled state with the tag-character error, rather than remaining stuck loading.
+
 Source: `dev` in WWalker1/CRL-head-to-head. The public beta is manually deployed from this branch; pushing dev alone does not update its domain. Main is unchanged. The dev branch uses the no-cron beta `vercel.json`; restore the production nightly cron configuration when integrating changes into main.
 
 The owner explicitly requested this dev release with labeled changes after GitHub write access was repaired. The separately unpublished cloud cron commit remains unavailable and is excluded from this review build. This is an explicit current-source dev review, not a claim that the cloud work was reconciled.

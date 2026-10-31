@@ -1,5 +1,11 @@
 # October 31 refresh, retention and release status
 
+## Dev release completed
+
+At the owner's subsequent explicit request, published the available Windows source to `dev` and deployed the existing public beta project. Deployment `dpl_7GvZL6rCsGp5GJJBeqEA9k1gaDFM` is READY at https://beta.rival-royale.com from commit `656c52dc1b25da54e5a2118baa462cb47c773585`. Start at `/dev-review` for twelve numbered areas with test steps, or read `docs/DEV_REVIEW_2026-10-31.md` for the full source/review mapping. Beta's lookup/model/history/review flags are enabled; its canonical/share origin is the public beta domain. No credential values were exposed or replaced.
+
+Beta uses a no-cron `vercel.json`; this differs intentionally from the untouched local/main production config. Fetch and restore the main production cron config when promoting application changes. Main remains `c48fffba8f06b5c18956a2448f19d12e73a3697c`. The cloud cron source is explicitly excluded and labeled in the review hub. Vercel cloud builds now pass; historical local EPERM remains a local-host issue. Public route/model HTTP checks, signed-out redirect and browser review-hub rendering passed. Signed-in mutations, real-device export and representative lookup/load checks are still owner acceptance items.
+
 ## GitHub reconnection follow-up
 
 All 122 changed/new/deleted source entries were successfully committed and pushed to `codex/production-refresh-retention-20261031` at `86e2fe5b0eaa33e1829a9790f472eb9692313037`. This includes the prior unpublished Windows changes, fonts/licenses, source tests, access skill and applied database migration; credential-pattern scanning found no matching secrets. Main was not advanced. This push is source preservation, not a verified development or production release. No Vercel deployment was found for this SHA immediately after the push. The next agent can retrieve this snapshot from GitHub instead of depending on this Windows working tree.
