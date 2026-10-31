@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 
-export const FRIEND_HISTORY_LIMIT = 100;
+import { FRIEND_HISTORY_LIMIT } from './history-limits';
+export { FRIEND_HISTORY_LIMIT } from './history-limits';
 /** Known competitive mode IDs; other constructed 1v1 games are archived separately. */
 export const ELIGIBLE_MODE_IDS = new Set([72000006, 72000464, 72000450, 72000474]);
 export const ELIGIBLE_MODES = ['ladder', 'ranked', 'challenge', 'other'] as const;

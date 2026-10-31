@@ -33,16 +33,16 @@ export default function InfoPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleStructuredData) }}
       />
-      <div className="min-h-screen animated-gradient">
+      <div className="min-h-screen bg-[#f7f5ef]">
         <div className="container mx-auto px-4 py-8 md:py-12 max-w-4xl">
-          <article className="bg-white rounded-xl md:rounded-2xl shadow-2xl p-6 md:p-10">
+          <article className="bg-[#fffdf8] rounded-lg border border-stone-200 p-6 md:p-10">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               How to Track Clash Royale Wins Against Friends
             </h1>
-            
+
             <p className="text-lg text-gray-700 mb-8">
-              If you're looking for a way to track your Clash Royale wins and losses against friends, 
-              you've come to the right place. This comprehensive guide will show you exactly how to use 
+              If you&apos;re looking for a way to track your Clash Royale wins and losses against friends,
+              you&apos;ve come to the right place. This comprehensive guide will show you exactly how to use
               a free battle tracker to monitor your head-to-head statistics.
             </p>
 
@@ -74,7 +74,7 @@ export default function InfoPage() {
                     <li>Open the Clash Royale app</li>
                     <li>Tap on your player name at the top of the screen</li>
                     <li>Your player tag will be displayed below your name</li>
-                    <li>Tap "Copy Tag" to copy it to your clipboard</li>
+                    <li>Tap &quot;Copy Tag&quot; to copy it to your clipboard</li>
                   </ol>
                 </div>
 
@@ -84,7 +84,7 @@ export default function InfoPage() {
                   </h3>
                   <p className="text-gray-700">
                     Create an account on Rival Royale and enter your player tag.
-                    The tracker uses your player tag to identify you in the Clash Royale API - no passwords 
+                    The tracker uses your player tag to identify you in the Clash Royale API - no passwords
                     or game credentials needed.
                   </p>
                 </div>
@@ -94,7 +94,7 @@ export default function InfoPage() {
                     Step 3: Add Your Friends
                   </h3>
                   <p className="text-gray-700">
-                    Once you're signed up, add your friends' player tags to start tracking battles. 
+                    Once you&apos;re signed up, add your friends&apos; player tags to start tracking battles.
                     You can track up to 15 friends, and each will have their own statistics card
                     showing your win/loss record against them.
                   </p>
@@ -121,7 +121,7 @@ export default function InfoPage() {
                 How Does Automatic Battle Syncing Work?
               </h2>
               <p className="text-gray-700 mb-4">
-                The tracker connects directly to the official Clash Royale API to fetch your battle history. 
+                The tracker connects directly to the official Clash Royale API to fetch your battle history.
                 This means:
               </p>
               <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4 mb-4">
@@ -131,7 +131,7 @@ export default function InfoPage() {
                 <li>Only 1v1 battles are tracked for accurate head-to-head statistics</li>
               </ul>
               <p className="text-gray-700">
-                The system intelligently filters battles to only include head-to-head 1v1 matches, 
+                The system intelligently filters battles to only include head-to-head 1v1 matches,
                 ensuring your statistics reflect true competitive performance against friends.
               </p>
             </section>
@@ -184,15 +184,17 @@ export default function InfoPage() {
                 Privacy and Data Security
               </h2>
               <p className="text-gray-700 mb-4">
-                The tracker is designed with privacy in mind. We only store:
+                Tracking needs an account as well as game records. The application uses:
               </p>
               <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4 mb-4">
-                <li>Your player tag (publicly available information)</li>
+                <li>Your account email, account identifier and authentication session</li>
+                <li>Your player tag (publicly available game information)</li>
                 <li>Friend player tags and names</li>
                 <li>Aggregated win/loss statistics</li>
+                <li>Eligible recent battle records, deck summaries and supported matchup estimates</li>
               </ul>
               <p className="text-gray-700">
-                The tracker stores win and loss totals. When history collection is enabled, it retains eligible recorded 1v1 matches for you and your tracked friends, including both decks, levels, tower troops, and outcomes. Deck and skill summaries use the latest 100 records. Game credentials are never stored.
+                The tracker stores win and loss totals. When history collection is enabled, it retains eligible recorded 1v1 matches for you and your tracked friends, including both decks, levels, tower troops, and outcomes. Deck and skill summaries use the latest 50 records. Your Clash Royale password is never requested. Read our <Link href="/privacy" className="text-violet-700 underline">privacy and data use page</Link> for authentication, analytics and advertising details.
               </p>
             </section>
 
@@ -200,7 +202,7 @@ export default function InfoPage() {
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
                 Frequently Asked Questions
               </h2>
-              
+
               <div className="space-y-6">
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -222,20 +224,20 @@ export default function InfoPage() {
 
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    What if I can't find my player tag?
+                    What if I can&apos;t find my player tag?
                   </h3>
                   <p className="text-gray-700">
-                    Your player tag is always visible in your Clash Royale profile. Tap on your name at the top of the game screen, 
-                    and your tag will be displayed below your name. If you're still having trouble, check the tutorial on the homepage.
+                    Your player tag is always visible in your Clash Royale profile. Tap on your name at the top of the game screen,
+                    and your tag will be displayed below your name. If you&apos;re still having trouble, check the tutorial on the homepage.
                   </p>
                 </div>
 
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Can I track battles against players who aren't my friends?
+                    Can I track battles against players who aren&apos;t my friends?
                   </h3>
                   <p className="text-gray-700">
-                    The tracker focuses on tracking battles against friends you've added. You can add any player's tag to track 
+                    The tracker focuses on tracking battles against friends you&apos;ve added. You can add any player&apos;s tag to track
                     your battles against them, as long as you have their player tag.
                   </p>
                 </div>
@@ -247,7 +249,7 @@ export default function InfoPage() {
                 Ready to Start Tracking?
               </h2>
               <p className="text-gray-700 mb-6">
-                Now that you know how to track your Clash Royale wins against friends, it's time to get started. 
+                Now that you know how to track your Clash Royale wins against friends, it&apos;s time to get started.
                 The process is simple, free, and takes just a few minutes to set up.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">

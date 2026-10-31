@@ -1,4 +1,4 @@
-import { normalizeBattle, type FriendHistoryLog } from './friend-history';
+import { FRIEND_HISTORY_LIMIT, normalizeBattle, type FriendHistoryLog } from './friend-history';
 import { getPlayerBattleLog } from './clashRoyaleApi';
 
 export type HistorySubject = { userId: string; playerTag: string; friendId?: string };
@@ -7,7 +7,7 @@ export function historyConflict(subject: HistorySubject) { return subject.friend
 export function historyQuery(client: any, subject: HistorySubject) {
   let query = client.from(historyTable(subject)).select('*').eq('user_id', subject.userId);
   query = subject.friendId ? query.eq('tracked_friend_id', subject.friendId) : query.eq('player_tag', subject.playerTag);
-  return query.order('battle_time', { ascending: false }).limit(100);
+  return query.order('battle_time', { ascending: false }).limit(FRIEND_HISTORY_LIMIT);
 }
 export function asFriendHistory(row: any): FriendHistoryLog {
   return { ...row, friend_result: row.friend_result ?? row.result, friend_deck: row.friend_deck ?? row.player_deck };

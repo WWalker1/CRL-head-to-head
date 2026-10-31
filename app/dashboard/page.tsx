@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { createClient } from '@/lib/supabase';
-import { TrackedFriend } from '@/lib/types';
-import FriendCard from '@/components/FriendCard';
-import AddFriendModal from '@/components/AddFriendModal';
-import SyncButton from '@/components/SyncButton';
-import EloDisplay from '@/components/EloDisplay';
-import toast from 'react-hot-toast';
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase";
+import { TrackedFriend } from "@/lib/types";
+import FriendCard from "@/components/FriendCard";
+import AddFriendModal from "@/components/AddFriendModal";
+import SyncButton from "@/components/SyncButton";
+import EloDisplay from "@/components/EloDisplay";
+import toast from "react-hot-toast";
 
 const MAX_TRACKED_FRIENDS = 15;
 
@@ -18,63 +18,62 @@ export default function DashboardPage() {
   const [friends, setFriends] = useState<TrackedFriend[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [userTag, setUserTag] = useState('');
+  const [userTag, setUserTag] = useState("");
   const [userElo, setUserElo] = useState(1500);
   const [averageElo, setAverageElo] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetchFriends();
-    fetchUserTag();
-  }, []);
-
-  const fetchFriends = async () => {
+  const fetchFriends = useCallback(async () => {
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
-        router.push('/login');
+        router.push("/login");
         return;
       }
 
       // Fetch tracked friends
       const { data, error } = await supabase
-        .from('tracked_friends')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
+        .from("tracked_friends")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
 
       if (error) {
-        console.error('Error fetching friends:', error);
+        console.error("Error fetching friends:", error);
         setFriends([]);
       } else {
         const friendsData = data || [];
-        
+
         // Fetch ELO ratings from user_ratings table for each friend via API endpoint
-        const friendTags = friendsData.map(f => f.friend_player_tag);
-        
+        const friendTags = friendsData.map((f) => f.friend_player_tag);
+
         if (friendTags.length > 0) {
-          const { data: { session } } = await supabase.auth.getSession();
-          
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+
           if (session) {
             try {
-              const response = await fetch('/api/friend-ratings', {
-                method: 'POST',
+              const response = await fetch("/api/friend-ratings", {
+                method: "POST",
                 headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session.access_token}`,
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${session.access_token}`,
                 },
                 body: JSON.stringify({ playerTags: friendTags }),
               });
 
               if (!response.ok) {
-                throw new Error('Failed to fetch friend ratings');
+                throw new Error("Failed to fetch friend ratings");
               }
 
               const { ratings } = await response.json();
 
               // Update friends with ELOs from user_ratings, default to 1500 if not found
-              const friendsWithRatings = friendsData.map(friend => ({
+              const friendsWithRatings = friendsData.map((friend) => ({
                 ...friend,
                 elo_rating: ratings[friend.friend_player_tag] ?? 1500,
               }));
@@ -82,17 +81,19 @@ export default function DashboardPage() {
               setFriends(friendsWithRatings);
 
               // Calculate average ELO
-              const elos = friendsWithRatings.map(f => f.elo_rating ?? 1500);
+              const elos = friendsWithRatings.map((f) => f.elo_rating ?? 1500);
               if (elos.length > 0) {
-                const avg = Math.round(elos.reduce((sum, elo) => sum + elo, 0) / elos.length);
+                const avg = Math.round(
+                  elos.reduce((sum, elo) => sum + elo, 0) / elos.length,
+                );
                 setAverageElo(avg);
               } else {
                 setAverageElo(null);
               }
             } catch (error) {
-              console.error('Error fetching friend ratings:', error);
+              console.error("Error fetching friend ratings:", error);
               // If ratings fetch fails, set friends with default ELOs
-              const friendsWithDefaultRatings = friendsData.map(friend => ({
+              const friendsWithDefaultRatings = friendsData.map((friend) => ({
                 ...friend,
                 elo_rating: 1500,
               }));
@@ -101,7 +102,7 @@ export default function DashboardPage() {
             }
           } else {
             // No session, set friends with default ELOs
-            const friendsWithDefaultRatings = friendsData.map(friend => ({
+            const friendsWithDefaultRatings = friendsData.map((friend) => ({
               ...friend,
               elo_rating: 1500,
             }));
@@ -116,159 +117,179 @@ export default function DashboardPage() {
 
       // Fetch user's own ELO rating
       const { data: ratingData, error: ratingError } = await supabase
-        .from('user_ratings')
-        .select('elo_rating')
-        .eq('user_id', user.id)
+        .from("user_ratings")
+        .select("elo_rating")
+        .eq("user_id", user.id)
         .single();
 
       if (ratingError) {
-        if (ratingError.code === 'PGRST116') {
+        if (ratingError.code === "PGRST116") {
           setUserElo(1500);
         } else {
-          console.error('Error fetching user rating:', ratingError);
+          console.error("Error fetching user rating:", ratingError);
         }
       } else {
         setUserElo(ratingData?.elo_rating ?? 1500);
       }
     } catch (error) {
-      console.error('Error fetching friends:', error);
+      console.error("Error fetching friends:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
-  const fetchUserTag = async () => {
+  const fetchUserTag = useCallback(async () => {
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (user) {
-        const tag = user.user_metadata?.player_tag || 'Unknown';
+        const tag = user.user_metadata?.player_tag || "Unknown";
         setUserTag(tag);
       }
     } catch (error) {
-      console.error('Error fetching user tag:', error);
+      console.error("Error fetching user tag:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void fetchFriends();
+    void fetchUserTag();
+  }, [fetchFriends, fetchUserTag]);
 
   const handleSync = async () => {
     const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
     if (!session) return;
 
-    const response = await fetch('/api/sync-battles', {
-      method: 'POST',
+    const response = await fetch("/api/sync-battles", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
       },
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Failed to sync battles');
+      throw new Error(error.error || "Failed to sync battles");
     }
 
     const result = await response.json();
-    
+
     // Refresh friends list after sync
     await fetchFriends();
-    
+
     return result;
   };
 
   const handleAddFriend = async (tag: string) => {
     const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) throw new Error('Not authenticated');
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    const response = await fetch('/api/add-friend', {
-      method: 'POST',
+    if (!session) throw new Error("Not authenticated");
+
+    const response = await fetch("/api/add-friend", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({ friendTag: tag }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Failed to add friend');
+      throw new Error(error.error || "Failed to add friend");
     }
 
     await fetchFriends();
   };
 
   const handleRemoveFriend = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this friend from tracking?')) {
+    if (
+      !confirm("Are you sure you want to remove this friend from tracking?")
+    ) {
       return;
     }
 
     try {
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) throw new Error('Not authenticated');
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      const response = await fetch('/api/remove-friend', {
-        method: 'DELETE',
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await fetch("/api/remove-friend", {
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ friendId: id }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to remove friend');
+        throw new Error("Failed to remove friend");
       }
 
       await fetchFriends();
-      toast.success('Friend removed successfully');
+      toast.success("Friend removed successfully");
     } catch (error) {
-      console.error('Error removing friend:', error);
-      toast.error('Failed to remove friend');
+      console.error("Error removing friend:", error);
+      toast.error("Failed to remove friend");
     }
   };
 
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push('/login');
+    router.push("/login");
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-700 to-orange-600 flex items-center justify-center">
-        <div className="text-white text-2xl">Loading...</div>
+      <div className="min-h-screen bg-[#f7f5ef] flex items-center justify-center">
+        <div className="text-stone-900 text-2xl">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-700 to-orange-600">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-[#f7f5ef]">
+      <div className="rr-container py-8 sm:py-12">
         {/* Header */}
         <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white sm:text-4xl">CRL Tracker</h1>
-            <p className="text-blue-100 mt-1">Tag: {userTag}</p>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-blue-100">Elo:</span>
-              <EloDisplay elo={userElo} size="lg" />
-            </div>
-            {averageElo !== null && (
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-blue-100">Average Friend Elo:</span>
-                <EloDisplay elo={averageElo} size="md" />
+            <h1 className="rr-title">Your rivalries</h1>
+            <p className="text-stone-600 mt-1">Tag: {userTag}</p>
+            <details className="mt-3 text-sm">
+              <summary className="cursor-pointer text-stone-600">
+                Ratings &amp; account details
+              </summary>
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-stone-600">Elo:</span>
+                <EloDisplay elo={userElo} size="lg" />
               </div>
-            )}
+              {averageElo !== null && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-stone-600">Average Friend Elo:</span>
+                  <EloDisplay elo={averageElo} size="md" />
+                </div>
+              )}
+            </details>
           </div>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
+            className="px-4 py-2 bg-white bg-opacity-20 text-stone-900 rounded-lg hover:bg-opacity-30 transition-colors"
           >
             Logout
           </button>
@@ -280,29 +301,56 @@ export default function DashboardPage() {
         </div>
 
         {/* Friends List */}
-        {process.env.NEXT_PUBLIC_MODEL_TOOLS_ENABLED === '1' && <Link href="/stats" className="mb-6 flex min-h-11 items-center justify-between gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"><span>See your matchup skill score</span><span aria-hidden="true">→</span></Link>}
+        {process.env.NEXT_PUBLIC_MODEL_TOOLS_ENABLED === "1" && (
+          <Link
+            href="/stats"
+            className="mb-6 flex min-h-11 items-center justify-between gap-3 rounded-xl border border-stone-300 bg-[#fffdf8] px-4 py-3 text-sm font-semibold text-stone-900 transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          >
+            <span>See your matchup skill score</span>
+            <span aria-hidden="true">→</span>
+          </Link>
+        )}
         <div className="mb-8">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div><h2 className="text-2xl font-bold text-white">Your Friends</h2><p className="text-sm text-blue-100">{friends.length} of {MAX_TRACKED_FRIENDS} tracked</p></div>
+            <div>
+              <h2 className="text-2xl font-bold text-stone-900">
+                Head to head
+              </h2>
+              <p className="text-sm text-stone-600">
+                {friends.length} of {MAX_TRACKED_FRIENDS} tracked
+              </p>
+            </div>
             <button
               onClick={() => setIsModalOpen(true)}
               disabled={friends.length >= MAX_TRACKED_FRIENDS}
-              className="min-h-11 px-4 py-2 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition-colors shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-11 px-4 py-2 bg-[#c24719] text-white font-semibold rounded-lg hover:bg-orange-700 transition-colors  disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {friends.length >= MAX_TRACKED_FRIENDS ? 'Friend limit reached' : '+ Add Friend'}
+              {friends.length >= MAX_TRACKED_FRIENDS
+                ? "Friend limit reached"
+                : "+ Add Friend"}
             </button>
           </div>
-          {friends.length >= MAX_TRACKED_FRIENDS && <p className="mb-4 text-sm text-white">Remove a friend to track someone new.</p>}
+          {friends.length >= MAX_TRACKED_FRIENDS && (
+            <p className="mb-4 text-sm text-stone-900">
+              Remove a friend to track someone new.
+            </p>
+          )}
 
           {friends.length === 0 ? (
-            <div className="bg-white bg-opacity-10 rounded-lg p-8 text-center text-white">
+            <div className="rr-panel rounded-lg p-8 text-center text-stone-900">
               <p className="text-lg">No friends tracked yet.</p>
-              <p className="text-sm mt-2">Add a friend to start tracking your head-to-head record!</p>
+              <p className="text-sm mt-2">
+                Add a friend to start tracking your head-to-head record!
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {friends.map((friend) => (
-                <FriendCard key={friend.id} friend={friend} onRemove={handleRemoveFriend} />
+                <FriendCard
+                  key={friend.id}
+                  friend={friend}
+                  onRemove={handleRemoveFriend}
+                />
               ))}
             </div>
           )}
@@ -317,4 +365,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

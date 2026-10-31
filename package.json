@@ -7,10 +7,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "jest",
     "test:watch": "jest --watch",
-    "backfill:elo": "node scripts/backfillElo.mjs"
+    "backfill:elo": "node scripts/backfillElo.mjs",
+    "ads:check": "node scripts/check-adsense.mjs"
   },
   "repository": {
     "type": "git",

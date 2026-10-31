@@ -4,7 +4,7 @@ import { getPlayerInfo } from '@/lib/clashRoyaleApi';
 import { reserveGameApi } from '@/lib/game-api-budget';
 
 const DEFAULT_ELO = 1500;
-export const MAX_TRACKED_FRIENDS = 15;
+const MAX_TRACKED_FRIENDS = 15;
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

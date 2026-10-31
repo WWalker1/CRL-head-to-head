@@ -1,24 +1,25 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { createClient } from '@/lib/supabase';
-import Link from 'next/link';
+import { useState } from "react";
+import { createClient } from "@/lib/supabase";
+import Link from "next/link";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setSuccess(false);
     setLoading(true);
 
     try {
       const supabase = createClient();
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${origin}/reset-password`,
       });
@@ -29,21 +30,22 @@ export default function ForgotPasswordPage() {
         setSuccess(true);
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError("An unexpected error occurred");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-orange-600">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-xl">
+    <div className="flex min-h-screen items-center justify-center bg-[#f7f5ef] px-4 py-10">
+      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 border border-stone-300">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
             Reset your password
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address and we&apos;ll send you a link to reset
+            your password.
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleResetPassword}>
@@ -54,12 +56,16 @@ export default function ForgotPasswordPage() {
           )}
           {success && (
             <div className="rounded-md bg-green-50 p-4 text-sm text-green-800">
-              Check your email for a password reset link. If you don't see it, check your spam folder.
+              Check your email for a password reset link. If you don&apos;t see
+              it, check your spam folder.
             </div>
           )}
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
-              <label htmlFor="email" className="sr-only">
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-semibold text-stone-700"
+              >
                 Email address
               </label>
               <input
@@ -68,7 +74,7 @@ export default function ForgotPasswordPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="relative block w-full rounded-md border border-gray-300 bg-white min-h-12 px-3 py-2 text-base text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -81,14 +87,17 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={loading || success}
-              className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
+              className="group relative flex w-full justify-center rounded-md bg-[#c24719] min-h-12 px-3 py-2 text-sm font-semibold text-white hover:bg-[#a73b13] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
             >
-              {loading ? 'Sending...' : 'Send reset link'}
+              {loading ? "Sending..." : "Send reset link"}
             </button>
           </div>
 
           <div className="text-center text-sm">
-            <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link
+              href="/login"
+              className="font-medium text-[#a73b13] hover:text-blue-500"
+            >
               Back to sign in
             </Link>
           </div>
@@ -97,4 +106,3 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
-

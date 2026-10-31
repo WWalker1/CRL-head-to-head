@@ -2,22 +2,193 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Rival Mono";
+  src: url("/fonts/rival-mono.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Rival Sans";
+  src: url("/fonts/rival-sans.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f5ef;
+  --foreground: #262622;
+  --rr-line: #dedbd2;
+  --rr-accent: #c24719;
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Rival Sans", "Segoe UI", sans-serif;
+}
+::selection {
+  background: #f6c9a5;
+  color: #262622;
+}
+:focus-visible {
+  outline: 2px solid #c24719;
+  outline-offset: 4px;
+}
+button,
+a,
+input,
+select,
+summary {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a,
+summary {
+  touch-action: manipulation;
+}
+input,
+select,
+textarea {
+  accent-color: #c24719;
+}
+.rr-page {
+  min-height: calc(100vh - 80px);
+  background: var(--background);
+  color: var(--foreground);
+}
+.rr-container {
+  width: 100%;
+  max-width: 1152px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 4vw, 32px);
+}
+.rr-navigation {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--rr-line);
+  background: #f7f5ef;
+}
+.rr-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Rival Mono", monospace;
+  font-size: 13px;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+.rr-emblem {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 40px;
+  background: #262622;
+  color: #fffdf8;
+  font-size: 25px;
+  border-radius: 3px 3px 12px 3px;
+}
+.rr-nav-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+.rr-nav-link:hover,
+.rr-nav-link[aria-current] {
+  color: var(--rr-accent);
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+.rr-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid #d2cec3;
+  border-radius: 6px;
+  background: #fffdf8;
+  color: #262622;
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    background-color 140ms,
+    border-color 140ms;
+}
+.rr-button:hover {
+  background: #ebe7dc;
+  border-color: #aaa393;
+}
+.rr-button-primary {
+  background: #c24719;
+  border-color: #a73b13;
+  color: #fff;
+  box-shadow: 0 2px 0 #8f3414;
+}
+.rr-button-primary:hover {
+  background: #a73b13;
+  color: #fff;
+}
+.rr-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.rr-kicker {
+  font-family: "Rival Mono", monospace;
+  font-size: 11px;
+  line-height: 1.8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #746b5d;
+}
+.rr-title {
+  font-size: clamp(32px, 5vw, 56px);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  font-weight: 650;
+  text-wrap: balance;
+}
+.rr-score {
+  font-family: "Rival Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.06em;
+}
+.rr-panel {
+  border: 1px solid var(--rr-line);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #262622;
+}
+.rr-tool-card {
+  display: block;
+  border: 1px solid var(--rr-line);
+  padding: clamp(20px, 4vw, 32px);
+  border-radius: 8px;
+  background: #fffdf8;
+  transition:
+    border-color 140ms,
+    background-color 140ms;
+}
+.rr-tool-card:hover {
+  border-color: #a89c87;
+  background: #fff;
+}
+.rr-workbench {
+  background: #202323;
+  color: #f5f2e8;
+}
+.rr-workbench h1 {
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+.rr-workbench .rr-kicker {
+  color: #c9c2b5;
+}
+.rr-skeleton {
+  background: #e6e2d8;
+  border-radius: 4px;
 }
 
 @layer utilities {
@@ -28,7 +199,8 @@ body {
 
 /* Animated gradient background */
 @keyframes gradient-shift {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {
@@ -44,7 +216,8 @@ body {
 
 /* Floating animation for decorative elements */
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
   }
   50% {
@@ -58,7 +231,8 @@ body {
 
 /* Pulsating animation for high ELO ratings */
 @keyframes elo-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -79,4 +253,3 @@ body {
     animation: none;
   }
 }
-

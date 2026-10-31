@@ -28,7 +28,7 @@ export default function SyncButton({ onSync }: SyncButtonProps) {
       <button
         onClick={handleSync}
         disabled={loading}
-        className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+        className="rr-button"
       >
         {loading ? (
           <>
@@ -47,8 +47,8 @@ export default function SyncButton({ onSync }: SyncButtonProps) {
           </>
         )}
       </button>
-      <p className="max-w-xl text-xs text-blue-100/90">
-        Note: Battles are auto-synced once per day. If you play more than 30 in a day, press Sync Battles to save all games. This helps keep the service free.
+      <p className="max-w-xl text-xs text-stone-600">
+        Refresh after playing to capture recent available matches. The game API keeps a limited history, so older games may be missing.
       </p>
     </div>
   );

@@ -10,6 +10,34 @@ const variants: CatalogVariant[] = [
 ];
 
 describe('CardPicker', () => {
+  it('keeps keyboard navigation within the open card library', () => {
+    render(<CardPicker open title="Choose card" variants={variants} selectedKeys={[]} onSelect={jest.fn()} onClose={jest.fn()} />);
+    const first = screen.getByRole('button', { name: 'Close card library' });
+    const buttons = screen.getAllByRole('button');
+    const last = buttons[buttons.length - 1];
+    last.focus();
+    fireEvent.keyDown(window, { key: 'Tab' });
+    expect(document.activeElement).toBe(first);
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(last);
+  });
+  it('resets search on reopening and calls the latest close callback on Escape', () => {
+    const firstClose = jest.fn();
+    const secondClose = jest.fn();
+    const props = { title: 'Choose card', variants, selectedKeys: [], onSelect: jest.fn() };
+    const { rerender } = render(<CardPicker {...props} open onClose={firstClose} />);
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search cards' }), { target: { value: 'hog' } });
+    rerender(<CardPicker {...props} open onClose={secondClose} />);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(secondClose).toHaveBeenCalledTimes(1);
+    expect(firstClose).not.toHaveBeenCalled();
+    rerender(<CardPicker {...props} open={false} onClose={secondClose} />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    rerender(<CardPicker {...props} open onClose={secondClose} />);
+    expect(screen.getByRole('searchbox', { name: 'Search cards' })).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'Select Archer Queen' })).toBeInTheDocument();
+  });
+
   it('searches cards, filters forms, and disables a duplicate base card', () => {
     render(<CardPicker open title="Choose card 2" variants={variants} selectedKeys={['1:0']} onSelect={jest.fn()} onClose={jest.fn()} />);
 

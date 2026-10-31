@@ -1,21 +1,21 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase';
-import Link from 'next/link';
-import posthog from 'posthog-js';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase";
+import Link from "next/link";
+import posthog from "posthog-js";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
@@ -29,23 +29,23 @@ export default function LoginPage() {
         setError(error.message);
       } else {
         if (data.user) posthog.identify(data.user.id);
-        posthog.capture('user_logged_in');
-        router.push('/dashboard');
+        posthog.capture("user_logged_in");
+        router.push("/dashboard");
         router.refresh();
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError("An unexpected error occurred");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-orange-600">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-xl">
+    <div className="flex min-h-screen items-center justify-center bg-[#f7f5ef] px-4 py-10">
+      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 border border-stone-300">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            Sign in to CRL Tracker
+            Sign in to Rival Royale
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
@@ -56,7 +56,10 @@ export default function LoginPage() {
           )}
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
-              <label htmlFor="email" className="sr-only">
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-semibold text-stone-700"
+              >
                 Email address
               </label>
               <input
@@ -65,14 +68,17 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="relative block w-full rounded-md border border-gray-300 bg-white min-h-12 px-3 py-2 text-base text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-semibold text-stone-700"
+              >
                 Password
               </label>
               <input
@@ -81,7 +87,7 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="relative block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="relative block w-full rounded-md border border-gray-300 bg-white min-h-12 px-3 py-2 text-base text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -93,18 +99,24 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
+              className="group relative flex w-full justify-center rounded-md bg-[#c24719] min-h-12 px-3 py-2 text-sm font-semibold text-white hover:bg-[#a73b13] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? "Signing in..." : "Sign in"}
             </button>
           </div>
 
           <div className="text-center text-sm space-y-2">
-            <Link href="/forgot-password" className="block font-medium text-blue-600 hover:text-blue-500">
+            <Link
+              href="/forgot-password"
+              className="block font-medium text-[#a73b13] hover:text-blue-500"
+            >
               Forgot your password?
             </Link>
-            <Link href="/signup" className="block font-medium text-blue-600 hover:text-blue-500">
-              Don't have an account? Sign up
+            <Link
+              href="/signup"
+              className="block font-medium text-[#a73b13] hover:text-blue-500"
+            >
+              Don&apos;t have an account? Sign up
             </Link>
           </div>
         </form>
@@ -112,4 +124,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

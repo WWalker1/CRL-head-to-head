@@ -1,4 +1,18 @@
-# Run the Rival model beta locally
+# Local development
+
+## Current web preview
+
+Use the current checkout based on production `main`, including the security fixes. The older branch/path instructions below are historical model-launch instructions and must not be used to redeploy the application.
+
+From this repository, run `./scripts/start-web-preview.ps1` and open **http://127.0.0.1:3100/guides**. Keep the terminal open; stopping it stops the preview. This foreground launcher makes the server lifetime visible, sets a local site URL, and restores process environment settings when it exits. It does not launch a model service or collector.
+
+To test the staged public lookup, run `./scripts/start-web-preview.ps1 -EnablePublicLookup` and open `/clash-royale-skill-score`. This opt-in uses the configured backend services and shared database quotas; it does not isolate production credentials already present in local environment files. Public lookup itself never writes account histories or enrolls tags in collection. Use a development database for signed-in mutation testing.
+
+If the port is occupied, stop the existing preview in its terminal or choose `-WebPort 3101`. Do not start a second server against the same Next.js development output. If a task-hosted preview disappears when a session ends, restart this command in a persistent local terminal.
+
+See `DEV_ROLLOUT_2026-10-21.md` for verification, flags and release blockers.
+
+## Historical model-only preview instructions
 
 Work in `C:\Users\22wes\.codex\worktrees\rival-model-product\head-to-head-royale` on `codex/rival-model-product`, not the original checkout. No production deployment or Supabase migration has been performed.
 

@@ -30,9 +30,7 @@ export default function AnimatedSection({ children, delay = 0, className = '' }:
     }
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
+      observer.disconnect();
     };
   }, []);
 

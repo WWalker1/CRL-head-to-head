@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   const client = db()!; const friendId = new URL(request.url).searchParams.get('friendId'); if (!friendId) return NextResponse.json({ error: 'friendId is required' }, { status: 400 });
   const { data: friend, error: friendError } = await friendFor(client, user.id, friendId); if (friendError || !friend) return NextResponse.json({ error: 'Friend not found' }, { status: 404 });
   try {
-    const insights = await readHistoryInsights(client, { userId: user.id, playerTag: friend.friend_player_tag, friendId: friend.id });
+    const insights = await readHistoryInsights(client, { userId: user.id, playerTag: friend.friend_player_tag, friendId: friend.id }, user.user_metadata?.player_tag);
     return NextResponse.json({ friend, ...insights }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch { return NextResponse.json({ error: 'History unavailable' }, { status: 503 }); }
 }
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     try {
       const subject = { userId: user.id, playerTag: friend.friend_player_tag, friendId: friend.id };
       const accepted = await persistHistory(client, subject, battles);
-      const insights = await readHistoryInsights(client, subject);
+      const insights = await readHistoryInsights(client, subject, user.user_metadata?.player_tag);
       return NextResponse.json({ accepted, friend, ...insights }, { headers: { 'Cache-Control': 'private, no-store' } });
     } catch { return NextResponse.json({ error: 'History unavailable' }, { status: 503 }); }
   } finally { await reservation.release(); }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Rival Royale Access"
+  short_description: "Bootstrap Rival Royale access and project context"
+  default_prompt: "Use $rival-royale-access to check project connections and resume Rival Royale work."

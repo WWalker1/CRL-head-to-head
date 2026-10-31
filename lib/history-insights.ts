@@ -1,6 +1,8 @@
+import { summarizeRivalryAdvantage } from './rivalry-advantage';
 import { canonicalDeck, summarizeFriendHistory, type FriendHistorySummary } from './friend-history';
 import { SKILL_MODES, summarizeMatchupSkill } from './matchup-skill';
 import { buildPlayerStats } from './player-stats';
+import { buildWeeklyRecap } from './weekly-recap';
 import { asFriendHistory, historyConflict, historyQuery, historyTable, type HistorySubject } from './history-storage';
 
 function modelDeck(deck: any) {
@@ -10,7 +12,7 @@ function modelDeck(deck: any) {
   return { cards, tower_id: Number(deck.tower), tower_level: deck.towerLevel };
 }
 
-/** Keep 100 full matches, up to 1,000 deck summaries, and an exact lifetime match total. */
+/** Keep 50 full matches, up to 1,000 deck summaries, and an exact lifetime match total. */
 export async function withAllTimeDecks(client: any, subject: HistorySubject, recent: FriendHistorySummary): Promise<FriendHistorySummary> {
   const subjectType = subject.friendId ? 'friend' : 'player';
   const subjectId = subject.friendId || subject.playerTag;
@@ -33,7 +35,7 @@ export async function withAllTimeDecks(client: any, subject: HistorySubject, rec
 }
 
 /** No outcomes or player identity are submitted to the deck predictor. */
-export async function readHistoryInsights(client: any, subject: HistorySubject) {
+export async function readHistoryInsights(client: any, subject: HistorySubject, ownerTag?: string) {
   const { data, error } = await historyQuery(client, subject);
   if (error) throw new Error('History unavailable. Check migration 009.');
   let rows: any[] = data || [];
@@ -74,5 +76,5 @@ export async function readHistoryInsights(client: any, subject: HistorySubject) 
   }
   const history = rows.map(asFriendHistory);
   const skill = summarizeMatchupSkill(history, version);
-  return { summary: await withAllTimeDecks(client, subject, summarizeFriendHistory(history)), skill, skillStatus, stats: buildPlayerStats(rows, version, skill) };
+  return { summary: await withAllTimeDecks(client, subject, summarizeFriendHistory(history)), skill, skillStatus, stats: buildPlayerStats(rows, version, skill), recap: buildWeeklyRecap(history, version), rivalry: subject.friendId ? summarizeRivalryAdvantage(history, ownerTag, version) : null, recentDeck: history[0]?.friend_deck ?? null };
 }

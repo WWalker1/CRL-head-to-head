@@ -52,17 +52,17 @@ describe('friend history summaries', () => {
     expect(normalizeBattle({ ...battle, opponent: [battle.opponent[0], { ...battle.opponent[0], tag: '#OTHER2' }] }, '#FRIEND')).toBeNull();
   });
 
-  it('counts exact deck variants and keeps only the latest 100 eligible rows', () => {
+  it('counts exact deck variants and keeps only the latest 50 eligible rows', () => {
     const rows = Array.from({ length: 101 }, (_, i) => ({
       ...log(String(i)),
       battle_time: new Date(Date.UTC(2026, 8, 1, 0, i)).toISOString(),
       friend_deck: { cards: i === 0 ? cards.map(card => ({ ...card, id: 'oldest-' + card.id })) : cards, tower: 'princess' },
     })).concat(log('200', 'draft'));
     const summary = summarizeFriendHistory(rows);
-    expect(summary.eligibleMatches).toBe(100);
-    expect(summary.topDecks[0].count).toBe(100);
-    expect(summary.coverage).toBe(100 / 100);
-    expect(summary.firstObserved).toBe(new Date(Date.UTC(2026, 8, 1, 0, 1)).toISOString());
+    expect(summary.eligibleMatches).toBe(50);
+    expect(summary.topDecks[0].count).toBe(50);
+    expect(summary.coverage).toBe(50 / 50);
+    expect(summary.firstObserved).toBe(new Date(Date.UTC(2026, 8, 1, 0, 51)).toISOString());
     expect(summary.topDecks.some(deck => deck.cards[0].id.startsWith('oldest-'))).toBe(false);
   });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DeckUsage, FriendHistorySummary } from '@/lib/friend-history';
 import { buildClashDeckLink, CLASH_DECK_IMPORT_NOTICE } from '@/lib/clash-deck-link';
 import { counter } from './model-tools/api';
@@ -36,7 +36,7 @@ export default function FriendDeckExperience({ friendId, friendName, friendTag, 
   const [scoring, setScoring] = useState(false);
   const [error, setError] = useState('');
 
-  const loadHistory = async (method: 'GET' | 'POST', signal?: AbortSignal) => {
+  const loadHistory = useCallback(async (method: 'GET' | 'POST', signal?: AbortSignal) => {
     const response = await fetch(method === 'GET' ? `/api/friend-decks?friendId=${encodeURIComponent(friendId)}` : '/api/friend-decks', { method, signal, credentials: 'same-origin', headers: method === 'POST' ? { 'content-type': 'application/json' } : {}, ...(method === 'POST' ? { body: JSON.stringify({ friendId }) } : {}) });
     if (!response.ok) throw new Error(response.status === 401 ? 'Sign in to see your friend’s decks.' : 'Friend history is unavailable. Check Supabase setup and try again.');
     let payload = await response.json();
@@ -44,8 +44,9 @@ export default function FriendDeckExperience({ friendId, friendName, friendTag, 
       const latest = await fetch('/api/friend-decks', { method: 'POST', signal, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ friendId }) });
       if (latest.ok) payload = await latest.json();
     }
+    if (signal?.aborted) return;
     setSummary(payload.summary); setSkill(payload.skill ?? null); setSkillStatus(payload.skillStatus ?? ''); setStats(payload.stats ?? null); setName(payload.friend?.friend_name || friendName || 'Friend'); setSelected(0); setResult(null);
-  };
+  }, [friendId, friendName]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -54,14 +55,14 @@ export default function FriendDeckExperience({ friendId, friendName, friendTag, 
       setLoading(false);
     }).catch(reason => { if (!controller.signal.aborted) { setError(reason instanceof Error ? reason.message : 'Could not load history.'); setLoading(false); } });
     return () => controller.abort();
-  }, [friendId]);
+  }, [loadHistory]);
 
   const usage = summary?.topDecks[selected];
   const target = useMemo(() => usage ? toModelDeck(usage) : null, [usage]);
   useEffect(() => {
     if (!target) return;
     const controller = new AbortController(); setScoring(true); setResult(null);
-    counter(target, [], 16, target.tower_id, 16, controller.signal).then(setResult).catch(reason => { if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : 'The counter model is unavailable.'); }).finally(() => { if (!controller.signal.aborted) setScoring(false); });
+    counter(target, [], 16, target.tower_id, 16, controller.signal).then(value => { if (!controller.signal.aborted) setResult(value); }).catch(reason => { if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : 'The counter model is unavailable.'); }).finally(() => { if (!controller.signal.aborted) setScoring(false); });
     return () => controller.abort();
   }, [target]);
 

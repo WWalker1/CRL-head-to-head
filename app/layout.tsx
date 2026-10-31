@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Script from 'next/script';
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import Navbar from "@/components/Navbar";
+import SiteFooter from '@/components/SiteFooter';
 import PostHogAuth from "@/components/PostHogAuth";
 import { getAdSenseConfig } from '@/lib/adsense';
 
@@ -85,12 +85,8 @@ export default function RootLayout({
       <body className="antialiased">
         <Navbar />
         {children}
-        {adsense.enabled ? <Script
-          id="google-adsense"
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsense.publisherId}`}
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-        /> : null}
+        <SiteFooter />
+
         <Analytics />
         <PostHogAuth />
         <Toaster position="top-right" />
