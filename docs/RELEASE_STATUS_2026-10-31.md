@@ -2,6 +2,8 @@
 
 ## GitHub reconnection follow-up
 
+All 122 changed/new/deleted source entries were successfully committed and pushed to `codex/production-refresh-retention-20261031` at `86e2fe5b0eaa33e1829a9790f472eb9692313037`. This includes the prior unpublished Windows changes, fonts/licenses, source tests, access skill and applied database migration; credential-pattern scanning found no matching secrets. Main was not advanced. This push is source preservation, not a verified development or production release. No Vercel deployment was found for this SHA immediately after the push. The next agent can retrieve this snapshot from GitHub instead of depending on this Windows working tree.
+
 The owner installed ChatGPT Codex Connector during this session. Creating branch `codex/production-refresh-retention-20261031` from verified main now succeeds. GitHub write authorization is restored; the earlier 403 evidence below is historical. Local Git metadata is still read-only. Main remains unchanged while preparing the combined source snapshot. The separate cloud branch is absent from GitHub; its Linear report confirms that it was never pushed. Task discovery still fails, so the original cloud commit has not been recovered.
 
 ## Live database changes completed

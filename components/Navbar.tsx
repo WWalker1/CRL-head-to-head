@@ -19,6 +19,7 @@ export default async function Navbar() {
       <Link href="/guides" className="rr-nav-link">
         Guides
       </Link>
+      {process.env.DEV_REVIEW_ENABLED === '1' && <Link href="/dev-review" className="rr-nav-link">Dev checklist</Link>}
       {user ? (
         <Link href="/dashboard" className="rr-button rr-button-primary">
           Your rivalries
