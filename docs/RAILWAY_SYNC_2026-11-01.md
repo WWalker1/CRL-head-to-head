@@ -9,19 +9,22 @@ Move daily collection execution and scheduling to Railway. Keep the existing pro
 - GitHub: WWalker1/CRL-head-to-head; infrastructure branch `codex/railway-nightly-sync`, based on production main, not the redesigned dev source.
 - Railway project: protective-optimism (`2bf3af82-e5f7-4266-8606-5cc411ae6d54`), production environment `30987d1c-2d64-4a27-a32a-a5db0c4b1a4b`.
 - New service: nightly-battle-sync (`8f305b20-25cd-4787-8881-b46d63950b39`). The existing model service is unchanged.
-- Dockerfile: `workers/nightly-sync/Dockerfile`; start: `node workers/nightly-sync/run.cjs`; native cron `0 2 * * *` (02:00 UTC daily); restart policy NEVER; 0.5 GB memory and 0.5 vCPU limits. No public domain, HTTP handler or persistent volume.
+- Dockerfile: `workers/nightly-sync/Dockerfile`; start: `node workers/nightly-sync/run.cjs`; intended native cron `0 2 * * *` (02:00 UTC daily); restart policy NEVER; 1 GB memory and 1 vCPU limits. No public domain, HTTP handler or persistent volume.
 - Service settings are configured directly through Railway. A railway.json attempt was rejected as deprecated; no deprecated Config-as-Code file is included.
 
 ## Runtime behavior
 
 - A small standalone image compiles the same existing battle processor/history code, with only seventeen pinned dependency packages from the existing lockfile. It does not build or launch Next.js and does not ship player archives or model weights.
-- Enumerates Auth in 200-user pages before starting writes. Errors/malformed/repeated pages fail explicitly. An exact full page requires the following terminating page, avoiding the old pagination gap.
-- Four user syncs maximum, at least 500ms between user starts, and 200ms between all upstream game API attempts across the pool. Existing HTTP 429 retries and request timeouts remain enabled.
+- Enumerates Auth in 1,000-user pages before starting writes. Errors/malformed/repeated pages fail explicitly. An exact full page requires the following terminating page, avoiding the old pagination gap.
+- After owner feedback about the initial conservative limits, the benchmark configuration is 64 concurrent account tasks, zero account-start delay and a 10ms shared game API interval (at most 100 requests/second). Existing HTTP 429 retries and request timeouts remain enabled. This is an upstream request budget, not a claim of 100 fully persisted accounts/second or a guaranteed thirty-second job.
+- Owner and friend logs share one worker-only in-flight/result cache. Tags are normalized; HTTP 404 results are negative-cached. Cache capacity is bounded to 128 MB / 5,000 subjects. Unused card image URLs are removed from cached raw logs; all normalization/Elo fields are preserved. Web requests keep their previous transport behavior.
+- Friend lists and ratings are read in account-scoped batches, including count-aware friend pagination. Direct friend-game rating writes still load the current Elo; quiet accounts use the prefetched rating. Cleanup reads are skipped when the worker inserted no new tracked battle. The ordinary web/manual sync path remains unchanged.
+- Completion metrics report game API attempts, retries, status counts, cache hits/misses/evictions, distinct tags, database requests/statuses/latencies and whole-job/phase durations.
 - Processes the complete eligible population without the old Vercel 4.5-minute admission deadline. Failed users are counted while later users still run. Incomplete/failed jobs exit nonzero; successful jobs exit zero. Signals stop new admissions and drain active work.
 - Future scheduled runs retry a failed account once (except permanent HTTP 403/404). Final summaries group failures by category; private Railway logs contain a short hashed account reference, never a tag or raw upstream error. All worker HTTP/database requests have an outer 30-second timeout; the existing game API's shorter per-attempt timeout is preserved. Completion logging is flushed before process exit.
 - Railway's native cron skips a scheduled start while the preceding execution is active. Do not create a second collector service or manually start a second collector while this one is running.
 - Structured Railway logs contain aggregate progress every 25 users and a final completion summary. The worker does not store per-run/per-user database logs. No new coordination table or schema migration is required.
-- `SYNC_JOB_MODE=check` validates complete Auth enumeration and game API access without running the battle processor. Set `SYNC_JOB_MODE=run` for collection. `MATCH_HISTORY_ENABLED=1`, `CLASH_REQUEST_INTERVAL_MS=200` and the existing Supabase/game API credentials are configured on this service; secret values stay outside Git.
+- `SYNC_JOB_MODE=check` validates complete Auth enumeration, game API access and bulk database reads without running the battle processor. Set `SYNC_JOB_MODE=run` for collection. Performance variables: `MATCH_HISTORY_ENABLED=1`, `CLASH_REQUEST_INTERVAL_MS=10`, `SYNC_CONCURRENCY=64`, `SYNC_LAUNCH_INTERVAL_MS=0`; existing Supabase/game API credentials stay outside Git.
 
 ## Storage longevity
 
@@ -39,5 +42,7 @@ On a future Railway failure, inspect aggregate logs and repair/re-run the single
 ## Verification
 
 Worker compilation, TypeScript and lint passed locally. Focused scheduler/battle/history/API tests cover complete pagination, malformed/failed pages, duplicate-page protection, four-worker concurrency, launch pacing, returned/thrown failures, shutdown/deferred reporting and upstream pacing. No production success is claimed until Railway reports a completed full run.
+
+Initial conservative production pass (worker commit `6aa1849`, Railway deployment `848276cb-ff11-4945-927e-cd9fdece65e0`): all 1,667 accounts attempted, 1,654 succeeded, 13 failed, 2,233 new battles, zero deferred, 1,015,240ms collection duration. This initial image suppressed raw failure details, so those thirteen causes are not inferred. The faster image adds failure categories, safe diagnostic codes and hashed account references. At that measurement the worker used roughly 63 MB memory. The first pass completed before starting any subsequent benchmark; no two collectors were launched together.
 
 The old Vercel cron endpoint is retired with an authenticated HTTP 410 response in the cutover source. It cannot start collection, even with the former valid cron credential. Manual account/friend refresh endpoints are unchanged. Retired scheduler tests were replaced with authentication/no-collection regression checks. The complete local suite passes 49 suites / 242 tests after this change; TypeScript, lint (six existing image warnings) and whitespace checks pass.

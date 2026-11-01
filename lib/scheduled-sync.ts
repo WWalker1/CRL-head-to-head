@@ -1,5 +1,37 @@
 type User = { id: string; user_metadata?: { player_tag?: unknown } };
 type SyncResult = { battlesProcessed: number; recordsUpdated: number; newBattles: number; errors: string[] };
+
+/** Bulk-load account-scoped inputs once instead of two reads for every account. */
+export async function loadScheduledSyncContexts(client: any, users: User[]) {
+  const contexts = new Map<string, { userId: string; friends: Array<{ id: string; friend_player_tag: string }>; rating?: any; cleanupOnlyIfNewBattles: boolean }>();
+  for (const user of users) contexts.set(user.id, { userId: user.id, friends: [], cleanupOnlyIfNewBattles: true });
+  let friendCount = 0;
+  let ratingCount = 0;
+  for (let offset = 0; offset < users.length; offset += 200) {
+    const ids = users.slice(offset, offset + 200).map(user => user.id);
+    const ratings = await client.from('user_ratings').select('user_id,player_tag,elo_rating,num_ranked_games,updated_at').in('user_id', ids);
+    if (ratings.error || !Array.isArray(ratings.data)) throw new Error('Rating prefetch failed');
+    for (const row of ratings.data) {
+      const context = contexts.get(row.user_id);
+      if (!context || !ids.includes(row.user_id)) throw new Error('Rating prefetch scope mismatch');
+      context.rating = row; ratingCount++;
+    }
+    let position = 0;
+    while (true) {
+      const friends = await client.from('tracked_friends').select('id,user_id,friend_player_tag', { count: 'exact' }).in('user_id', ids).order('id').range(position, position + 999);
+      if (friends.error || !Array.isArray(friends.data) || typeof friends.count !== 'number') throw new Error('Friend prefetch failed');
+      for (const row of friends.data) {
+        const context = contexts.get(row.user_id);
+        if (!context || !ids.includes(row.user_id)) throw new Error('Friend prefetch scope mismatch');
+        context.friends.push({ id: row.id, friend_player_tag: row.friend_player_tag }); friendCount++;
+      }
+      position += friends.data.length;
+      if (position >= friends.count) break;
+      if (!friends.data.length) throw new Error('Friend prefetch pagination stalled');
+    }
+  }
+  return { contexts, friendCount, ratingCount };
+}
 export type SyncSummary = {
   success: boolean; totalUsers: number; eligibleUsers: number; processed: number;
   succeeded: number; failed: number; deferred: number; newBattles: number; durationMs: number;
@@ -29,7 +61,7 @@ export async function enumerateSyncUsers(
     const rows = result.data.users;
     if (rows.some(user => !user || typeof user.id !== 'string' || !user.id)) throw new Error('Invalid Auth page');
     const prior = users.size;
-    for (const user of rows) users.set(user.id, user);
+    for (const user of rows) users.set(user.id, { id: user.id, user_metadata: { player_tag: user.user_metadata?.player_tag } });
     if (rows.length < perPage) return [...users.values()];
     if (users.size === prior) throw new Error('Auth pagination made no progress');
   }
@@ -49,7 +81,7 @@ export async function runScheduledSync(options: {
   const concurrency = options.concurrency ?? 4;
   const interval = options.launchIntervalMs ?? 500;
   const attempts = options.maxAttempts ?? 1;
-  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 15 || interval < 0 || !Number.isFinite(interval) || !Number.isInteger(attempts) || attempts < 1 || attempts > 3) throw new Error('Invalid worker limits');
+  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 128 || interval < 0 || !Number.isFinite(interval) || !Number.isInteger(attempts) || attempts < 1 || attempts > 3) throw new Error('Invalid worker limits');
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms)));
   const start = now();

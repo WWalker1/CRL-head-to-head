@@ -1,4 +1,4 @@
-import { enumerateSyncUsers, runScheduledSync } from '../scheduled-sync';
+import { enumerateSyncUsers, runScheduledSync, loadScheduledSyncContexts } from '../scheduled-sync';
 
 const users = (count: number) => Array.from({ length: count }, (_, i) => ({ id: String(i), user_metadata: { player_tag: '#TAG' + i } }));
 const result = { battlesProcessed: 1, recordsUpdated: 1, newBattles: 1, errors: [] };
@@ -17,6 +17,24 @@ describe('Railway scheduled sync', () => {
   });
   it('detects a repeated full page rather than looping forever', async () => {
     await expect(enumerateSyncUsers(async () => ({ data: { users: users(2) }, error: null }), 2)).rejects.toThrow('no progress');
+  });
+  it('retains only required account metadata during enumeration', async () => {
+    const data = [{ id: 'account', email: 'synthetic@example.com', user_metadata: { player_tag: '#P0YQ', unrelated: 'discard' } }];
+    expect(await enumerateSyncUsers(async () => ({ data: { users: data }, error: null }))).toEqual([{ id: 'account', user_metadata: { player_tag: '#P0YQ' } }]);
+  });
+  it('bulk-loads isolated account contexts and follows truncated friend pages using their total count', async () => {
+    const friends = [{ id: 'a', user_id: '0', friend_player_tag: '#A' }, { id: 'b', user_id: '0', friend_player_tag: '#B' }, { id: 'c', user_id: '1', friend_player_tag: '#C' }];
+    const range = jest.fn((offset: number) => Promise.resolve({ data: friends.slice(offset, offset + 1), count: 3, error: null }));
+    const chain: any = { select: () => chain, in: () => chain, order: () => chain, range, then: (resolve: any) => Promise.resolve({ data: [{ user_id: '0', player_tag: '#TAG0' }], error: null }).then(resolve) };
+    const result = await loadScheduledSyncContexts({ from: () => chain }, users(2));
+    expect(result.friendCount).toBe(3);
+    expect(range).toHaveBeenCalledTimes(3);
+    expect(result.contexts.get('0')?.friends.map(row => row.id)).toEqual(['a', 'b']);
+    expect(result.contexts.get('1')?.friends.map(row => row.id)).toEqual(['c']);
+  });
+  it('rejects out-of-scope prefetch data before any syncing', async () => {
+    const chain: any = { select: () => chain, in: () => chain, then: (resolve: any) => Promise.resolve({ data: [{ user_id: 'another-owner' }], error: null }).then(resolve) };
+    await expect(loadScheduledSyncContexts({ from: () => chain }, users(1))).rejects.toThrow('scope mismatch');
   });
   it('processes every eligible user with at most four active jobs', async () => {
     let active = 0;

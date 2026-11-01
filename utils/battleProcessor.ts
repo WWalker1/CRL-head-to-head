@@ -195,7 +195,13 @@ async function cleanupOldBattles(userId: string): Promise<number> {
 
 
 // the code that does the stuff for all the things
-export async function syncBattlesForUser(userId: string, playerTag: string): Promise<SyncResult> {
+export type ScheduledSyncContext = {
+  userId: string;
+  friends: Array<{ id: string; friend_player_tag: string }>;
+  rating?: { player_tag: string | null; elo_rating: number | null; num_ranked_games: number | null; updated_at: string | null };
+  cleanupOnlyIfNewBattles?: boolean;
+};
+export async function syncBattlesForUser(userId: string, playerTag: string, context?: ScheduledSyncContext): Promise<SyncResult> {
   const result: SyncResult = {
     battlesProcessed: 0,
     recordsUpdated: 0,
@@ -204,12 +210,17 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
     errors: [],
   };
 
+  if (context && context.userId !== userId) {
+    result.errors.push('Invalid scheduled sync context');
+    return result;
+  }
+
   try {
     // Get recent battles from API
     const battles = await getPlayerBattleLog(playerTag);
 
     // Get tracked friends (just for the tags, not for Elo ratings)
-    const { data: friends, error: friendsError } = await supabase
+    const { data: friends, error: friendsError } = context ? { data: context.friends, error: null } : await supabase
       .from('tracked_friends')
       .select('id,friend_player_tag')
       .eq('user_id', userId);
@@ -228,7 +239,13 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
     // gets your own rating data
     let userRatingData: UserRatingData;
     try {
-      userRatingData = await getUserRatingData(userId, playerTag);
+      // Accounts with direct friend games still read the current Elo before any rating writes.
+      const hasTrackedOpponent = battles.some(battle => battle.opponent?.some(opponent => trackedTags.has(opponent.tag)));
+      userRatingData = context?.rating?.player_tag === playerTag && !hasTrackedOpponent ? {
+        elo_rating: context.rating.elo_rating ?? DEFAULT_ELO,
+        num_ranked_games: context.rating.num_ranked_games ?? 0,
+        updated_at: context.rating.updated_at,
+      } : await getUserRatingData(userId, playerTag);
     } catch (ratingError: any) {
       console.error('Error fetching user rating:', ratingError);
       result.errors.push('Failed to fetch player rating');
@@ -373,7 +390,7 @@ export async function syncBattlesForUser(userId: string, playerTag: string): Pro
     result.battlesProcessed = oneVoneBattles.length;
 
     // Cleanup old battles, keeping only the last 25
-    result.deletedBattles = await cleanupOldBattles(userId);
+    if (!context?.cleanupOnlyIfNewBattles || result.newBattles > 0) result.deletedBattles = await cleanupOldBattles(userId);
   } catch (err: any) {
     result.errors.push(`Failed to sync battles: ${err.message}`);
   }
