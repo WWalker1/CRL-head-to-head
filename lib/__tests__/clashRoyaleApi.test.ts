@@ -86,4 +86,14 @@ describe('Clash Royale API rate limits', () => {
     await expect(getPlayerBattleLog('#P2YQ')).rejects.toThrow('404');
     expect(fetch).toHaveBeenCalledTimes(1);
   });
+  it.each([500, 520, 525])('retries transient worker HTTP %s responses at the request layer', async status => {
+    process.env.SYNC_JOB_MODE = 'run';
+    process.env.CLASH_REQUEST_INTERVAL_MS = '0';
+    jest.mocked(fetch).mockResolvedValueOnce({ ok: false, status, headers: new Headers(), text: async () => 'temporary failure' } as Response)
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => [] } as unknown as Response);
+    const pending = getPlayerBattleLog('#WORKER' + status);
+    await jest.advanceTimersByTimeAsync(250);
+    await expect(pending).resolves.toEqual([]);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
 });

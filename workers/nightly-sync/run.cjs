@@ -11,6 +11,7 @@ async function main() {
   const concurrency = Number(process.env.SYNC_CONCURRENCY || 64);
   const launchIntervalMs = Number(process.env.SYNC_LAUNCH_INTERVAL_MS || 0);
   const dbMetrics = { requests: 0, responseMs: 0, maxResponseMs: 0, statuses: {} };
+  const historyMetrics = { unchangedSubjects: 0, changedSubjects: 0, submittedRows: 0 };
   const baseFetch = globalThis.fetch.bind(globalThis);
   const timedFetch = async (input, init = {}) => {
     const originalSignal = init.signal || (typeof input === 'object' && input?.signal);
@@ -53,7 +54,11 @@ async function main() {
     }
     if (!gameApiReady) throw new Error('Game API preflight failed');
     const prefetchStarted = Date.now();
-    const { contexts, friendCount, ratingCount } = await loadScheduledSyncContexts(client, users);
+    const { contexts, friendCount, ratingCount } = await loadScheduledSyncContexts(client, users, process.env.SYNC_SNAPSHOT_DEDUP_ENABLED === '1');
+    for (const context of contexts.values()) if (context.historySnapshot) {
+      context.historySnapshot.onSkip = () => historyMetrics.unchangedSubjects++;
+      context.historySnapshot.onWrite = rows => { historyMetrics.changedSubjects++; historyMetrics.submittedRows += rows; };
+    }
     const prefetchMs = Date.now() - prefetchStarted;
     if (process.env.SYNC_JOB_MODE === 'check') {
       summary = { success: true, mode: 'check', totalUsers: users.length, friendCount, ratingCount, authMs, prefetchMs, api: getClashApiMetrics(), database: dbMetrics };
@@ -70,10 +75,10 @@ async function main() {
     log('sync_started', { totalUsers: users.length, concurrency, launchIntervalMs, apiIntervalMs: Number(process.env.CLASH_REQUEST_INTERVAL_MS || 10), friendCount, ratingCount, authMs, prefetchMs });
     summary = await runScheduledSync({
       users, sync: (id, tag) => syncBattlesForUser(id, tag, contexts.get(id)), concurrency, launchIntervalMs, maxAttempts: 2,
-      signal: controller.signal, progress: value => log('sync_progress', { ...value, api: getClashApiMetrics(), database: dbMetrics, memory: process.memoryUsage() }),
+      signal: controller.signal, progress: value => log('sync_progress', { ...value, api: getClashApiMetrics(), database: dbMetrics, history: historyMetrics, memory: process.memoryUsage() }),
       onFailure: ({ userId, categories }) => log('sync_account_failed', { accountRef: createHash('sha256').update(userId).digest('hex').slice(0, 12), categories }),
     });
-    log('sync_complete', { ...summary, jobMs: Date.now() - jobStarted, authMs, prefetchMs, api: getClashApiMetrics(), database: dbMetrics, memory: process.memoryUsage() });
+    log('sync_complete', { ...summary, jobMs: Date.now() - jobStarted, authMs, prefetchMs, api: getClashApiMetrics(), database: dbMetrics, history: historyMetrics, memory: process.memoryUsage() });
     if (!summary.success) process.exitCode = 1;
   } catch {
     log('sync_failed', { reason: 'job_failed', mode: process.env.SYNC_JOB_MODE || 'run' });

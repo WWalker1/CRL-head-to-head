@@ -1,7 +1,7 @@
 import { ClashRoyaleBattle } from '@/lib/types';
 import { createClient } from '@supabase/supabase-js';
 import { getPlayerBattleLog } from '@/lib/clashRoyaleApi';
-import { captureUserHistory } from '@/lib/history-storage';
+import { captureUserHistory, type HistoryCaptureSnapshot } from '@/lib/history-storage';
 
 const DEFAULT_ELO = 1500;
 const K_FACTOR = Number(process.env.ELO_K_FACTOR ?? 32);
@@ -200,6 +200,7 @@ export type ScheduledSyncContext = {
   friends: Array<{ id: string; friend_player_tag: string }>;
   rating?: { player_tag: string | null; elo_rating: number | null; num_ranked_games: number | null; updated_at: string | null };
   cleanupOnlyIfNewBattles?: boolean;
+  historySnapshot?: HistoryCaptureSnapshot;
 };
 export async function syncBattlesForUser(userId: string, playerTag: string, context?: ScheduledSyncContext): Promise<SyncResult> {
   const result: SyncResult = {
@@ -231,7 +232,10 @@ export async function syncBattlesForUser(userId: string, playerTag: string, cont
     }
 
     if (process.env.MATCH_HISTORY_ENABLED === '1') {
-      result.errors.push(...await captureUserHistory(supabase, userId, playerTag, battles, friends || []));
+      const errors = context?.historySnapshot
+        ? await captureUserHistory(supabase, userId, playerTag, battles, friends || [], context.historySnapshot)
+        : await captureUserHistory(supabase, userId, playerTag, battles, friends || []);
+      result.errors.push(...errors);
     }
 
     const trackedTags = new Set(friends?.map(f => f.friend_player_tag) || []);

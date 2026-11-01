@@ -18,8 +18,7 @@ function reserveApiSlot() {
   const interval = Number(process.env.CLASH_REQUEST_INTERVAL_MS || 0);
   if (!Number.isFinite(interval) || interval <= 0) return Promise.resolve();
   const slot = requestQueue.then(async () => {
-    const wait = nextRequestAt - Date.now();
-    if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
+    while (nextRequestAt > Date.now()) await new Promise(resolve => setTimeout(resolve, nextRequestAt - Date.now()));
     nextRequestAt = Date.now() + Math.min(interval, 10000);
   });
   requestQueue = slot;
@@ -55,11 +54,14 @@ async function fetchFromApi(endpoint: string, attempts = 3, timeoutMs = 10000) {
     if (response.status === 429) apiMetrics.rateLimited++;
 
     if (response.ok) return response.json();
-    if (response.status === 429 && attempt < attempts - 1) {
-      const retryAfter = Number(response.headers.get('retry-after'));
-      const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
-        ? Math.min(retryAfter * 1000, 3000)
-        : 1000 * (attempt + 1);
+    if ((response.status === 429 || (process.env.SYNC_JOB_MODE && response.status >= 500)) && attempt < attempts - 1) {
+      const retryAfter = Number(response.headers?.get('retry-after'));
+      const waitMs = response.status === 429
+        ? Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter * 1000, 30000) : 1000 * (attempt + 1)
+        : 250 * 2 ** attempt;
+      // Drain errors so the connection can be reused; a 429 pauses the shared worker queue.
+      await response.text().catch(() => undefined);
+      if (process.env.SYNC_JOB_MODE && response.status === 429) nextRequestAt = Math.max(nextRequestAt, Date.now() + waitMs);
       await new Promise(resolve => setTimeout(resolve, waitMs));
       continue;
     }
@@ -99,12 +101,12 @@ export async function getPlayerBattleLog(playerTag: string): Promise<ClashRoyale
   if (pending) { apiMetrics.cacheHits++; return pending; }
   apiMetrics.cacheMisses++;
   const put = (entry: { value?: Buffer; error?: Error; bytes: number }) => {
-    while (workerCache.size && (workerCacheBytes + entry.bytes > 128 * 1024 * 1024 || workerCache.size >= 5000)) {
+    while (workerCache.size && (workerCacheBytes + entry.bytes > 256 * 1024 * 1024 || workerCache.size >= 5000)) {
       const oldest = workerCache.keys().next().value!;
       workerCacheBytes -= workerCache.get(oldest)!.bytes;
       workerCache.delete(oldest); apiMetrics.cacheEvictions++;
     }
-    if (entry.bytes <= 128 * 1024 * 1024) { workerCache.set(tag, entry); workerCacheBytes += entry.bytes; }
+    if (entry.bytes <= 256 * 1024 * 1024) { workerCache.set(tag, entry); workerCacheBytes += entry.bytes; }
   };
   const promise = (async () => {
     try {

@@ -2,9 +2,9 @@ type User = { id: string; user_metadata?: { player_tag?: unknown } };
 type SyncResult = { battlesProcessed: number; recordsUpdated: number; newBattles: number; errors: string[] };
 
 /** Bulk-load account-scoped inputs once instead of two reads for every account. */
-export async function loadScheduledSyncContexts(client: any, users: User[]) {
-  const contexts = new Map<string, { userId: string; friends: Array<{ id: string; friend_player_tag: string }>; rating?: any; cleanupOnlyIfNewBattles: boolean }>();
-  for (const user of users) contexts.set(user.id, { userId: user.id, friends: [], cleanupOnlyIfNewBattles: true });
+export async function loadScheduledSyncContexts(client: any, users: User[], includeDigests = false) {
+  const contexts = new Map<string, { userId: string; friends: Array<{ id: string; friend_player_tag: string }>; rating?: any; cleanupOnlyIfNewBattles: boolean; historySnapshot?: { digests: Record<string, string>; onSkip?: () => void; onWrite?: (rows: number) => void } }>();
+  for (const user of users) contexts.set(user.id, { userId: user.id, friends: [], cleanupOnlyIfNewBattles: true, ...(includeDigests ? { historySnapshot: { digests: {} } } : {}) });
   let friendCount = 0;
   let ratingCount = 0;
   for (let offset = 0; offset < users.length; offset += 200) {
@@ -29,6 +29,21 @@ export async function loadScheduledSyncContexts(client: any, users: User[]) {
       if (position >= friends.count) break;
       if (!friends.data.length) throw new Error('Friend prefetch pagination stalled');
     }
+    if (includeDigests) {
+      let position = 0;
+      while (true) {
+        const states = await client.from('history_subject_totals').select('user_id,subject_type,subject_id,last_log_digest', { count: 'exact' }).in('user_id', ids).order('user_id').order('subject_type').order('subject_id').range(position, position + 999);
+        if (states.error || !Array.isArray(states.data) || typeof states.count !== 'number') throw new Error('History snapshot prefetch failed');
+        for (const row of states.data) {
+          const context = contexts.get(row.user_id);
+          if (!context || !ids.includes(row.user_id)) throw new Error('History snapshot scope mismatch');
+          if (typeof row.last_log_digest === 'string') context.historySnapshot!.digests[`${row.subject_type}:${row.subject_id}`] = row.last_log_digest;
+        }
+        position += states.data.length;
+        if (position >= states.count) break;
+        if (!states.data.length) throw new Error('History snapshot pagination stalled');
+      }
+    }
   }
   return { contexts, friendCount, ratingCount };
 }
@@ -45,7 +60,7 @@ function failureCategory(reason: string) {
   if (/history unavailable for tracked friend/i.test(reason)) return 'friend_history';
   if (/history|migration 009/i.test(reason)) return 'history_storage';
   if (/rating/i.test(reason)) return 'rating_storage';
-  if (/fetch|offline|timeout|timed.out|network|502|503|504/i.test(reason)) return 'dependency_unavailable';
+  if (/fetch|offline|timeout|timed.out|network|API error: 5\d\d/i.test(reason)) return 'dependency_unavailable';
   return 'sync_error';
 }
 

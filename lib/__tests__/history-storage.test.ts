@@ -52,6 +52,30 @@ function makeClient(error: unknown = null) {
 describe('history storage', () => {
   beforeEach(() => jest.clearAllMocks());
 
+  it('skips unchanged snapshots only after publishing a successful history write', async () => {
+    const upsert = jest.fn().mockResolvedValue({ error: null });
+    const state: any = { eq: () => state, then: (resolve: any) => Promise.resolve({ error: null }).then(resolve) };
+    const update = jest.fn(() => state);
+    const client = { from: (table: string) => table === 'history_subject_totals' ? { update } : { upsert } };
+    const snapshot = { digests: {} as Record<string, string>, onSkip: jest.fn() };
+    const subject = { userId: 'owner', playerTag: '#PLAYER' };
+    await persistHistory(client, subject, [battle('#PLAYER')], snapshot);
+    expect(snapshot.digests['player:#PLAYER']).toMatch(/^[0-9a-f]{64}$/);
+    expect(upsert.mock.invocationCallOrder[0]).toBeLessThan(update.mock.invocationCallOrder[0]);
+    await persistHistory(client, subject, [battle('#PLAYER'), battle('#PLAYER')], snapshot);
+    expect(upsert).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(snapshot.onSkip).toHaveBeenCalledTimes(1);
+    await persistHistory(client, subject, [{ ...battle('#PLAYER'), battleTime: '20260922T000000.000Z' }], snapshot);
+    expect(upsert).toHaveBeenCalledTimes(2);
+  });
+  it('never caches a fingerprint when history persistence fails', async () => {
+    const { client } = makeClient(new Error('storage unavailable'));
+    const snapshot = { digests: {} as Record<string, string> };
+    await expect(persistHistory(client, { userId: 'owner', playerTag: '#PLAYER' }, [battle('#PLAYER')], snapshot)).rejects.toThrow('Could not store');
+    expect(snapshot.digests).toEqual({});
+  });
+
   it('stores player history under user and player ownership keys', async () => {
     const { client, from, upsert } = makeClient();
     expect(await persistHistory(client, { userId: 'user-1', playerTag: '#PLAYER' }, [battle('#PLAYER')])).toBe(1);
