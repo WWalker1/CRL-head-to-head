@@ -38,3 +38,5 @@ On a future Railway failure, inspect aggregate logs and repair/re-run the single
 ## Verification
 
 Worker compilation, TypeScript and lint passed locally. Focused scheduler/battle/history/API tests cover complete pagination, malformed/failed pages, duplicate-page protection, four-worker concurrency, launch pacing, returned/thrown failures, shutdown/deferred reporting and upstream pacing. No production success is claimed until Railway reports a completed full run.
+
+The old Vercel cron endpoint is retired with an authenticated HTTP 410 response in the cutover source. It cannot start collection, even with the former valid cron credential. Manual account/friend refresh endpoints are unchanged. Retired scheduler tests were replaced with authentication/no-collection regression checks. The complete local suite passes 49 suites / 242 tests after this change; TypeScript, lint (six existing image warnings) and whitespace checks pass.

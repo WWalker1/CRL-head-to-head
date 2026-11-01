@@ -67,7 +67,7 @@ export default function PlayerStatsView({ friendId }: { friendId?: string }) {
     : 'No games yet';
 
   return <div className="mt-6 space-y-5">
-    {friendId && <header><Link href="/dashboard" className="inline-flex min-h-11 items-center text-sm font-semibold text-violet-200 hover:text-white">← Back to friends</Link><span className="mt-4 block text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">Rival Royale · matchup skill</span><h1 className="mt-3 break-words text-3xl font-black tracking-tight text-white sm:text-5xl">{data.friend?.friend_name || 'Friend'}&apos;s matchup skill</h1><p className="mt-2 text-sm text-slate-300 sm:text-base">Their latest 100 recorded 1v1 games, compared with model expectations.</p>{data.friend?.friend_player_tag && <p className="mt-1 text-xs text-slate-400">{data.friend.friend_player_tag}</p>}</header>}
+    {friendId && <header><Link href="/dashboard" className="inline-flex min-h-11 items-center text-sm font-semibold text-violet-200 hover:text-white">← Back to friends</Link><span className="mt-4 block text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">Rival Royale · matchup skill</span><h1 className="mt-3 break-words text-3xl font-black tracking-tight text-white sm:text-5xl">{data.friend?.friend_name || 'Friend'}&apos;s matchup skill</h1><p className="mt-2 text-sm text-slate-300 sm:text-base">Their latest 50 recorded 1v1 games, compared with model expectations.</p>{data.friend?.friend_player_tag && <p className="mt-1 text-xs text-slate-400">{data.friend.friend_player_tag}</p>}</header>}
     <MatchupSkill skill={stats.skill as MatchupSkillSummary} status={skillStatus} dark subject={friendId ? 'Their' : 'Your'} />
     <div className="grid gap-4 lg:grid-cols-2">
       <Highlight title="Best win" eyebrow="Lowest model chance" rows={stats.toughWins} empty={`${friendId ? 'Their' : 'Your'} best win will appear after a supported match is scored.`} friend={Boolean(friendId)} />
@@ -75,7 +75,7 @@ export default function PlayerStatsView({ friendId }: { friendId?: string }) {
     </div>
     <details className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-xs leading-5 text-slate-400">
       <summary className="cursor-pointer font-semibold text-slate-200">About these stats</summary>
-      <p className="mt-3">{stats.windowMatches} recent games · {stats.scoredMatches} model-supported · {windowLabel}. Highlights use the current model and the latest 100 stored games. Estimates describe deck matchups; player decisions, balance changes, and opponents can change a result.</p>
+      <p className="mt-3">{stats.windowMatches} recent games · {stats.scoredMatches} model-supported · {windowLabel}. Highlights use the current model and the latest 50 stored games. Estimates describe deck matchups; player decisions, balance changes, and opponents can change a result.</p>
     </details>
   </div>;
 }

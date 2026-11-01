@@ -16,7 +16,7 @@ export default function MatchupSkill({ skill, status, dark = false, subject = 'Y
       </div>
       <div className="min-w-0 flex-1">
         <p className={`text-xs font-bold uppercase tracking-[0.18em] ${dark ? 'text-orange-300' : 'text-violet-700'}`}>{modelScore ? 'Matchup skill' : 'Recent battle record'}</p>
-        <h2 className="mt-2 text-xl font-bold sm:text-2xl">{score === null ? 'More games needed for a score' : modelScore ? 'Results vs expectation' : `${subject} last 100 games`}</h2>
+        <h2 className="mt-2 text-xl font-bold sm:text-2xl">{score === null ? 'More games needed for a score' : modelScore ? 'Results vs expectation' : `${subject} last 50 games`}</h2>
         {modelScore && skill.provisional && <span className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${dark ? 'border-orange-300/30 bg-orange-300/10 text-orange-200' : 'border-orange-200 bg-orange-50 text-orange-800'}`}>Early score · {skill.scoredMatches} of 30 games</span>}
         <p className={`mt-2 text-sm ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{modelScore ? `${skill.actualWins} wins · ${skill.winsAboveExpected >= 0 ? '+' : ''}${skill.winsAboveExpected.toFixed(1)} vs expected` : score !== null ? `${skill.recordWins} wins · ${skill.recordLosses} losses` : 'Sync battles to see results.'}</p>
         {modelScore && <p className={`mt-1 text-sm ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{skill.toughWins} wins in {skill.toughMatches} tough matchups</p>}

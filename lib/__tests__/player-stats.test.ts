@@ -29,16 +29,16 @@ describe('buildPlayerStats', () => {
     expect(result.modelVersion).toBe('v1');
   });
 
-  it('limits the analysis to the latest 100 eligible 1v1 matches, including other constructed modes', () => {
+  it('limits the analysis to the latest 50 eligible 1v1 matches, including other constructed modes', () => {
     const rows = Array.from({ length: 101 }, (_, index) => row(`m-${index}`, 'loss', 0.9, {
       mode: index === 100 ? 'challenge' : 'ranked',
       battle_time: new Date(Date.UTC(2026, 0, 1 + index)).toISOString(),
     }));
     rows.push(row('special-other', 'loss', 1, { mode: 'other', battle_time: '2026-12-31T00:00:00.000Z' }));
     const result = buildPlayerStats(rows, 'v1', skill);
-    expect(result.windowMatches).toBe(100);
+    expect(result.windowMatches).toBe(50);
     expect(result.favorableLosses).toHaveLength(5);
-    expect(result.firstMatch).toBe(rows[2].battle_time);
+    expect(result.firstMatch).toBe(rows[52].battle_time);
     expect(result.lastMatch).toBe('2026-12-31T00:00:00.000Z');
     expect(result.favorableLosses.some(match => match.id === 'special-other')).toBe(true);
   });

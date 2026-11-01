@@ -1,3 +1,4 @@
+import { FRIEND_HISTORY_LIMIT } from './history-limits';
 import { SKILL_MODES, type MatchupSkillSummary } from './matchup-skill';
 
 export type PlayerStatsRow = {
@@ -51,12 +52,12 @@ function highlight(row: PlayerStatsRow): MatchupHighlight {
   };
 }
 
-/** Current-model highlights are restricted to supported estimates in the same latest-100 window as skill. */
+/** Current-model highlights are restricted to supported estimates in the same latest-50 window as skill. */
 export function buildPlayerStats(rows: PlayerStatsRow[], modelVersion: string | null, skill: MatchupSkillSummary): PlayerStats {
   const window = rows
     .filter(row => SKILL_MODES.has(row.mode) && ['win', 'loss'].includes(row.friend_result ?? row.result ?? ''))
     .sort((a, b) => Date.parse(b.battle_time) - Date.parse(a.battle_time))
-    .slice(0, 100);
+    .slice(0, FRIEND_HISTORY_LIMIT);
   const scored = window.filter(row => usableProbability(row, modelVersion));
   const favorableLosses = scored.filter(row => (row.friend_result ?? row.result) === 'loss')
     .sort((a, b) => b.expected_win_probability! - a.expected_win_probability! || Date.parse(b.battle_time) - Date.parse(a.battle_time))

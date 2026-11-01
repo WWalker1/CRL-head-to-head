@@ -10,7 +10,7 @@ function modelDeck(deck: any) {
   return { cards, tower_id: Number(deck.tower), tower_level: deck.towerLevel };
 }
 
-/** Keep 100 full matches, up to 1,000 deck summaries, and an exact lifetime match total. */
+/** Keep 50 full matches, up to 1,000 deck summaries, and an exact lifetime match total. */
 export async function withAllTimeDecks(client: any, subject: HistorySubject, recent: FriendHistorySummary): Promise<FriendHistorySummary> {
   const subjectType = subject.friendId ? 'friend' : 'player';
   const subjectId = subject.friendId || subject.playerTag;

@@ -35,7 +35,7 @@ export default function FriendSkillBadge({ friendId, friendName }: { friendId: s
 
   const score = skill?.score ?? skill?.recordScore ?? null;
   return <Link ref={badgeRef} href={`/friend-skill/${encodeURIComponent(friendId)}`} className="mt-4 flex min-h-11 items-center justify-between gap-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-violet-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-700" aria-label={`View ${friendName}'s matchup skill details`}>
-    <span className="min-w-0 text-xs font-semibold">{skill?.score != null ? 'Matchup skill' : 'Recent record'} <span className="font-normal text-violet-700">· latest 100 games</span></span>
+    <span className="min-w-0 text-xs font-semibold">{skill?.score != null ? 'Matchup skill' : 'Recent record'} <span className="font-normal text-violet-700">· latest 50 games</span></span>
     <span className="shrink-0 text-xl font-black tabular-nums">{unavailable ? '—' : skill ? score === null ? '—' : Math.round(score) : '…'}<span className="text-xs font-medium">/100</span></span>
   </Link>;
 }
