@@ -36,6 +36,26 @@ describe('Railway scheduled sync', () => {
     const chain: any = { select: () => chain, in: () => chain, then: (resolve: any) => Promise.resolve({ data: [{ user_id: 'another-owner' }], error: null }).then(resolve) };
     await expect(loadScheduledSyncContexts({ from: () => chain }, users(1))).rejects.toThrow('scope mismatch');
   });
+  it('bounds bulk prefetch to four account batches while covering every account', async () => {
+    let active = 0;
+    let maximum = 0;
+    const client = { from: jest.fn(() => {
+      const chain: any = {
+        select: () => chain, in: () => chain, order: () => chain,
+        range: async () => ({ data: [], count: 0, error: null }),
+        then: (resolve: any) => {
+          active++; maximum = Math.max(maximum, active);
+          return new Promise(done => setTimeout(() => { active--; done({ data: [], error: null }); }, 1)).then(resolve);
+        },
+      };
+      return chain;
+    }) };
+    const result = await loadScheduledSyncContexts(client, users(1001), true);
+    expect(maximum).toBe(4);
+    expect(result.contexts.size).toBe(1001);
+    expect(result.contexts.get('1000')?.historySnapshot?.digests).toEqual({});
+    expect(client.from).toHaveBeenCalledTimes(18);
+  });
   it('processes every eligible user with at most four active jobs', async () => {
     let active = 0;
     let maximum = 0;

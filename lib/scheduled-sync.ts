@@ -7,44 +7,50 @@ export async function loadScheduledSyncContexts(client: any, users: User[], incl
   for (const user of users) contexts.set(user.id, { userId: user.id, friends: [], cleanupOnlyIfNewBattles: true, ...(includeDigests ? { historySnapshot: { digests: {} } } : {}) });
   let friendCount = 0;
   let ratingCount = 0;
-  for (let offset = 0; offset < users.length; offset += 200) {
-    const ids = users.slice(offset, offset + 200).map(user => user.id);
-    const ratings = await client.from('user_ratings').select('user_id,player_tag,elo_rating,num_ranked_games,updated_at').in('user_id', ids);
-    if (ratings.error || !Array.isArray(ratings.data)) throw new Error('Rating prefetch failed');
-    for (const row of ratings.data) {
-      const context = contexts.get(row.user_id);
-      if (!context || !ids.includes(row.user_id)) throw new Error('Rating prefetch scope mismatch');
-      context.rating = row; ratingCount++;
-    }
-    let position = 0;
-    while (true) {
-      const friends = await client.from('tracked_friends').select('id,user_id,friend_player_tag', { count: 'exact' }).in('user_id', ids).order('id').range(position, position + 999);
-      if (friends.error || !Array.isArray(friends.data) || typeof friends.count !== 'number') throw new Error('Friend prefetch failed');
-      for (const row of friends.data) {
+  let nextOffset = 0;
+  const loadBatches = async () => {
+    while (nextOffset < users.length) {
+      const offset = nextOffset;
+      nextOffset += 200;
+      const ids = users.slice(offset, offset + 200).map(user => user.id);
+      const ratings = await client.from('user_ratings').select('user_id,player_tag,elo_rating,num_ranked_games,updated_at').in('user_id', ids);
+      if (ratings.error || !Array.isArray(ratings.data)) throw new Error('Rating prefetch failed');
+      for (const row of ratings.data) {
         const context = contexts.get(row.user_id);
-        if (!context || !ids.includes(row.user_id)) throw new Error('Friend prefetch scope mismatch');
-        context.friends.push({ id: row.id, friend_player_tag: row.friend_player_tag }); friendCount++;
+        if (!context || !ids.includes(row.user_id)) throw new Error('Rating prefetch scope mismatch');
+        context.rating = row; ratingCount++;
       }
-      position += friends.data.length;
-      if (position >= friends.count) break;
-      if (!friends.data.length) throw new Error('Friend prefetch pagination stalled');
-    }
-    if (includeDigests) {
       let position = 0;
       while (true) {
-        const states = await client.from('history_subject_totals').select('user_id,subject_type,subject_id,last_log_digest', { count: 'exact' }).in('user_id', ids).order('user_id').order('subject_type').order('subject_id').range(position, position + 999);
-        if (states.error || !Array.isArray(states.data) || typeof states.count !== 'number') throw new Error('History snapshot prefetch failed');
-        for (const row of states.data) {
+        const friends = await client.from('tracked_friends').select('id,user_id,friend_player_tag', { count: 'exact' }).in('user_id', ids).order('id').range(position, position + 999);
+        if (friends.error || !Array.isArray(friends.data) || typeof friends.count !== 'number') throw new Error('Friend prefetch failed');
+        for (const row of friends.data) {
           const context = contexts.get(row.user_id);
-          if (!context || !ids.includes(row.user_id)) throw new Error('History snapshot scope mismatch');
-          if (typeof row.last_log_digest === 'string') context.historySnapshot!.digests[`${row.subject_type}:${row.subject_id}`] = row.last_log_digest;
+          if (!context || !ids.includes(row.user_id)) throw new Error('Friend prefetch scope mismatch');
+          context.friends.push({ id: row.id, friend_player_tag: row.friend_player_tag }); friendCount++;
         }
-        position += states.data.length;
-        if (position >= states.count) break;
-        if (!states.data.length) throw new Error('History snapshot pagination stalled');
+        position += friends.data.length;
+        if (position >= friends.count) break;
+        if (!friends.data.length) throw new Error('Friend prefetch pagination stalled');
+      }
+      if (includeDigests) {
+        let position = 0;
+        while (true) {
+          const states = await client.from('history_subject_totals').select('user_id,subject_type,subject_id,last_log_digest', { count: 'exact' }).in('user_id', ids).order('user_id').order('subject_type').order('subject_id').range(position, position + 999);
+          if (states.error || !Array.isArray(states.data) || typeof states.count !== 'number') throw new Error('History snapshot prefetch failed');
+          for (const row of states.data) {
+            const context = contexts.get(row.user_id);
+            if (!context || !ids.includes(row.user_id)) throw new Error('History snapshot scope mismatch');
+            if (typeof row.last_log_digest === 'string') context.historySnapshot!.digests[`${row.subject_type}:${row.subject_id}`] = row.last_log_digest;
+          }
+          position += states.data.length;
+          if (position >= states.count) break;
+          if (!states.data.length) throw new Error('History snapshot pagination stalled');
+        }
       }
     }
-  }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, Math.ceil(users.length / 200)) }, loadBatches));
   return { contexts, friendCount, ratingCount };
 }
 export type SyncSummary = {
