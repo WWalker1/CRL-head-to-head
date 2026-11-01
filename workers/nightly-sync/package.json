@@ -1,0 +1,11 @@
+{
+  "name": "rival-royale-nightly-sync",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "2.78.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
