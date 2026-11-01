@@ -33,6 +33,8 @@ export async function persistHistory(client: any, subject: HistorySubject, battl
 // Short lived, bounded sharing avoids repeated friend-log fetches in a sync batch.
 const logs = new Map<string, { expires: number; promise: ReturnType<typeof getPlayerBattleLog> }>();
 export function sharedBattleLog(tag: string) {
+  // The standalone worker owns a job-wide serialized cache in the API layer.
+  if (process.env.SYNC_JOB_MODE) return getPlayerBattleLog(tag);
   const prior = logs.get(tag);
   if (prior && prior.expires > Date.now()) return prior.promise;
   if (logs.size >= 500) logs.clear();

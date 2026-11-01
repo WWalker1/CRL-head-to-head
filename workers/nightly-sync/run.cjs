@@ -70,10 +70,10 @@ async function main() {
     log('sync_started', { totalUsers: users.length, concurrency, launchIntervalMs, apiIntervalMs: Number(process.env.CLASH_REQUEST_INTERVAL_MS || 10), friendCount, ratingCount, authMs, prefetchMs });
     summary = await runScheduledSync({
       users, sync: (id, tag) => syncBattlesForUser(id, tag, contexts.get(id)), concurrency, launchIntervalMs, maxAttempts: 2,
-      signal: controller.signal, progress: value => log('sync_progress', value),
+      signal: controller.signal, progress: value => log('sync_progress', { ...value, api: getClashApiMetrics(), database: dbMetrics, memory: process.memoryUsage() }),
       onFailure: ({ userId, categories }) => log('sync_account_failed', { accountRef: createHash('sha256').update(userId).digest('hex').slice(0, 12), categories }),
     });
-    log('sync_complete', { ...summary, jobMs: Date.now() - jobStarted, authMs, prefetchMs, api: getClashApiMetrics(), database: dbMetrics });
+    log('sync_complete', { ...summary, jobMs: Date.now() - jobStarted, authMs, prefetchMs, api: getClashApiMetrics(), database: dbMetrics, memory: process.memoryUsage() });
     if (!summary.success) process.exitCode = 1;
   } catch {
     log('sync_failed', { reason: 'job_failed', mode: process.env.SYNC_JOB_MODE || 'run' });

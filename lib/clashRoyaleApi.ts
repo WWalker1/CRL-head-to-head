@@ -1,4 +1,5 @@
 import { ClashRoyalePlayer, ClashRoyaleBattle } from './types';
+import { serialize, deserialize } from 'node:v8';
 
 // used as proxy server to get a static IP address 
 const API_BASE_URL = 'https://proxy.royaleapi.dev/v1';
@@ -7,7 +8,7 @@ const API_BASE_URL = 'https://proxy.royaleapi.dev/v1';
 // Web requests retain their existing behavior when the interval is unset.
 let requestQueue = Promise.resolve();
 let nextRequestAt = 0;
-const workerCache = new Map<string, { value?: ClashRoyaleBattle[]; error?: Error; bytes: number }>();
+const workerCache = new Map<string, { value?: Buffer; error?: Error; bytes: number }>();
 const workerInflight = new Map<string, Promise<ClashRoyaleBattle[]>>();
 const workerTags = new Set<string>();
 let workerCacheBytes = 0;
@@ -92,12 +93,12 @@ export async function getPlayerBattleLog(playerTag: string): Promise<ClashRoyale
     apiMetrics.cacheHits++;
     workerCache.delete(tag); workerCache.set(tag, cached);
     if (cached.error) throw cached.error;
-    return cached.value!;
+    return deserialize(cached.value!) as ClashRoyaleBattle[];
   }
   const pending = workerInflight.get(tag);
   if (pending) { apiMetrics.cacheHits++; return pending; }
   apiMetrics.cacheMisses++;
-  const put = (entry: { value?: ClashRoyaleBattle[]; error?: Error; bytes: number }) => {
+  const put = (entry: { value?: Buffer; error?: Error; bytes: number }) => {
     while (workerCache.size && (workerCacheBytes + entry.bytes > 128 * 1024 * 1024 || workerCache.size >= 5000)) {
       const oldest = workerCache.keys().next().value!;
       workerCacheBytes -= workerCache.get(oldest)!.bytes;
@@ -113,7 +114,9 @@ export async function getPlayerBattleLog(playerTag: string): Promise<ClashRoyale
       const compactCard = (card: any) => { const copy = { ...card }; delete copy.iconUrls; return copy; };
       const player = (row: any) => ({ ...row, cards: row.cards?.map(compactCard), supportCards: row.supportCards?.map(compactCard) });
       const data = raw.map(row => ({ ...row, team: row.team?.map(player), opponent: row.opponent?.map(player) }));
-      put({ value: data, bytes: Buffer.byteLength(JSON.stringify(data)) });
+      // Serialized buffers keep bounded cached payloads outside V8's object heap.
+      const serialized = serialize(data);
+      put({ value: serialized, bytes: serialized.byteLength });
       return data;
     } catch (error) {
       if (error instanceof Error && /API error: 404/.test(error.message)) put({ error, bytes: 256 });
