@@ -3,7 +3,19 @@ type SyncResult = { battlesProcessed: number; recordsUpdated: number; newBattles
 export type SyncSummary = {
   success: boolean; totalUsers: number; eligibleUsers: number; processed: number;
   succeeded: number; failed: number; deferred: number; newBattles: number; durationMs: number;
+  failureCategories: Record<string, number>;
 };
+
+function failureCategory(reason: string) {
+  if (/API error: 404/.test(reason)) return 'player_unavailable';
+  if (/API error: 403|credentials/i.test(reason)) return 'upstream_authorization';
+  if (/429|rate.limit/i.test(reason)) return 'upstream_rate_limit';
+  if (/history unavailable for tracked friend/i.test(reason)) return 'friend_history';
+  if (/history|migration 009/i.test(reason)) return 'history_storage';
+  if (/rating/i.test(reason)) return 'rating_storage';
+  if (/fetch|offline|timeout|timed.out|network|502|503|504/i.test(reason)) return 'dependency_unavailable';
+  return 'sync_error';
+}
 
 /** Enumerate completely before writing; a failed Auth page cannot silently omit accounts. */
 export async function enumerateSyncUsers(
@@ -29,17 +41,21 @@ export async function runScheduledSync(options: {
   users: User[];
   sync: (id: string, tag: string) => Promise<SyncResult>;
   concurrency?: number; launchIntervalMs?: number; signal?: AbortSignal;
+  maxAttempts?: number;
+  onFailure?: (failure: { userId: string; categories: string[] }) => void;
   sleep?: (ms: number) => Promise<void>; now?: () => number;
-  progress?: (summary: Omit<SyncSummary, 'success' | 'deferred' | 'durationMs'>) => void;
+  progress?: (summary: Omit<SyncSummary, 'success' | 'deferred' | 'durationMs' | 'failureCategories'>) => void;
 }): Promise<SyncSummary> {
   const concurrency = options.concurrency ?? 4;
   const interval = options.launchIntervalMs ?? 500;
-  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 15 || interval < 0 || !Number.isFinite(interval)) throw new Error('Invalid worker limits');
+  const attempts = options.maxAttempts ?? 1;
+  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 15 || interval < 0 || !Number.isFinite(interval) || !Number.isInteger(attempts) || attempts < 1 || attempts > 3) throw new Error('Invalid worker limits');
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms)));
   const start = now();
   const users = options.users.filter(user => typeof user.user_metadata?.player_tag === 'string' && user.user_metadata.player_tag.trim());
   const summary = { totalUsers: options.users.length, eligibleUsers: users.length, processed: 0, succeeded: 0, failed: 0, newBattles: 0 };
+  const failureCategories: Record<string, number> = {};
   let next = 0;
   let nextLaunch = start;
   let launchQueue = Promise.resolve();
@@ -60,20 +76,34 @@ export async function runScheduledSync(options: {
       if (options.signal?.aborted) return;
       const user = users[index];
       let result: SyncResult | undefined;
-      try {
-        result = await options.sync(user.id, user.user_metadata!.player_tag as string);
-      } catch { /* One failed account must not stop the remaining accounts. */ }
+      let reasons: string[] = [];
+      for (let attempt = 0; attempt < attempts; attempt++) {
+        try {
+          result = await options.sync(user.id, user.user_metadata!.player_tag as string);
+          reasons = Array.isArray(result?.errors) ? result.errors : ['Invalid sync result'];
+          summary.newBattles += Number.isFinite(result?.newBattles) ? result!.newBattles : 0;
+        } catch (error) {
+          result = undefined;
+          reasons = [error instanceof Error ? error.message : 'Unknown sync error'];
+        }
+        const permanent = reasons.some(reason => /API error: (403|404)/.test(reason));
+        if (!reasons.length || permanent || attempt + 1 >= attempts || options.signal?.aborted) break;
+        await sleep(2000);
+        if (options.signal?.aborted) break;
+      }
       summary.processed++;
       if (result && Array.isArray(result.errors) && result.errors.length === 0) {
         summary.succeeded++;
       } else {
         summary.failed++;
+        const categories = [...new Set(reasons.map(failureCategory))];
+        for (const category of categories) failureCategories[category] = (failureCategories[category] || 0) + 1;
+        options.onFailure?.({ userId: user.id, categories });
       }
-      summary.newBattles += Number.isFinite(result?.newBattles) ? result!.newBattles : 0;
       if (summary.processed % 25 === 0) options.progress?.({ ...summary });
     }
   };
   await Promise.all(Array.from({ length: Math.min(concurrency, users.length) }, worker));
   const deferred = users.length - summary.processed;
-  return { ...summary, success: summary.failed === 0 && deferred === 0 && !options.signal?.aborted, deferred, durationMs: now() - start };
+  return { ...summary, success: summary.failed === 0 && deferred === 0 && !options.signal?.aborted, deferred, durationMs: now() - start, failureCategories };
 }

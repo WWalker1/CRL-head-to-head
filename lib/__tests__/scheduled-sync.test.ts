@@ -51,4 +51,18 @@ describe('Railway scheduled sync', () => {
   it('does not report an already-aborted empty run as successful', async () => {
     await expect(runScheduledSync({ users: [], sync: jest.fn(), signal: AbortSignal.abort() })).resolves.toMatchObject({ success: false });
   });
+  it('retries a transient partial failure once and counts only newly inserted battles', async () => {
+    const sync = jest.fn().mockResolvedValueOnce({ ...result, newBattles: 2, errors: ['History unavailable for tracked friend example'] }).mockResolvedValueOnce({ ...result, newBattles: 0 });
+    const summary = await runScheduledSync({ users: users(1), sync, maxAttempts: 2, launchIntervalMs: 0, sleep: async () => {} });
+    expect(sync).toHaveBeenCalledTimes(2);
+    expect(summary).toMatchObject({ success: true, failed: 0, newBattles: 2 });
+  });
+  it.each([[404, 'player_unavailable'], [403, 'upstream_authorization']])('does not retry permanent HTTP %s failures and categorizes them', async (status, category) => {
+    const onFailure = jest.fn();
+    const sync = jest.fn().mockResolvedValue({ ...result, errors: [`Failed to sync battles: Clash Royale API error: ${status}`] });
+    const summary = await runScheduledSync({ users: users(1), sync, maxAttempts: 2, launchIntervalMs: 0, onFailure });
+    expect(sync).toHaveBeenCalledTimes(1);
+    expect(summary).toMatchObject({ success: false, failureCategories: { [category]: 1 } });
+    expect(onFailure).toHaveBeenCalledWith({ userId: '0', categories: [category] });
+  });
 });

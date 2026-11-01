@@ -1,4 +1,5 @@
-FROM node:22.22.0-bookworm-slim AS build
+# Track maintained Node 22 LTS patch releases when rebuilding the worker.
+FROM node:22-bookworm-slim AS build
 WORKDIR /app
 COPY workers/nightly-sync/package.json workers/nightly-sync/package-lock.json ./
 RUN npm ci --include=dev --ignore-scripts
@@ -7,7 +8,7 @@ COPY utils ./utils
 COPY workers/nightly-sync ./workers/nightly-sync
 RUN node workers/nightly-sync/build.cjs && npm prune --omit=dev --ignore-scripts
 
-FROM node:22.22.0-bookworm-slim
+FROM node:22-bookworm-slim
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
