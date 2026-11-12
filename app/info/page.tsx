@@ -184,7 +184,7 @@ export default function InfoPage() {
                 Privacy and Data Security
               </h2>
               <p className="text-gray-700 mb-4">
-                The tracker is designed with privacy in mind. We only store:
+                The tracker uses account information and game records to operate your dashboard. Tracked game data includes:
               </p>
               <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4 mb-4">
                 <li>Your player tag (publicly available information)</li>
@@ -192,7 +192,7 @@ export default function InfoPage() {
                 <li>Aggregated win/loss statistics</li>
               </ul>
               <p className="text-gray-700">
-                The tracker stores win and loss totals. When history collection is enabled, it retains eligible recorded 1v1 matches for you and your tracked friends, including both decks, levels, tower troops, and outcomes. Deck and skill summaries use the latest 50 records. Game credentials are never stored.
+                The tracker stores win and loss totals. When history collection is enabled, it retains eligible recorded 1v1 matches for you and your tracked friends, including both decks, levels, tower troops, and outcomes. Deck and skill summaries use the latest 50 records. Your Clash Royale password is never requested. Read the <Link href="/privacy" className="font-semibold text-violet-700 underline">privacy policy</Link> for account data, analytics, service providers, and advertising disclosures.
               </p>
             </section>
 

@@ -1,0 +1,15 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import ArticlePage from '@/components/ArticlePage';
+
+export const metadata: Metadata = { title: 'About Rival Royale', description: 'Why Rival Royale combines recorded friend battles, deck comparisons, and model-relative skill scores, and what its tools can and cannot tell you.', alternates: { canonical: '/about' } };
+
+export default function AboutPage() {
+  return <ArticlePage title="About Rival Royale" intro="A Clash Royale companion built around a specific question: what can your recorded games against friends teach you about your next matchup?">
+    <section><h2>From a rivalry to a deck decision</h2><p>A head-to-head record answers who won the games the tracker captured. It does not explain the decks behind those results. Rival Royale connects that record to recorded friend decks, a counter finder, and a score comparing recent results with deck-model expectations.</p><p>The useful loop is simple: look at a tracked friend’s most-played decks, choose a complete deck you want to prepare for, explore counter candidates, and practice a candidate in the game. The tracker gives context to that choice; the model gives another comparison to consider.</p></section>
+    <section><h2>What you can use without an account</h2><p>The <Link href="/counter-deck">counter finder</Link>, <Link href="/clash-royale-counter-deck-finder">deck-building guide</Link>, <Link href="/guides/understand-skill-score">skill-score explanation</Link>, and <Link href="/models">model methodology</Link> are public. Anonymous counter searches have a daily allowance. Personal battle tracking and private player history require an account.</p></section>
+    <section><h2>What makes the comparison useful</h2><p>A favorable win and a difficult win count the same in a plain win rate. Rival Royale also compares supported results with the expectations of its deck matchup model. That helps identify games worth reviewing, such as an unlikely win or a loss with a favored deck. It does not establish why a player won.</p><p>The methodology page documents the model’s inputs, held-out evaluation, bounded counter search, and coverage limitations. Candidate rankings are estimates from a limited search, not live ladder win rates or a claim that a deck is the best in the game.</p></section>
+    <section><h2>Limits we want you to see</h2><ul><li>The game API exposes recent battles. A recorded rivalry can miss matches, especially older games.</li><li>Card levels, tower troops, starting hands, decisions, and balance updates can change a real outcome.</li><li>The score uses a recent window and can move sharply with a small sample.</li><li>Rival Royale never asks for your Clash Royale account password.</li></ul></section>
+    <section><h2>Feedback and corrections</h2><p>Found a confusing explanation, incorrect card detail, or a broken flow? <Link href="/contact">Contact Rival Royale</Link> with the page and steps that led to it. Suggestions about a deck should include all eight cards and their forms so the issue can be reproduced.</p></section>
+  </ArticlePage>;
+}

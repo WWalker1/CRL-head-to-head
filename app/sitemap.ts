@@ -8,6 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${baseUrl}${path}`, changeFrequency: 'weekly' as const, priority: 0.8,
   }));
   return [
+    ...['/about', '/contact', '/privacy', '/guides/understand-skill-score'].map(path => ({ url: `${baseUrl}${path}`, changeFrequency: 'monthly' as const, priority: 0.6 })),
     ...(process.env.MODEL_TOOLS_ENABLED === '1' ? tools : []),
     {
       url: baseUrl,

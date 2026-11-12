@@ -4,13 +4,15 @@ import { useState } from 'react';
 import CardPicker from './CardPicker';
 import type { CatalogTower, CatalogVariant, Deck } from './types';
 
-export default function VisualDeckForm({ deck, variants, towers, onChange, showCardLevels = true, showLevelCaveat = true }: {
+export default function VisualDeckForm({ deck, variants, towers, onChange, showCardLevels = true, showLevelCaveat = true, loadingCatalog = false, wide = false }: {
   deck: Deck;
   variants: CatalogVariant[];
   towers: CatalogTower[];
   onChange: (deck: Deck) => void;
   showCardLevels?: boolean;
   showLevelCaveat?: boolean;
+  loadingCatalog?: boolean;
+  wide?: boolean;
 }) {
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [advanced, setAdvanced] = useState(false);
@@ -27,12 +29,18 @@ export default function VisualDeckForm({ deck, variants, towers, onChange, showC
     onChange({ ...deck, cards });
   };
   const setAllLevels = (level: number) => onChange({ ...deck, cards: deck.cards.map(card => ({ ...card, level: Math.max(level, lookup.get(card.key)?.min_level ?? 1) })), tower_level: level });
-  return <div>
-    <div className="grid grid-cols-4 gap-2 sm:gap-3" role="group" aria-label="Deck card slots">{deck.cards.map((entry, slot) => {
+  return <div className={`w-full max-w-lg ${wide ? 'lg:max-w-none' : ''}`}>
+    <div className={`grid grid-cols-4 gap-2 sm:gap-3 ${wide ? 'lg:grid-cols-8' : ''}`} role="group" aria-label="Deck card slots">{deck.cards.map((entry, slot) => {
       const card = lookup.get(entry.key);
-      return <button key={slot} type="button" onClick={() => setActiveSlot(slot)} aria-label={`Card ${slot + 1}: ${card?.name ?? 'choose a card'}`} className={`group relative min-h-36 overflow-hidden rounded-xl border text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400 ${card ? 'border-blue-200/20 bg-slate-900 hover:border-orange-400' : 'border-dashed border-blue-200/30 bg-blue-900/20 hover:border-orange-400 hover:bg-blue-900/30'}`}>
+      return <button key={slot} type="button" onClick={() => setActiveSlot(slot)} disabled={loadingCatalog} aria-label={`Card ${slot + 1}: ${card?.name ?? 'choose a card'}`} className={`group relative flex min-w-0 flex-col overflow-hidden rounded-xl border text-left transition disabled:cursor-wait focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400 ${card ? 'border-blue-200/20 bg-slate-900 hover:border-orange-400' : 'border-dashed border-blue-200/30 bg-blue-900/20 hover:border-orange-400 hover:bg-blue-900/30'}`}>
         <span className="absolute left-1.5 top-1.5 z-10 flex h-6 min-w-6 items-center justify-center rounded-md bg-slate-950/85 px-1 text-[11px] font-bold text-white">{slot + 1}</span>
-        {card ? <><div className="flex aspect-[4/5] items-center justify-center bg-blue-950/40">{card.image ? <img src={card.image} alt="" loading="lazy" className="h-full w-full object-contain" /> : <span className="text-sm text-blue-100">{card.name}</span>}</div><div className="px-1.5 py-1.5"><span className="block truncate text-xs font-semibold text-white">{card.base_name ?? card.name}</span><span className="block text-[11px] text-orange-300">{card.form === 1 ? 'Evolution' : card.form === 2 ? 'Hero' : 'Base'}{showCardLevels ? ` · Lv ${entry.level}` : ''}</span></div></> : <div className="flex min-h-36 flex-col items-center justify-center gap-1 px-1"><span className="text-3xl text-orange-300">+</span><span className="text-xs font-semibold text-blue-100">Add card</span></div>}
+        <div className="relative flex aspect-[4/5] w-full shrink-0 items-center justify-center bg-blue-950/40">
+          {card?.image ? <img src={card.image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-contain" /> : <span className="text-3xl text-orange-300" aria-hidden="true">+</span>}
+        </div>
+        <div className="flex h-11 w-full min-w-0 shrink-0 flex-col justify-center px-1.5">
+          <span className="block truncate text-xs font-semibold text-white">{card ? card.base_name ?? card.name : 'Add card'}</span>
+          <span className="block truncate text-[11px] text-orange-300">{card ? `${card.form === 1 ? 'Evolution' : card.form === 2 ? 'Hero' : 'Base'}${showCardLevels ? ` · Lv ${entry.level}` : ''}` : '\u00a0'}</span>
+        </div>
       </button>;
     })}</div>
     <div className="mt-4 flex flex-wrap items-center justify-between gap-2"><p className="text-sm text-blue-100/80">{deck.cards.filter(card => card.key).length} / 8 cards selected</p><button type="button" onClick={() => setAdvanced(value => !value)} aria-expanded={advanced} className="min-h-11 rounded-lg border border-blue-200/25 px-3 text-sm font-semibold text-blue-100 hover:border-orange-300">{advanced ? 'Hide' : 'Show'} {showCardLevels ? 'levels & tower' : 'tower options'}</button></div>

@@ -1,0 +1,58 @@
+# Rival Royale UI and AdSense readiness — November 11, 2026
+
+Branch: `codex/production-ui-ad-readiness`, created directly from fetched production `origin/main` at `0caa037`. The earlier development redesign and local storage-compaction work are not included. Production deployment, ad serving settings, account settings, and the nightly collector have not been changed.
+
+## UI changes
+
+- Preserve the production colors, visual language, navigation labels and tool flow.
+- Target deck uses eight compact columns on desktop and four on phones. Matchup forms retain four columns with a width cap. Example decks are narrower on desktop.
+- Empty and filled slots use the same artwork box and fixed caption space. Artwork cannot enlarge its parent from intrinsic image dimensions.
+- Mobile navigation closes on link selection (including the current route), on route changes, outside pointer presses, and Escape. Escape restores focus to the summary.
+- The complete tool shell and empty slots are server-rendered. The previous full-page loading wrappers are removed. Card-library loading is a small status message; optional examples no longer delay a successful catalog response.
+- Friend-deck query loading remains inside its own small Suspense boundary. Existing friend-deck loading, counter export and stale-prediction protections pass regression tests.
+
+## AdSense finding and changes
+
+The supplied AdSense screenshot states **Low value content**. It does not identify a specific offending URL. No claim is made that these changes guarantee approval.
+
+Concrete gaps addressed:
+
+- Added public About, Contact and Privacy pages. Contact uses the owner-provided `wwwestonwalker@gmail.com`; no Resend account or new address was provisioned.
+- Added source-checked disclosures for account data, game records, bounded recent histories, aggregates, optional sharing, providers, analytics, cookies and potential Google advertising.
+- Corrected the older information page's misleading “only store” wording, which omitted account and analytics data.
+- Expanded the existing counter guide with an eight-card worked example, roles, tradeoffs, a process for preparing for a friend's deck, and a way to test one change at a time. This stays on the existing canonical URL.
+- Added an original skill-score guide with a four-game calculation using the implemented formula, provisional sample threshold, fallback distinction and review questions.
+- Added contextual links and a crawlable footer so the guides and trust pages are discoverable, including the formerly orphaned counter guide. Sitemap now contains 11 canonical public URLs.
+- Added Supercell's unofficiality notice and policy link. No ad-serving flags or automatic placement settings were enabled.
+
+## Verification
+
+- 35 JavaScript test suites, **197 tests passed**. New behavior tests cover mobile closure, required catalog failure, optional example failure and a slow example response.
+- TypeScript checking passed; optimized production build passed with placeholder build credentials. No production credentials were used for the build.
+- Browser checks used actual public card catalog/example data through the existing local preview path. No live counter-search quota, signed-in user data or production write was used.
+- Desktop at 1440 × 1000: empty and filled target grids both **201.3125 px** high; eight card slots are each 126.25 × 201.3125 px.
+- Phone at 390 × 844: four-card and five-card target grids both **277.5 px** high; all eight slots stay 73 × 134.75 px. No page-wide overflow.
+- Browser navigation reached `/info` and confirmed the mobile menu was closed after navigation. Privacy, deck guide and skill guide rendered at phone width without page-wide overflow.
+- Production-server HTTP checks: all 11 public pages return 200, permit indexing, declare self-canonical URLs, and contain one H1. Counter and matchup initial HTML contains all 8/16 card slots and no old full-page loading fallback. Sitemap contains all 11 public URLs.
+- React review: server-side auth remains in Navbar, only the mobile disclosure is a client boundary; effect listeners clean up; async fetches abort; friend query dependencies use primitive strings; public pages remain server-rendered and links remain crawlable.
+
+This is UI/content verification, not a new signed-in tracking or model-quality audit. Model code and database schema were not changed.
+
+## Before applying again
+
+1. Review and publish this branch's changes; Google cannot review changes that exist only in a branch. Confirm the privacy disclosures against final production configuration.
+2. In AdSense, finish and test applicable regional privacy/consent messages, including refusal and changing choices, before enabling ads. A privacy page is not a consent mechanism.
+3. Review ad category blocking against Supercell's fan-content restrictions. Exclude account, password, private stats and other low-content/utility screens from Auto ads; avoid overlays and placement beside card/action controls.
+4. After the live public pages are accessible and the changes are reviewed, request a new AdSense review. Genuine repeat usage and a consistent web presence still take time; no arbitrary article count or artificial traffic guarantees acceptance.
+
+## Existing dependency findings
+
+The local dependency audit reports critical advisories in the existing Next.js and DOMPurify versions. Dependencies were not changed as part of this UI/content branch. Recommend a separate security update before production release; the build also displays a Next.js upgrade notice. This report does not establish whether the application's configuration reaches each vulnerable code path.
+
+## Sources reviewed
+
+- https://support.google.com/adsense/answer/7299563 — original content, value and navigation.
+- https://support.google.com/adsense/answer/81904 — rejection reasons and content/navigation guidance.
+- https://support.google.com/adsense/answer/1348695 — required advertising cookie disclosures.
+- https://support.google.com/adsense/answer/13554116 — regional consent platform requirements.
+- https://supercell.com/en/fan-content-policy/ — unofficiality notice and ad restrictions.

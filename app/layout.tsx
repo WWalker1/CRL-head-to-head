@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import PostHogAuth from "@/components/PostHogAuth";
 import { getAdSenseConfig } from '@/lib/adsense';
 
@@ -85,6 +86,7 @@ export default function RootLayout({
       <body className="antialiased">
         <Navbar />
         {children}
+        <Footer />
         {adsense.enabled ? <Script
           id="google-adsense"
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsense.publisherId}`}

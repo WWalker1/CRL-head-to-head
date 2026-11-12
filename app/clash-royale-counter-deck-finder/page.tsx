@@ -7,7 +7,7 @@ const siteBaseUrl = (process.env.NEXT_PUBLIC_SITE_URL ||
 const canonicalUrl = `${siteBaseUrl}${pageUrl}`;
 
 export const metadata: Metadata = {
-  title: 'Clash Royale Deck Builder & Counter Finder Guide',
+  title: 'How to Build a Good Clash Royale Deck & Find Counters',
   description: 'Learn how to use Rival Royale’s Clash Royale deck builder and counter finder. Compare counter decks, understand matchup estimates, and treat predictions as guidance rather than guarantees.',
   alternates: { canonical: pageUrl },
   openGraph: {
@@ -41,7 +41,7 @@ const faqs = [
   },
   {
     question: 'How does the Rival Royale counter deck finder work?',
-    answer: 'Choose the eight cards in a target deck, then ask the finder to compare supported candidate decks against it. Search is bounded and heuristic: it evaluates a limited candidate set rather than every legal deck. You can lock cards that you want to keep in candidate decks.',
+    answer: 'Choose the eight cards in a target deck, then ask the finder to compare supported candidate decks against it. Search is bounded and heuristic: it evaluates a limited candidate set rather than every legal deck. Review the complete suggested deck before exporting it; a useful candidate needs a coherent game plan as well as a favorable estimate.',
   },
   {
     question: 'Are suggested counter decks guaranteed to win?',
@@ -155,6 +155,28 @@ export default function ClashRoyaleCounterDeckFinderPage() {
               {faqs.map(({ question, answer }) => <div key={question} className="py-4"><h2 className="font-bold text-white">{question}</h2><p className="mt-2 text-sm leading-6 text-slate-300">{answer}</p></div>)}
             </div>
           </details>
+        </section>
+        <section className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-7" aria-labelledby="good-deck-heading">
+          <h2 id="good-deck-heading" className="text-2xl font-bold text-white">What makes a good Clash Royale deck?</h2>
+          <p className="mt-4 max-w-3xl leading-7 text-slate-300">Start with a repeatable way to damage a tower, then ask how the other seven cards help you reach it. Eight individually strong cards can still compete for the same job. A useful deck has a pressure plan, answers to the threats you expect, and a rotation you can afford to play.</p>
+          <p className="mt-3 max-w-3xl leading-7 text-slate-300">For an illustrative cycle deck, consider Hog Rider, Musketeer, Cannon, Ice Golem, Skeletons, Ice Spirit, Fireball, and The Log. This is a teaching example, not a claim about the current best ladder deck. Card availability, levels, forms, tower troops, and balance changes affect whether it fits your account.</p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-white/10 p-4"><h3 className="font-bold text-orange-200">Pressure: Hog Rider</h3><p className="mt-2 text-sm leading-6 text-slate-300">The tower-pressure plan gives the deck a purpose. The question is when to commit, rather than whether every support card can also attack a tower.</p></div>
+            <div className="rounded-xl border border-white/10 p-4"><h3 className="font-bold text-orange-200">Defense: Cannon and Musketeer</h3><p className="mt-2 text-sm leading-6 text-slate-300">These cover different defensive jobs. Ask what happens if one is out of rotation and whether using both at once leaves enough elixir for the next threat.</p></div>
+            <div className="rounded-xl border border-white/10 p-4"><h3 className="font-bold text-orange-200">Rotation: small support cards</h3><p className="mt-2 text-sm leading-6 text-slate-300">Skeletons, Ice Spirit, and Ice Golem help shape a rotation and support defense. Cycling them without a purpose can remove a needed answer before an opponent attacks.</p></div>
+            <div className="rounded-xl border border-white/10 p-4"><h3 className="font-bold text-orange-200">Spells: two different jobs</h3><p className="mt-2 text-sm leading-6 text-slate-300">Fireball and The Log cover different spell situations. Spending a spell for tower damage also means it is unavailable for the next defensive exchange.</p></div>
+          </div>
+          <h2 className="mt-8 text-2xl font-bold text-white">How do I build a counter to my friend’s deck?</h2>
+          <ol className="mt-4 list-decimal space-y-3 pl-5 leading-7 text-slate-300">
+            <li><strong className="text-white">Record all eight cards.</strong> Include the forms and relevant levels. Preparing for one memorable card can miss the support combination that actually caused the problem.</li>
+            <li><strong className="text-white">Identify the failure in your defense.</strong> Against a Hog Rider plan, ask whether your building was unavailable, whether support overwhelmed it, or whether you spent too much elixir before the push. Each calls for a different change.</li>
+            <li><strong className="text-white">Check the whole candidate.</strong> A building may answer one threat, but the complete deck still needs air coverage, a tower-pressure plan, and a playable rotation. Avoid filling several slots with cards that solve only the same problem.</li>
+            <li><strong className="text-white">Use the counter finder for comparisons.</strong> Enter the target in the <Link className={linkClass} href="/counter-deck">counter finder</Link>. Compare suggested decks as hypotheses to practice, rather than proof of a guaranteed counter.</li>
+            <li><strong className="text-white">Test one change at a time.</strong> Keep a note of why you lost a defensive exchange. If the same failure persists, changing the rotation or timing may help more than swapping another card.</li>
+          </ol>
+          <h2 className="mt-8 text-2xl font-bold text-white">How do I tell whether a swap helped?</h2>
+          <p className="mt-4 max-w-3xl leading-7 text-slate-300">Write a specific test before playing: “I want a defensive answer available when their win condition comes back.” Keep the rest of the deck stable for a set of games and note whether that problem becomes less frequent. Also note a cost, such as weaker air defense or a slower attack. A swap that improves one interaction can make the overall deck worse.</p>
+          <p className="mt-3 max-w-3xl leading-7 text-slate-300">The <Link className={linkClass} href="/matchup">matchup tool</Link> can compare complete deck ideas. Your recorded games add another kind of evidence. Read <Link className={linkClass} href="/guides/understand-skill-score">how the skill score handles expectations and small samples</Link> before interpreting a short winning streak as a lasting improvement.</p>
         </section>
       </article>
     </main>

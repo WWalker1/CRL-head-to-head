@@ -10,7 +10,7 @@
 
 ## Before enabling ads
 
-- Publish an accurate, accessible privacy policy describing the site's actual Supabase, Vercel Analytics, PostHog and Google advertising data use, storage, cookies and choices. The existing product information page is not a complete advertising privacy policy. This change does not add a legal policy or a consent platform.
+- Review and publish `/privacy`, `/about`, and `/contact` from `codex/production-ui-ad-readiness`. The privacy page describes the source-verified Supabase, Vercel, Railway, PostHog, account/history and advertising data flows, with the owner-provided contact address. Confirm it matches the eventual production configuration. These pages do not implement a consent platform.
 - Configure and publish Google's certified consent message in AdSense > Privacy & messaging for applicable regions, including EEA, UK and Switzerland. Include refusal and consent-management choices, and verify the required privacy-settings/revocation entry point. Configure applicable US-state messages as appropriate. Test consent acceptance, refusal and later changes before enabling monetization. An environment flag is not user consent.
 - Review Supercell's fan-content requirements, unofficiality notice and excluded advertising categories. Configure ad blocking controls accordingly.
 - For Auto ads, configure low-density in-page ads in Google's dashboard and exclude signup, login, password-reset and other pages where ads would disrupt the experience. Exclude card selection and action controls. Start with vignette overlays off. Google's dashboard controls Auto ads locations; the shared script is loaded throughout production once `ADSENSE_ENABLED=1`.
@@ -47,3 +47,21 @@ Official references:
 - https://support.google.com/adsense/answer/9183460
 - https://support.google.com/adsense/answer/10960768
 - https://supercell.com/en/fan-content-policy/
+
+## November 11 low-value-content remediation
+
+The owner's AdSense screenshot identifies **Low value content**, not a verification failure. Keep the current production design as the baseline. Branch `codex/production-ui-ad-readiness` adds:
+
+- A compact, stable deck editor; mobile menu closure; and server-rendered tool chrome rather than a whole-page client-loading fallback.
+- A worked deck-building/counter example on the existing guide, rather than a duplicate SEO landing page.
+- `/guides/understand-skill-score`, documenting the actual score formula with a transparent four-game calculation and small-sample interpretation.
+- About, Contact and Privacy pages, source-checked disclosures, owner-supplied support address, and the Supercell unofficiality notice.
+- Crawlable footer and contextual links, including discovery of the previously orphaned counter guide; new public routes in the sitemap.
+
+No ad serving flag, payment/account setting, or production deployment is changed by this branch. Do not resubmit the live site for review while these changes exist only on a branch. After publishing the reviewed changes, check live public access without an account, finish the consent-message and ad-category steps above, then request a new review. The rejection also mentions consistent presence and genuine user interest. No content edit can guarantee those signals or approval, and adding arbitrary article counts or buying artificial traffic is not a remedy.
+
+Official guidance reviewed November 11, 2026:
+- https://support.google.com/adsense/answer/7299563 — original value and usable navigation.
+- https://support.google.com/adsense/answer/81904 — insufficient content, quality and navigation rejection guidance.
+- https://support.google.com/adsense/answer/1348695 — required advertising cookie disclosures.
+- https://support.google.com/adsense/answer/13554116 — regional consent management requirements.

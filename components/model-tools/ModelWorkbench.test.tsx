@@ -9,7 +9,9 @@ const deck = { cards: cards.slice(0, 8).map((card) => ({ key: card.key, level: 1
 const response = (body: unknown, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body }) as Response;
 
 async function chooseCard(slot: number, name: string) {
-  fireEvent.click(screen.getByRole('button', { name: `Card ${slot}: choose a card` }));
+  const slotButton = screen.getByRole('button', { name: `Card ${slot}: choose a card` });
+  await waitFor(() => expect(slotButton).toBeEnabled());
+  fireEvent.click(slotButton);
   fireEvent.click(await screen.findByRole('button', { name: `Select ${name}` }));
 }
 

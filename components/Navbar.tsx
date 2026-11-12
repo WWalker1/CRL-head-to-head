@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import MobileNav from './MobileNav';
 import { createClient } from '@/lib/supabase-server';
 
 export default async function Navbar() {
@@ -37,14 +38,7 @@ export default async function Navbar() {
           <div className="hidden md:flex items-center gap-4 lg:gap-6">
             {links}
           </div>
-          <details className="relative md:hidden group">
-            <summary className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-lg border border-white/40 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 [&::-webkit-details-marker]:hidden" aria-label="Open navigation menu">
-              <span aria-hidden="true" className="text-xl leading-none">☰</span>
-            </summary>
-            <div className="absolute right-0 top-full mt-2 flex min-w-44 flex-col gap-3 rounded-lg border border-white/20 bg-blue-900 p-4 shadow-xl">
-              {links}
-            </div>
-          </details>
+          <MobileNav>{links}</MobileNav>
         </div>
       </div>
     </nav>
