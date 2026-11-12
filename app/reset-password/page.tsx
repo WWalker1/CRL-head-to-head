@@ -86,7 +86,7 @@ export default function ResetPasswordPage() {
   if (isValidToken === null) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-orange-600">
-        <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-xl">
+        <div className="w-full max-w-md space-y-8 rounded-lg bg-white dark:bg-slate-900 p-8 shadow-xl">
           <div className="text-center">Loading...</div>
         </div>
       </div>
@@ -96,27 +96,27 @@ export default function ResetPasswordPage() {
   if (isValidToken === false) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-orange-600">
-        <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-xl">
+        <div className="w-full max-w-md space-y-8 rounded-lg bg-white dark:bg-slate-900 p-8 shadow-xl">
           <div>
-            <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+            <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-slate-100">
               Invalid Reset Link
             </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
+            <p className="mt-2 text-center text-sm text-gray-600 dark:text-slate-300">
               This password reset link is invalid or has expired.
             </p>
           </div>
           {error && (
-            <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">
+            <div className="rounded-md bg-red-50 dark:bg-red-950 p-4 text-sm text-red-800 dark:text-red-200">
               {error}
             </div>
           )}
           <div className="text-center text-sm">
-            <Link href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link href="/forgot-password" className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
               Request a new reset link
             </Link>
           </div>
           <div className="text-center text-sm">
-            <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link href="/login" className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
               Back to sign in
             </Link>
           </div>
@@ -127,18 +127,18 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-orange-600">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-xl">
+      <div className="w-full max-w-md space-y-8 rounded-lg bg-white dark:bg-slate-900 p-8 shadow-xl">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-slate-100">
             Set new password
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-gray-600 dark:text-slate-300">
             Enter your new password below.
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleResetPassword}>
           {error && (
-            <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">
+            <div className="rounded-md bg-red-50 dark:bg-red-950 p-4 text-sm text-red-800 dark:text-red-200">
               {error}
             </div>
           )}
@@ -153,7 +153,7 @@ export default function ResetPasswordPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="relative block w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="New password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -169,7 +169,7 @@ export default function ResetPasswordPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="relative block w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="Confirm new password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -188,7 +188,7 @@ export default function ResetPasswordPage() {
           </div>
 
           <div className="text-center text-sm">
-            <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link href="/login" className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
               Back to sign in
             </Link>
           </div>

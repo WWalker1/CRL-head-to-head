@@ -87,24 +87,24 @@ export default function RivalryShareControl({ friendId, friendName }: Props) {
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <h3 className="text-sm font-bold text-blue-900">Share your record</h3>
-        <p className="mt-1 text-xs leading-5 text-gray-600">Create a public snapshot of your wins and losses with {friendName}.</p>
+        <p className="mt-1 text-xs leading-5 text-gray-600 dark:text-slate-300">Create a public snapshot of your wins and losses with {friendName}.</p>
       </div>
       {!shareUrl && <button type="button" onClick={createShare} disabled={busy} className="min-h-11 w-full rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-60 sm:w-auto">{busy ? 'Creating link…' : 'Create share link'}</button>}
     </div>
-    <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-2 text-sm text-gray-700">
+    <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
       <input type="checkbox" checked={includeDecks} onChange={event => setIncludeDecks(event.target.checked)} disabled={!!shareUrl || busy} className="h-4 w-4 accent-blue-700" />
       Include the friend’s most-played decks
     </label>
     {shareUrl && <div className="mt-2 space-y-2">
-      <label className="block text-xs font-semibold text-gray-600" htmlFor={`rivalry-share-${friendId}`}>Public share link</label>
-      <input id={`rivalry-share-${friendId}`} readOnly value={shareUrl} onFocus={event => event.currentTarget.select()} className="min-h-11 w-full rounded-lg border border-blue-200 bg-white px-3 text-sm text-gray-800" />
+      <label className="block text-xs font-semibold text-gray-600 dark:text-slate-300" htmlFor={`rivalry-share-${friendId}`}>Public share link</label>
+      <input id={`rivalry-share-${friendId}`} readOnly value={shareUrl} onFocus={event => event.currentTarget.select()} className="min-h-11 w-full rounded-lg border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-900 px-3 text-sm text-gray-800 dark:text-slate-200" />
       <div className="flex flex-col gap-2 sm:flex-row">
-        <button type="button" onClick={copyLink} className="min-h-11 flex-1 rounded-lg border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-800 hover:bg-blue-100">Copy link</button>
+        <button type="button" onClick={copyLink} className="min-h-11 flex-1 rounded-lg border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-900 px-4 text-sm font-semibold text-blue-800 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900">Copy link</button>
         {supportsNativeShare && <button type="button" onClick={nativeShare} className="min-h-11 flex-1 rounded-lg bg-orange-600 px-4 text-sm font-bold text-white hover:bg-orange-700">Share…</button>}
-        <button type="button" onClick={revokeLink} disabled={busy} className="min-h-11 rounded-lg border border-orange-200 px-4 text-sm font-semibold text-orange-800 hover:bg-orange-50 disabled:opacity-60">Revoke link</button>
+        <button type="button" onClick={revokeLink} disabled={busy} className="min-h-11 rounded-lg border border-orange-200 px-4 text-sm font-semibold text-orange-800 dark:text-orange-200 hover:bg-orange-50 dark:hover:bg-orange-950 disabled:opacity-60">Revoke link</button>
       </div>
     </div>}
-    {message && <p role="status" className="mt-2 text-xs leading-5 text-blue-800">{message}</p>}
-    {error && <p role="alert" className="mt-2 text-xs leading-5 text-orange-800">{error}</p>}
+    {message && <p role="status" className="mt-2 text-xs leading-5 text-blue-800 dark:text-blue-200">{message}</p>}
+    {error && <p role="alert" className="mt-2 text-xs leading-5 text-orange-800 dark:text-orange-200">{error}</p>}
   </section>;
 }

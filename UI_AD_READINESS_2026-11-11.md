@@ -56,3 +56,12 @@ The local dependency audit reports critical advisories in the existing Next.js a
 - https://support.google.com/adsense/answer/1348695 — required advertising cookie disclosures.
 - https://support.google.com/adsense/answer/13554116 — regional consent platform requirements.
 - https://supercell.com/en/fan-content-policy/ — unofficiality notice and ad restrictions.
+
+
+## Follow-up: dark mode and preview tools
+
+- Replaced the small baseline hyphen with a centered en dash, explicit contrast, fixed spacing and tabular record numbers. Added a screen-reader record label and wrapping for large totals.
+- Added native `prefers-color-scheme: dark` styles for friend cards and links, Elo text, account forms, add-friend controls, public landing and information pages, article/table content, footer and light skill-summary variants. Day colors are preserved. Root `color-scheme` now matches the preferred scheme for native controls.
+- Browser checks used native dark preference, not a recolored screenshot. All three record pieces have the same measured vertical center. Add-friend input uses slate-100 text on slate-800. Synthetic records 1–0, 281–377 and 10000–0 render without phone overflow at 390 px. Public skill, skill guide, privacy and counter pages render without phone overflow.
+- Found preview model variables restricted to `codex/rival-model-product`. Re-scoped the five Preview-only model/history settings (`MODEL_TOOLS_ENABLED`, `NEXT_PUBLIC_MODEL_TOOLS_ENABLED`, `MATCH_HISTORY_ENABLED`, `MODEL_SERVICE_URL`, `MODEL_SERVICE_TOKEN`) to `codex/production-ui-ad-readiness`, preserving their stored service credential; explicitly enabled the three flags. Production settings and the separate beta project were not changed. Existing deployments are immutable; the new branch build receives the corrected settings. The older branch no longer receives these branch-specific settings on future builds.
+- The local visual fixture uses synthetic example records, performs no account writes, and is excluded from the pushed branch.

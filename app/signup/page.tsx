@@ -70,20 +70,20 @@ export default function SignupPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-orange-600">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-xl">
+      <div className="w-full max-w-md space-y-8 rounded-lg bg-white dark:bg-slate-900 p-8 shadow-xl">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-slate-100">
             Create your account
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSignup}>
           {error && (
-            <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">
+            <div className="rounded-md bg-red-50 dark:bg-red-950 p-4 text-sm text-red-800 dark:text-red-200">
               {error}
             </div>
           )}
           {success && (
-            <div className="rounded-md bg-green-50 p-4 text-sm text-green-800">
+            <div className="rounded-md bg-green-50 dark:bg-green-950 p-4 text-sm text-green-800 dark:text-green-200">
               <p className="font-semibold">Account created successfully!</p>
               <p className="mt-2">
                 Please check your email ({email}) to confirm your account. 
@@ -105,7 +105,7 @@ export default function SignupPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="relative block w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -122,7 +122,7 @@ export default function SignupPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="relative block w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -138,7 +138,7 @@ export default function SignupPage() {
                 name="playerTag"
                 type="text"
                 required
-                className="relative block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="relative block w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="Clash Royale Player Tag (e.g. #ABC123)"
                 value={playerTag}
                 onChange={(e) => setPlayerTag(e.target.value)}
@@ -159,11 +159,11 @@ export default function SignupPage() {
 
           <div className="text-center text-sm">
             {success ? (
-              <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link href="/login" className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
                 After confirming your email, sign in here
               </Link>
             ) : (
-              <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link href="/login" className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
                 Already have an account? Sign in
               </Link>
             )}

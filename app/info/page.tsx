@@ -35,42 +35,42 @@ export default function InfoPage() {
       />
       <div className="min-h-screen animated-gradient">
         <div className="container mx-auto px-4 py-8 md:py-12 max-w-4xl">
-          <article className="bg-white rounded-xl md:rounded-2xl shadow-2xl p-6 md:p-10">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <article className="bg-white dark:bg-slate-900 rounded-xl md:rounded-2xl shadow-2xl p-6 md:p-10">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-slate-100 mb-4">
               How to Track Clash Royale Wins Against Friends
             </h1>
             
-            <p className="text-lg text-gray-700 mb-8">
+            <p className="text-lg text-gray-700 dark:text-slate-300 mb-8">
               If you're looking for a way to track your Clash Royale wins and losses against friends, 
               you've come to the right place. This comprehensive guide will show you exactly how to use 
               a free battle tracker to monitor your head-to-head statistics.
             </p>
 
             <section className="mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-slate-100 mb-4">
                 What is a Clash Royale Head-to-Head Tracker?
               </h2>
-              <p className="text-gray-700 mb-4">
+              <p className="text-gray-700 dark:text-slate-300 mb-4">
                 A Clash Royale head-to-head tracker organizes available 1v1 results against specific players. Rival Royale can sync recent eligible battle records through the game API and calculate summaries from the records it has; API history may not include every older match.
               </p>
-              <p className="text-gray-700">
+              <p className="text-gray-700 dark:text-slate-300">
                 Rival Royale focuses this record on eligible head-to-head 1v1 battles. Team battles and unsupported modes are excluded, and a partial API history should not be read as a complete lifetime record.
               </p>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-slate-100 mb-4">
                 How to Get Started Tracking Your Battles
               </h2>
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
                     Step 1: Find Your Player Tag
                   </h3>
-                  <p className="text-gray-700 mb-2">
+                  <p className="text-gray-700 dark:text-slate-300 mb-2">
                     Your Clash Royale player tag is a unique identifier that looks like #COG20PR2. To find it:
                   </p>
-                  <ol className="list-decimal list-inside space-y-2 text-gray-700 ml-4">
+                  <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-slate-300 ml-4">
                     <li>Open the Clash Royale app</li>
                     <li>Tap on your player name at the top of the screen</li>
                     <li>Your player tag will be displayed below your name</li>
@@ -79,10 +79,10 @@ export default function InfoPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
                     Step 2: Sign Up for the Tracker
                   </h3>
-                  <p className="text-gray-700">
+                  <p className="text-gray-700 dark:text-slate-300">
                     Create an account on Rival Royale and enter your player tag.
                     The tracker uses your player tag to identify you in the Clash Royale API - no passwords 
                     or game credentials needed.
@@ -90,10 +90,10 @@ export default function InfoPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
                     Step 3: Add Your Friends
                   </h3>
-                  <p className="text-gray-700">
+                  <p className="text-gray-700 dark:text-slate-300">
                     Once you're signed up, add your friends' player tags to start tracking battles. 
                     You can track up to 15 friends, and each will have their own statistics card
                     showing your win/loss record against them.
@@ -101,13 +101,13 @@ export default function InfoPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
                     Step 4: View Your Statistics
                   </h3>
-                  <p className="text-gray-700">
+                  <p className="text-gray-700 dark:text-slate-300">
                     When sync is enabled, refresh the recent eligible battles available from the API. Your dashboard summarizes the records it has:
                   </p>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+                  <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 ml-4">
                     <li>Total wins and losses against each friend</li>
                     <li>Win percentage for each matchup</li>
                     <li>Visual progress bars for quick stat overview</li>
@@ -117,34 +117,34 @@ export default function InfoPage() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-slate-100 mb-4">
                 How Does Automatic Battle Syncing Work?
               </h2>
-              <p className="text-gray-700 mb-4">
+              <p className="text-gray-700 dark:text-slate-300 mb-4">
                 The tracker connects directly to the official Clash Royale API to fetch your battle history. 
                 This means:
               </p>
-              <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4 mb-4">
+              <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 ml-4 mb-4">
                 <li>Eligible recent battles can be retrieved from the game API</li>
                 <li>Available history may not include every older battle</li>
                 <li>Refresh tracked battle history from your dashboard when sync is enabled</li>
                 <li>Only 1v1 battles are tracked for accurate head-to-head statistics</li>
               </ul>
-              <p className="text-gray-700">
+              <p className="text-gray-700 dark:text-slate-300">
                 The system intelligently filters battles to only include head-to-head 1v1 matches, 
                 ensuring your statistics reflect true competitive performance against friends.
               </p>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-slate-100 mb-4">
                 What Statistics Can You Track?
               </h2>
-              <p className="text-gray-700 mb-4">
+              <p className="text-gray-700 dark:text-slate-300 mb-4">
                 For each friend you add, the tracker displays:
               </p>
-              <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                <ul className="space-y-2 text-gray-700">
+              <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-4 mb-4">
+                <ul className="space-y-2 text-gray-700 dark:text-slate-300">
                   <li className="flex items-start">
                     <span className="font-semibold mr-2">• Win/Loss Record:</span>
                     <span>Total number of wins and losses in your 1v1 battles</span>
@@ -159,19 +159,19 @@ export default function InfoPage() {
                   </li>
                 </ul>
               </div>
-              <p className="text-gray-700">
+              <p className="text-gray-700 dark:text-slate-300">
                 Summaries reflect the eligible battle records currently stored for your account. The available API history can be shorter than your full playing history.
               </p>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-slate-100 mb-4">
                 Why Track Your Clash Royale Battles?
               </h2>
-              <p className="text-gray-700 mb-4">
+              <p className="text-gray-700 dark:text-slate-300 mb-4">
                 Tracking your battles against friends offers several benefits:
               </p>
-              <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+              <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 ml-4">
                 <li><strong>Competitive Insight:</strong> See who you perform best against and identify areas for improvement</li>
                 <li><strong>Friendly Competition:</strong> Add an extra layer of fun to your matches with tracked statistics</li>
                 <li><strong>Progress Tracking:</strong> Monitor how your performance changes over time</li>
@@ -180,61 +180,61 @@ export default function InfoPage() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-slate-100 mb-4">
                 Privacy and Data Security
               </h2>
-              <p className="text-gray-700 mb-4">
+              <p className="text-gray-700 dark:text-slate-300 mb-4">
                 The tracker uses account information and game records to operate your dashboard. Tracked game data includes:
               </p>
-              <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4 mb-4">
+              <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 ml-4 mb-4">
                 <li>Your player tag (publicly available information)</li>
                 <li>Friend player tags and names</li>
                 <li>Aggregated win/loss statistics</li>
               </ul>
-              <p className="text-gray-700">
-                The tracker stores win and loss totals. When history collection is enabled, it retains eligible recorded 1v1 matches for you and your tracked friends, including both decks, levels, tower troops, and outcomes. Deck and skill summaries use the latest 50 records. Your Clash Royale password is never requested. Read the <Link href="/privacy" className="font-semibold text-violet-700 underline">privacy policy</Link> for account data, analytics, service providers, and advertising disclosures.
+              <p className="text-gray-700 dark:text-slate-300">
+                The tracker stores win and loss totals. When history collection is enabled, it retains eligible recorded 1v1 matches for you and your tracked friends, including both decks, levels, tower troops, and outcomes. Deck and skill summaries use the latest 50 records. Your Clash Royale password is never requested. Read the <Link href="/privacy" className="font-semibold text-violet-700 dark:text-violet-300 underline">privacy policy</Link> for account data, analytics, service providers, and advertising disclosures.
               </p>
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-slate-100 mb-4">
                 Frequently Asked Questions
               </h2>
               
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
                     Do I need my game password?
                   </h3>
-                  <p className="text-gray-700">
+                  <p className="text-gray-700 dark:text-slate-300">
                     No. Sign up with your player tag; Rival Royale does not need your Clash Royale account password.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
                     How often are battles synced?
                   </h3>
-                  <p className="text-gray-700">
+                  <p className="text-gray-700 dark:text-slate-300">
                     Sync availability depends on the current account and feature configuration. When enabled, use the dashboard to refresh eligible recent matches; the game API may omit older records.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
                     What if I can't find my player tag?
                   </h3>
-                  <p className="text-gray-700">
+                  <p className="text-gray-700 dark:text-slate-300">
                     Your player tag is always visible in your Clash Royale profile. Tap on your name at the top of the game screen, 
                     and your tag will be displayed below your name. If you're still having trouble, check the tutorial on the homepage.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-2">
                     Can I track battles against players who aren't my friends?
                   </h3>
-                  <p className="text-gray-700">
+                  <p className="text-gray-700 dark:text-slate-300">
                     The tracker focuses on tracking battles against friends you've added. You can add any player's tag to track 
                     your battles against them, as long as you have their player tag.
                   </p>
@@ -242,11 +242,11 @@ export default function InfoPage() {
               </div>
             </section>
 
-            <section className="mt-10 pt-8 border-t border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            <section className="mt-10 pt-8 border-t border-gray-200 dark:border-slate-700">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-4">
                 Ready to Start Tracking?
               </h2>
-              <p className="text-gray-700 mb-6">
+              <p className="text-gray-700 dark:text-slate-300 mb-6">
                 Now that you know how to track your Clash Royale wins against friends, it's time to get started. 
                 The process is simple, free, and takes just a few minutes to set up.
               </p>
@@ -259,7 +259,7 @@ export default function InfoPage() {
                 </Link>
                 <Link
                   href="/"
-                  className="inline-block px-6 py-3 bg-gray-200 text-gray-900 text-lg font-semibold rounded-xl hover:bg-gray-300 transition-all text-center"
+                  className="inline-block px-6 py-3 bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-slate-100 text-lg font-semibold rounded-xl hover:bg-gray-300 transition-all text-center"
                 >
                   Back to Home
                 </Link>

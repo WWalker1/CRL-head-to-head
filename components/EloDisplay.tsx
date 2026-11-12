@@ -8,17 +8,17 @@ export default function EloDisplay({ elo, size = 'md' }: EloDisplayProps) {
   const getEloTier = (elo: number) => {
     if (elo < 1000) {
       return {
-        className: 'text-gray-500 font-semibold elo-pulse',
+        className: 'text-gray-500 dark:text-slate-400 font-semibold elo-pulse',
         sizeClass: size === 'lg' ? 'text-lg' : size === 'sm' ? 'text-sm' : 'text-base',
       };
     } else if (elo < 1500) {
       return {
-        className: 'text-cyan-500 font-bold elo-pulse',
+        className: 'text-cyan-500 dark:text-cyan-300 font-bold elo-pulse',
         sizeClass: size === 'lg' ? 'text-lg' : size === 'sm' ? 'text-sm' : 'text-base',
       };
     } else if (elo < 1750) {
       return {
-        className: 'text-purple-500 font-bold elo-pulse',
+        className: 'text-purple-500 dark:text-purple-300 font-bold elo-pulse',
         sizeClass: size === 'lg' ? 'text-lg' : size === 'sm' ? 'text-sm' : 'text-base',
       };
     } else {

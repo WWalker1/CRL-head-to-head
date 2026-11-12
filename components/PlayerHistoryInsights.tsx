@@ -11,5 +11,5 @@ export default function PlayerHistoryInsights({ revision }: { revision: number }
     fetch('/api/player-history', { signal: controller.signal, credentials: 'same-origin' }).then(async response => { if (!response.ok) throw new Error('Your matchup skill will appear after history is configured and synced.'); return response.json(); }).then(setData).catch(reason => { if (!controller.signal.aborted) setError(reason.message); });
     return () => controller.abort();
   }, [revision]);
-  return <div className="mb-6">{error ? <p className="rounded-lg bg-white p-4 text-sm text-gray-700">{error}</p> : data ? <MatchupSkill skill={data.skill} status={data.skillStatus} /> : <p className="text-sm text-white">Loading matchup skill…</p>}</div>;
+  return <div className="mb-6">{error ? <p className="rounded-lg bg-white dark:bg-slate-900 p-4 text-sm text-gray-700 dark:text-slate-300">{error}</p> : data ? <MatchupSkill skill={data.skill} status={data.skillStatus} /> : <p className="text-sm text-white">Loading matchup skill…</p>}</div>;
 }

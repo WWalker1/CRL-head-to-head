@@ -42,15 +42,15 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-orange-600">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-xl">
+      <div className="w-full max-w-md space-y-8 rounded-lg bg-white dark:bg-slate-900 p-8 shadow-xl">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-slate-100">
             Sign in to CRL Tracker
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           {error && (
-            <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">
+            <div className="rounded-md bg-red-50 dark:bg-red-950 p-4 text-sm text-red-800 dark:text-red-200">
               {error}
             </div>
           )}
@@ -65,7 +65,7 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="relative block w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -81,7 +81,7 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="relative block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="relative block w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -100,10 +100,10 @@ export default function LoginPage() {
           </div>
 
           <div className="text-center text-sm space-y-2">
-            <Link href="/forgot-password" className="block font-medium text-blue-600 hover:text-blue-500">
+            <Link href="/forgot-password" className="block font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
               Forgot your password?
             </Link>
-            <Link href="/signup" className="block font-medium text-blue-600 hover:text-blue-500">
+            <Link href="/signup" className="block font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
               Don't have an account? Sign up
             </Link>
           </div>

@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
 export default function Footer() {
-  return <footer className="border-t border-slate-200 bg-slate-50 px-4 py-8 text-slate-600 sm:px-6">
+  return <footer className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-4 py-8 text-slate-600 dark:text-slate-300 sm:px-6">
     <div className="mx-auto max-w-6xl">
-      <nav aria-label="Guides and site information" className="flex flex-wrap gap-x-6 gap-y-1 text-sm font-semibold text-violet-800">
+      <nav aria-label="Guides and site information" className="flex flex-wrap gap-x-6 gap-y-1 text-sm font-semibold text-violet-800 dark:text-violet-200">
         <Link className="inline-flex min-h-11 items-center hover:underline" href="/clash-royale-counter-deck-finder">Deck building guide</Link>
         <Link className="inline-flex min-h-11 items-center hover:underline" href="/guides/understand-skill-score">Understand your skill score</Link>
         <Link className="inline-flex min-h-11 items-center hover:underline" href="/models">Model methodology</Link>
