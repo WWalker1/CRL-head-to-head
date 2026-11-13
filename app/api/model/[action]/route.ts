@@ -42,7 +42,6 @@ async function forward(request: NextRequest, context: { params: Promise<{ action
         const bearer = request.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1];
         const { data: { user }, error } = await supabase.auth.getUser(bearer);
         if (error || !user) {
-          if (action !== 'counter') return NextResponse.json({ error: 'Sign in to use model predictions.' }, { status: 401 });
           if (!origin) return NextResponse.json({ error: 'A same-site origin is required.' }, { status: 403 });
           const limited = await checkAnonymousRateLimit(request, 'counter_search');
           if (limited) return limited;

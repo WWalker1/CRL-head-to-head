@@ -27,7 +27,9 @@ describe('model proxy', () => {
   const request = (body = '{}', origin = 'https://rival.example') => new NextRequest('https://rival.example/api/model/predict', { method: 'POST', body, headers: { origin } });
   it('does not accept local bypass in production', async () => {
     process.env.MODEL_LOCAL_PREVIEW = '1'; client.auth.getUser.mockResolvedValue({ data: { user: null } });
-    expect((await POST(request(), context('predict'))).status).toBe(401);
+    (checkAnonymousRateLimit as jest.Mock).mockResolvedValueOnce(new Response('{}', { status: 429 }));
+    expect((await POST(request(), context('predict'))).status).toBe(429);
+    expect(checkAnonymousRateLimit).toHaveBeenCalledWith(expect.any(NextRequest), 'counter_search');
     expect(global.fetch).not.toHaveBeenCalled();
   });
   it('requires a working quota check', async () => {
@@ -35,13 +37,13 @@ describe('model proxy', () => {
     expect((await POST(request(), context('counter'))).status).toBe(429);
     expect(global.fetch).not.toHaveBeenCalled();
   });
-  it('allows three anonymous counter searches, then rejects the fourth', async () => {
+  it('shares the guest allowance between counter searches and predictions', async () => {
     client.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
     (checkAnonymousRateLimit as jest.Mock)
       .mockResolvedValueOnce(null).mockResolvedValueOnce(null).mockResolvedValueOnce(null)
       .mockResolvedValueOnce(new Response('{}', { status: 429, headers: { 'Retry-After': '3600' } }));
     for (let attempt = 0; attempt < 3; attempt++) {
-      expect((await POST(request('{"target":{}}'), context('counter'))).status).toBe(200);
+      expect((await POST(request('{"target":{}}'), context(attempt % 2 ? 'predict' : 'counter'))).status).toBe(200);
     }
     const blocked = await POST(request('{"target":{}}'), context('counter'));
     expect(blocked.status).toBe(429);
@@ -51,12 +53,12 @@ describe('model proxy', () => {
     expect(checkAnonymousRateLimit).toHaveBeenCalledTimes(4);
     expect(checkAnonymousRateLimit).toHaveBeenCalledWith(expect.any(NextRequest), 'counter_search');
   });
-  it('keeps signed-in searches on the per-user quota and predictions behind sign-in', async () => {
+  it('keeps signed-in searches and predictions on their per-user quotas', async () => {
     expect((await POST(request(), context('counter'))).status).toBe(200);
     expect(client.rpc).toHaveBeenCalledWith('consume_model_quota', { operation: 'search' });
     expect(checkAnonymousRateLimit).not.toHaveBeenCalled();
-    client.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
-    expect((await POST(request(), context('predict'))).status).toBe(401);
+    expect((await POST(request(), context('predict'))).status).toBe(200);
+    expect(client.rpc).toHaveBeenCalledWith('consume_model_quota', { operation: 'predict' });
     expect(checkAnonymousRateLimit).not.toHaveBeenCalled();
   });
   it('accepts a refreshed browser bearer token for a signed-in counter search', async () => {
@@ -72,12 +74,12 @@ describe('model proxy', () => {
     expect(client.rpc).toHaveBeenCalledWith('consume_model_quota', { operation: 'search' });
     expect(checkAnonymousRateLimit).not.toHaveBeenCalled();
   });
-  it('rejects anonymous counter requests without a same-site origin or valid bounded body', async () => {
+  it.each(['counter', 'predict'])('rejects anonymous %s requests without a same-site origin or valid bounded body', async (action) => {
     client.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
     const noOrigin = new NextRequest('https://rival.example/api/model/counter', { method: 'POST', body: '{}' });
-    expect((await POST(noOrigin, context('counter'))).status).toBe(403);
-    expect((await POST(request('{}', 'https://other.example'), context('counter'))).status).toBe(403);
-    expect((await POST(request(JSON.stringify({ x: 'x'.repeat(33000) })), context('counter'))).status).toBe(413);
+    expect((await POST(noOrigin, context(action))).status).toBe(403);
+    expect((await POST(request('{}', 'https://other.example'), context(action))).status).toBe(403);
+    expect((await POST(request(JSON.stringify({ x: 'x'.repeat(33000) })), context(action))).status).toBe(413);
     expect(checkAnonymousRateLimit).not.toHaveBeenCalled();
     expect(global.fetch).not.toHaveBeenCalled();
   });

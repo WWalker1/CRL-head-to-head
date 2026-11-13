@@ -25,7 +25,7 @@ export async function checkAnonymousRateLimit(request: NextRequest, operation: O
       const daily = operation === 'counter_search';
       const now = new Date();
       const retryAfter = daily ? Math.max(1, Math.ceil((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1) - now.getTime()) / 1000)) : 60;
-      return NextResponse.json({ error: daily ? 'Free counter searches are used for today. Sign in or try again tomorrow.' : 'Usage limit reached. Try again in a minute.' }, {
+      return NextResponse.json({ error: daily ? 'Free model requests are used for today. Sign in or try again tomorrow.' : 'Usage limit reached. Try again in a minute.' }, {
         status: 429, headers: { 'Retry-After': String(retryAfter), 'Cache-Control': 'no-store' },
       });
     }

@@ -67,3 +67,10 @@ Updated Next.js and its ESLint configuration to 16.4.6 and the locked DOMPurify 
 - The local visual fixture uses synthetic example records, performs no account writes, and is excluded from the pushed branch.
 
 - Follow-up validation: 36 suites / 198 tests and TypeScript/optimized build passed. Hosted preview verification checks both navigation and model API responses; the first preview API failure was caught and corrected before reporting completion.
+
+
+## Guest model access and speed check — November 12
+
+Opened deck matchup predictions to guests as well as counter generation, using the existing shared allowance of three model requests per UTC day per network address. Same-origin validation, bounded bodies, server-held model credentials, signed-in quotas and private-data authorization remain enforced. The workbench and About page now disclose the allowance. No schema or quota-cap change. 36 suites / 199 tests and the Node 22 production build passed.
+
+Live speed investigation: the homepage plus sampled JavaScript and CSS all return Content-Encoding: br with Accept-Encoding: br, gzip. The screenshot’s gzip warning does not establish missing compression; Brotli compression is already active. Its 85 grade, 1.03 s single-run load time, 409.8 KB and 17 requests do not establish a site-wide performance problem. Monitor mobile Core Web Vitals and tool interactions; repeat measurements after ads are enabled.
