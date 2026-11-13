@@ -58,7 +58,7 @@ The owner's AdSense screenshot identifies **Low value content**, not a verificat
 - About, Contact and Privacy pages, source-checked disclosures, owner-supplied support address, and the Supercell unofficiality notice.
 - Crawlable footer and contextual links, including discovery of the previously orphaned counter guide; new public routes in the sitemap.
 
-No ad serving flag, payment/account setting, or production deployment is changed by this branch. Do not resubmit the live site for review while these changes exist only on a branch. After publishing the reviewed changes, check live public access without an account, finish the consent-message and ad-category steps above, then request a new review. The rejection also mentions consistent presence and genuine user interest. No content edit can guarantee those signals or approval, and adding arbitrary article counts or buying artificial traffic is not a remedy.
+No ad serving flag or payment/account setting is changed by this branch. The owner has authorized deployment of the reviewed changes. Do not resubmit the live site for review while these changes exist only on a branch. After publishing the reviewed changes, check live public access without an account, finish the consent-message and ad-category steps above, then request a new review. The rejection also mentions consistent presence and genuine user interest. No content edit can guarantee those signals or approval, and adding arbitrary article counts or buying artificial traffic is not a remedy.
 
 Official guidance reviewed November 11, 2026:
 - https://support.google.com/adsense/answer/7299563 — original value and usable navigation.

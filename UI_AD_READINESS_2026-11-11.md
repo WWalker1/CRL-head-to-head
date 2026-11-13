@@ -1,6 +1,6 @@
 # Rival Royale UI and AdSense readiness — November 11, 2026
 
-Branch: `codex/production-ui-ad-readiness`, created directly from fetched production `origin/main` at `0caa037`. The earlier development redesign and local storage-compaction work are not included. Production deployment, ad serving settings, account settings, and the nightly collector have not been changed.
+Branch: `codex/production-ui-ad-readiness`, created directly from fetched production `origin/main` at `0caa037`. The earlier development redesign and local storage-compaction work are not included. The user authorized publishing these reviewed changes to production. Ad serving remains disabled; account settings and the nightly collector configuration are preserved.
 
 ## UI changes
 
@@ -27,7 +27,7 @@ Concrete gaps addressed:
 
 ## Verification
 
-- 35 JavaScript test suites, **197 tests passed**. New behavior tests cover mobile closure, required catalog failure, optional example failure and a slow example response.
+- 36 JavaScript test suites, **198 tests passed**. New behavior tests cover mobile closure, required catalog failure, optional example failure and a slow example response.
 - TypeScript checking passed; optimized production build passed with placeholder build credentials. No production credentials were used for the build.
 - Browser checks used actual public card catalog/example data through the existing local preview path. No live counter-search quota, signed-in user data or production write was used.
 - Desktop at 1440 × 1000: empty and filled target grids both **201.3125 px** high; eight card slots are each 126.25 × 201.3125 px.
@@ -45,9 +45,9 @@ This is UI/content verification, not a new signed-in tracking or model-quality a
 3. Review ad category blocking against Supercell's fan-content restrictions. Exclude account, password, private stats and other low-content/utility screens from Auto ads; avoid overlays and placement beside card/action controls.
 4. After the live public pages are accessible and the changes are reviewed, request a new AdSense review. Genuine repeat usage and a consistent web presence still take time; no arbitrary article count or artificial traffic guarantees acceptance.
 
-## Existing dependency findings
+## Release security checks — November 12
 
-The local dependency audit reports critical advisories in the existing Next.js and DOMPurify versions. Dependencies were not changed as part of this UI/content branch. Recommend a separate security update before production release; the build also displays a Next.js upgrade notice. This report does not establish whether the application's configuration reaches each vulnerable code path.
+Updated Next.js and its ESLint configuration to 16.4.6 and the locked DOMPurify dependency to 3.4.17. The production dependency audit now reports zero known vulnerabilities. All 198 tests and the optimized production build passed using Node 22, matching the hosting runtime. Authentication, model implementation, database schema and Railway nightly schedule are unchanged.
 
 ## Sources reviewed
 
