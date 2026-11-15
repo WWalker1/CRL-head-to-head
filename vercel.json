@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm test -- --runInBand && npx tsc --noEmit && npm run build",
+  "buildCommand": "NODE_ENV=test npm test -- --runInBand && npx tsc --noEmit && npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
