@@ -44,10 +44,33 @@ jobs:
           trap 'kill $! 2>/dev/null || true' EXIT
           curl --retry 15 --retry-delay 1 --retry-connrefused -fsS http://127.0.0.1:3107/meta -o /dev/null
           CHROME_CHANNEL=chrome NODE_PATH="$RUNNER_TEMP/editorial-browser/node_modules" node scripts/editorial/review.cjs
+      - name: Render review contact sheet
+        if: always()
+        run: |
+          python -m pip -q install Pillow
+          python - <<'PY'
+          from PIL import Image, ImageOps, ImageDraw
+          from pathlib import Path
+          import base64
+          folder = Path('.local/editorial-screenshots')
+          tiles = [('weekly-1440-light', (0,0,560,395)), ('weekly-deck-375-dark',(560,0,840,395)), ('monthly-390-light',(0,395,280,790)), ('balance-375-dark',(280,395,560,790)), ('weekly-deck-390-light',(560,395,840,790))]
+          if all((folder/(name+'.png')).exists() for name,_ in tiles):
+              sheet = Image.new('RGB',(840,790),'#202030')
+              for name,(x,y,r,b) in tiles:
+                  img = Image.open(folder/(name+'.png')).convert('RGB')
+                  img.thumbnail((r-x,b-y-18))
+                  sheet.paste(img,(x,y+18))
+                  ImageDraw.Draw(sheet).text((x+3,y+2),name,fill='white')
+              out = folder/'review.jpg'
+              sheet.save(out,quality=72)
+              raw=base64.b64encode(out.read_bytes()).decode()
+              for start in range(0,len(raw),3000):
+                  print('EDITORIAL_REVIEW_CHUNK '+raw[start:start+3000])
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: editorial-browser-screenshots
-          path: .local/editorial-screenshots/*.png
+          path: .local/editorial-screenshots/
           include-hidden-files: true
           retention-days: 14
