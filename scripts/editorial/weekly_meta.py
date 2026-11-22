@@ -131,7 +131,7 @@ def aggregate(records, collected, start, end, rank_limit, min_games):
             "cohort": f"Top {rank_limit} global Ranked leaderboard players at sampling time",
             "sampledPlayerDeckAppearances": total, "uniquePlayerMatches": len(seen),
             "minGames": min_games, "decks": decks[:50],
-            "methodology": "One observation per sampled player per unique match, ranked constructed 1v1 only; draws excluded. Win rate = wins / decisive observations. Usage = deck observations / all valid deck observations. Non-random leaderboard sample; opponent deck not necessarily top-ranked."}
+            "methodology": "One observation per sampled player per unique match, ranked constructed 1v1 only; draws excluded. The API exposes only recent battle logs, so the 7-day window is incomplete, especially for active players. Win rate = wins / decisive observations. Usage = deck observations / all valid deck observations. Non-random leaderboard sample; opponent deck not necessarily top-ranked."}
 
 
 def collect(limit, pause, start, end):
@@ -199,6 +199,8 @@ def main():
     with open(args.out, "w", encoding="utf-8") as output:
         json.dump(snapshot, output, indent=2)
     if args.publish:
+        if snapshot["sampledPlayerDeckAppearances"] < 100 or not snapshot["decks"]:
+            raise RuntimeError("Publication quality gate: insufficient ranked observations")
         week = end.strftime("%Y-%m-%d")
         publish_r2(snapshot, "editorial/meta/" + week + ".json")
         publish_r2(snapshot, "editorial/meta/latest.json")
