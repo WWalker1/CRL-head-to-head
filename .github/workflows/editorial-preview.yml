@@ -34,6 +34,8 @@ jobs:
       - run: npx tsc --noEmit
       - run: env -u NEXT_PUBLIC_SUPABASE_ANON_KEY -u NEXT_PUBLIC_SUPABASE_URL npm test -- --runInBand
       - run: npm run build
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: offline-build-only
       - name: Inspect mobile and desktop reports in Chromium
         run: |
           npm install --prefix "$RUNNER_TEMP/editorial-browser" playwright@1.56.1
