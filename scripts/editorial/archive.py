@@ -1,5 +1,5 @@
 """Private S3-compatible report archive. Only aggregated rows are persisted."""
-from datetime import timedelta
+from datetime import date, timedelta
 import json
 import os
 
@@ -34,6 +34,11 @@ def monthly_report(parts, month, minimum):
                   sampledPlayerDeckAppearances=total, physicalMatches=sum(p["physicalMatches"] for p in ordered),
                   daysObserved=sorted(set().union(*(p["daysObserved"] for p in ordered))),
                   decks=[d for d in ranked if d["games"] >= minimum][:50], collectionWindows=len(ordered))
+    report["methodology"] = ("Counts pool decisive sampled-player appearances by battle date across "
+                             "non-overlapping weekly windows. Each physical battle counts once per sampled "
+                             "participant. Usage divides a list's appearances by all eligible appearances, "
+                             "including lists below the display threshold. Recent logs miss games played "
+                             "between collections. Players can appear in multiple windows.")
     report.pop("sampledPlayers", None)
     return report
 
@@ -59,6 +64,11 @@ def publish(bundle):
         client.put_object(Bucket=bucket, Key=key, ContentType="application/json",
                           Body=json.dumps(payload, separators=(",",":")).encode(),
                           **({"IfMatch":etag} if etag else {"IfNoneMatch":"*"}))
+    publish_objects(bundle, read, write)
+
+
+def publish_objects(bundle, read, write):
+    """Publish derived objects from the immutable input; repeat safely after failure."""
     prefix = "editorial/meta/"
     snap = bundle["weekly"]
     key = prefix+"weeks/"+snap["windowEnd"][:10]+".json"
@@ -73,7 +83,8 @@ def publish(bundle):
         if not part["decks"]:
             continue
         # A calendar month intersects at most six fixed weekly windows.
-        from datetime import date
+        month_key = prefix+"months/"+month+".json"
+        old, etag = read(month_key)
         left = date.fromisoformat(month+"-01")
         monday = left + timedelta(days=7-left.weekday())
         parts = []
@@ -82,8 +93,6 @@ def publish(bundle):
             if week:
                 parts.extend(week["slices"])
             monday += timedelta(days=7)
-        month_key = prefix+"months/"+month+".json"
-        old, etag = read(month_key)
         result = monthly_report(parts, month, snap["minGames"])
         if old != result:
             write(month_key,result,etag)

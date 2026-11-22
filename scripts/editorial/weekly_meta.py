@@ -112,6 +112,8 @@ def card_view(card, catalog):
     form = card.get("evolutionLevel", 0)
     meta = catalog.get(card["id"], {})
     icons = card.get("iconUrls") or meta.get("iconUrls") or {}
+    if not isinstance(icons, dict):
+        icons = {}
     role = {0: "Base", 1: "Evolution", 2: "Hero"}[form]
     preferred = {0: "medium", 1: "evolutionMedium", 2: "heroMedium"}[form]
     return {"id": card["id"], "name": card.get("name") or meta.get("name", ""),
@@ -148,7 +150,7 @@ def aggregate(records, collected, start, end, rank_limit, min_games, catalog=Non
             continue
         cards = item["cards"]
         costs = [c["elixir"] for c in cards]
-        decks.append({"averageElixir": round(sum(costs) / 8, 1) if all(type(n) is int and n >= 0 for n in costs) else None,
+        decks.append({"averageElixir": round(sum(costs) / 8, 1) if all(type(n) is int and 0 <= n <= 10 for n in costs) else None,
                       "id": hashlib.sha256(key.encode()).hexdigest()[:16],
                       "cards": item["cards"], "games": item["games"],
                       "wins": item["wins"],
@@ -157,7 +159,7 @@ def aggregate(records, collected, start, end, rank_limit, min_games, catalog=Non
     decks.sort(key=lambda r: (-r["games"], -r["wins"], r["id"]))
     return {"schemaVersion": 1, "kind": "top-ranked-decks", "publishedAt": collected.isoformat(),
             "windowStart": start.isoformat(), "windowEnd": end.isoformat(),
-            "cohort": f"Top {rank_limit} global Ranked leaderboard players at sampling time",
+            "cohort": f"Global Ranked leaderboard, ranks 1–{rank_limit} at collection time",
             "sampledPlayerDeckAppearances": total, "physicalMatches": len(physical), "daysObserved": sorted(dates),
             "minGames": min_games, "decks": decks[:max_decks],
             "methodology": "One observation per sampled player per unique match, ranked constructed 1v1 only; draws excluded. The API exposes only recent battle logs, so the 7-day window is incomplete, especially for active players. Win rate = wins / decisive observations. Usage = deck observations / all valid deck observations. Non-random leaderboard sample; opponent deck not necessarily top-ranked."}

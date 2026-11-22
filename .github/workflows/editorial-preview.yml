@@ -13,7 +13,7 @@ permissions:
   contents: read
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       EDITORIAL_LOCAL_PREVIEW: '1'
@@ -39,11 +39,11 @@ jobs:
       - name: Inspect mobile and desktop reports in Chromium
         run: |
           npm install --prefix "$RUNNER_TEMP/editorial-browser" playwright@1.56.1
-          "$RUNNER_TEMP/editorial-browser/node_modules/.bin/playwright" install chromium --with-deps
+          google-chrome --version
           npm start -- -p 3107 > "$RUNNER_TEMP/editorial-web.log" 2>&1 &
           trap 'kill $! 2>/dev/null || true' EXIT
           curl --retry 15 --retry-delay 1 --retry-connrefused -fsS http://127.0.0.1:3107/meta -o /dev/null
-          NODE_PATH="$RUNNER_TEMP/editorial-browser/node_modules" node scripts/editorial/review.cjs
+          CHROME_CHANNEL=chrome NODE_PATH="$RUNNER_TEMP/editorial-browser/node_modules" node scripts/editorial/review.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
