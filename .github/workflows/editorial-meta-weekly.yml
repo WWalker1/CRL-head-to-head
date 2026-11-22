@@ -30,15 +30,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - run: python -m unittest discover -s scripts/editorial
       - name: Install isolated R2 client
-        run: python -m pip install 'boto3>=1.35,<2'
+        run: python -m pip install 'boto3>=1.40,<2'
       - name: Collect top-player battle logs
         env:
           CLASH_ROYALE_API_KEY: ${{ secrets.CLASH_ROYALE_API_KEY }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ vars.R2_EDITORIAL_BUCKET }}
+          R2_EDITORIAL_ACCESS_KEY_ID: ${{ secrets.R2_EDITORIAL_ACCESS_KEY_ID }}
+          R2_EDITORIAL_SECRET_ACCESS_KEY: ${{ secrets.R2_EDITORIAL_SECRET_ACCESS_KEY }}
+          R2_EDITORIAL_BUCKET: ${{ vars.R2_EDITORIAL_BUCKET }}
           PUBLISH_REQUESTED: ${{ github.event_name == 'schedule' || inputs.publish == true }}
         shell: bash
         run: |

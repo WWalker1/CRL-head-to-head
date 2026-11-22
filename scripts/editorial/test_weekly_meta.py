@@ -42,6 +42,7 @@ class WeeklyMetaTests(unittest.TestCase):
         b = battle("#A", "#B", self.time)
         r = module.aggregate([("#A", b), ("#B", b)], self.end, self.start, self.end, 2, 1)
         self.assertEqual(r["sampledPlayerDeckAppearances"], 2)
+        self.assertEqual(r["physicalMatches"], 1)
         self.assertEqual(r["decks"][0]["wins"], 1)
         self.assertEqual(r["decks"][0]["winRate"], 50)
 
@@ -52,6 +53,33 @@ class WeeklyMetaTests(unittest.TestCase):
         b.pop("modifiers")
         b["type"] = "friendly"
         self.assertIsNone(module.ranked_battle(b, "#A", self.start, self.end))
+
+    def test_forms_are_distinct_and_unknown_forms_rejected(self):
+        cards = battle("#A", "#B", self.time)["team"][0]["cards"]
+        cards[0]["evolutionLevel"] = 1
+        evo = module.deck_key(cards)
+        cards[0]["evolutionLevel"] = 2
+        self.assertNotEqual(evo, module.deck_key(cards))
+        cards[0]["evolutionLevel"] = 3
+        self.assertIsNone(module.deck_key(cards))
+
+    def test_months_pool_counts_and_reject_overlapping_windows(self):
+        from archive import monthly_report
+        b = battle("#A", "#B", self.time)
+        part = module.aggregate([("#A",b),("#B",b)], self.end,self.start,self.end,2,1)
+        report = monthly_report([part], "2026-11", 1)
+        self.assertEqual(report["decks"][0]["winRate"], 50)
+        self.assertRaises(ValueError, monthly_report, [part,part], "2026-11", 1)
+
+    def test_retries_rate_limit(self):
+        from unittest.mock import patch, MagicMock
+        import io
+        response = MagicMock()
+        response.__enter__.return_value = io.BytesIO(b'{"ok":true}')
+        error = module.HTTPError("https://example.test",429,"limited",{"Retry-After":"2"},None)
+        with patch.dict(module.os.environ, CLASH_ROYALE_API_KEY="test"), patch.object(module,"urlopen",side_effect=[error,response]), patch.object(module.time,"sleep") as sleep:
+            self.assertEqual(module.request_json("/cards"), {"ok":True})
+            sleep.assert_called_once_with(2)
 
     def test_rejects_old_battles_and_draws(self):
         b = battle("#A", "#B", "20261101T120000.000Z")

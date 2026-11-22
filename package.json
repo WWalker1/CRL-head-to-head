@@ -10,7 +10,8 @@
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "backfill:elo": "node scripts/backfillElo.mjs"
+    "backfill:elo": "node scripts/backfillElo.mjs",
+    "prebuild": "node scripts/editorial/preview-build.mjs"
   },
   "repository": {
     "type": "git",
