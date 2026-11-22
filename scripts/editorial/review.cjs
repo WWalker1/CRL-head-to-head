@@ -14,7 +14,15 @@ const assert = require('node:assert/strict');
         const response = await page.goto(base+route,{waitUntil:'domcontentloaded'});
         assert.equal(response.status(),200);
         await page.locator('main h1').waitFor();
-        assert.equal(await page.locator('link[rel=canonical]').count(),1);
+        const canonical = page.locator('link[rel=canonical]');
+        assert.equal(await canonical.count(),1);
+        assert.equal(new URL(await canonical.getAttribute('href')).pathname,route);
+        if (width === 1440 && name === 'weekly') {
+          await page.locator('main article img').evaluateAll(async imgs=>{
+            for (const img of imgs) img.loading = 'eager';
+            await Promise.all(imgs.map(img=>img.decode()));
+          });
+        }
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth > innerWidth),false,route+' overflow at '+width);
         if (name !== 'balance') {
           const deck = page.locator('main article').first();
