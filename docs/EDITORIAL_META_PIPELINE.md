@@ -21,7 +21,7 @@ With --publish, the window ends at the most recent Monday 00:00 UTC. Use the sch
 - editorial/meta/months/YYYY-MM.json pools all winning/losing appearances from disjoint weekly slices, including lists below the weekly threshold. Percentages are recalculated from counts.
 - editorial/meta/index.json contains discoverable archive months.
 
-Replaying a finished week reuses its original archive. ETag-conditional writes and create-only archive puts make interrupted runs recoverable and reject conflicting concurrent writes. Retry the same week if a concurrent update failed. The one-off November 22 preview archive is a rolling validation sample, outside the scheduled week archive. Do not mix overlapping samples. More frequent collection would require a private incremental observation store and cross-run deduplication before combining counts.
+Replaying a finished week reuses its original archive. ETag-conditional writes and create-only archive puts make interrupted runs recoverable and reject conflicting concurrent writes. After an interrupted or conflicting write, use `python scripts/editorial/weekly_meta.py --publish --resume-week YYYY-MM-DD` with the Monday UTC end date. This rebuilds from the original archive without calling the game API. The one-off November 22 preview archive is a rolling validation sample, outside the scheduled week archive. Do not mix overlapping samples. More frequent collection would require a private incremental observation store and cross-run deduplication before combining counts.
 
 ## Credentials and rollout
 
@@ -33,6 +33,7 @@ Production activation requires explicit approval, a new dedicated editorial buck
 
 Monthly summaries need no React edits. Publishing a valid new week regenerates every affected month, its archive index, and its sitemap entries. For balance coverage, verify the effective date and each change against an official Supercell release, then create a reviewed packet under content/editorial/evidence. Supply its facts, timestamp and outline.schema.json to an AI editor. Ask it to select and order only evidence IDs. It may draft new language for human source verification in the packet before compilation. The compiler rejects unknown or repeated claims, invented fields and sources outside the official hosts. Separate confirmed changes, measured observations and strategies. With no matched pre/post sample, say so explicitly. No paid model call is required.
 ```sh
+python scripts/editorial/compile_article.py evidence.json --brief > /tmp/editor-brief.json
 python scripts/editorial/compile_article.py evidence.json outline.json /tmp/article.json
 ```
 Review the rendered draft, then approve by committing compiler output under content/editorial/approved and registering it in lib/editorial-articles.ts. New individual articles share the server-rendered template. To add a new article type, define its evidence schema, required sections, compiler and tests, extend the registered union and render only validated fields. Metrics belong in the collector, outside generated prose. The approved registry drives sitemap inclusion.
@@ -42,3 +43,7 @@ Review the rendered draft, then approve by committing compiler output under cont
 The PR verification workflow runs Python, TypeScript, Jest, a Next.js build and Chromium checks at widths 320, 375, 390, 768 and 1440. Its screenshots include light/dark viewports and complete first-deck crops. Check eight decoded assets, HTTP status, canonical tags and overflow. Downloads expire after 14 days.
 
 At four to five 250-player runs per month, budget roughly 1,000–1,300 upstream calls before retries, a few dozen object writes and tens of CI minutes. R2 Standard includes 10 GB-month, 1M Class A and 10M Class B operations account-wide; budget $0 marginal while under shared allowances. Beyond these, storage is $0.015/GB-month. Measured private runner minutes and optional AI usage depend on account plan. No always-on worker is needed.
+
+## Design references
+
+RoyaleAPI puts the time range, game count and raw results beside deck lists. Deck Shop connects card forms with a player's next action, while Deck AI makes playlist and league context explicit. Rival Royale uses a narrower global Ranked cohort, puts its denominator on the page and links into its existing matchup tools. Sources reviewed: https://royaleapi.com/decks/popular, https://www.deckshop.pro/deck/finder, https://deckai.app/guide and https://deckroyale.gg/. A separate Clash Royale site at deck.gg could not be verified. No competitor statistics or assets enter the pipeline.

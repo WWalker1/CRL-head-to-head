@@ -34,8 +34,22 @@ def compile_article(evidence, draft):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    for name in ("evidence","draft","output"):
-        parser.add_argument(name,type=Path)
+    parser.add_argument("evidence", type=Path)
+    parser.add_argument("draft", type=Path, nargs="?")
+    parser.add_argument("output", type=Path, nargs="?")
+    parser.add_argument("--brief", action="store_true", help="Print verified evidence and the allowed model output schema")
     args = parser.parse_args()
-    result = compile_article(json.loads(args.evidence.read_text(encoding="utf-8")),json.loads(args.draft.read_text(encoding="utf-8")))
+    evidence = json.loads(args.evidence.read_text(encoding="utf-8"))
+    if args.brief:
+        schema = Path(__file__).resolve().parents[2] / "content/editorial/outline.schema.json"
+        print(json.dumps({
+            "task": "Select and order the most useful verified evidence IDs for a Ranked player. "
+                    "Keep confirmed, observed and strategy sections in that order; use each claim once. "
+                    "Return only an outline matching the schema. Do not invent facts or references.",
+            "evidence": evidence, "schema": json.loads(schema.read_text(encoding="utf-8")),
+        }, ensure_ascii=False, indent=2))
+        raise SystemExit(0)
+    if not args.draft or not args.output:
+        parser.error("Supply a draft and output path, or use --brief")
+    result = compile_article(evidence,json.loads(args.draft.read_text(encoding="utf-8")))
     args.output.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")

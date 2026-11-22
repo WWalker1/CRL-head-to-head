@@ -2,7 +2,7 @@
 """Weekly top-ranked deck snapshot. Read-only game API; R2 writes only with --publish."""
 import argparse
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import hashlib
 import json
 from pathlib import Path
@@ -183,9 +183,12 @@ def collect(limit, pause, start, end):
             if not isinstance(battles, list):
                 raise ValueError("Malformed battle log")
             observations.extend((tag, battle) for battle in battles)
-        except (HTTPError, URLError, ValueError, TimeoutError):
+        except (HTTPError, URLError, ValueError, TimeoutError) as exc:
+            status = getattr(exc, "code", None)
+            if status in (401, 403):
+                raise RuntimeError(f"Game API authorization failed (HTTP {status})") from None
             errors += 1
-            print(json.dumps({"event": "log_failed", "rankIndex": index}), file=sys.stderr)
+            print(json.dumps({"event": "log_failed", "rankIndex": index, "status": status, "reason": type(exc).__name__}), file=sys.stderr)
         if index < len(tags):
             time.sleep(pause)
     # Do not publish an apparently representative report from widespread API failures.
@@ -202,7 +205,14 @@ def main():
     parser.add_argument("--out", default="meta-preview.json")
     parser.add_argument("--archive-dir", type=Path)
     parser.add_argument("--publish", action="store_true")
+    parser.add_argument("--resume-week", type=date.fromisoformat, help="Rebuild from immutable week ending YYYY-MM-DD; requires --publish")
     args = parser.parse_args()
+    if args.resume_week:
+        if not args.publish:
+            parser.error("--resume-week requires --publish")
+        from archive import publish
+        publish(resume_week=args.resume_week)
+        return
     if not 1 <= args.top <= 1000 or not 0.05 <= args.pause <= 60 or args.min_games < 1:
         parser.error("Invalid collection parameters")
     now = datetime.now(timezone.utc)

@@ -43,7 +43,7 @@ def monthly_report(parts, month, minimum):
     return report
 
 
-def publish(bundle):
+def publish(bundle=None, *, resume_week=None):
     import boto3
     from botocore.exceptions import ClientError
     bucket = os.environ["R2_EDITORIAL_BUCKET"]
@@ -64,6 +64,12 @@ def publish(bundle):
         client.put_object(Bucket=bucket, Key=key, ContentType="application/json",
                           Body=json.dumps(payload, separators=(",",":")).encode(),
                           **({"IfMatch":etag} if etag else {"IfNoneMatch":"*"}))
+    if resume_week is not None:
+        if resume_week.weekday() != 0:
+            raise ValueError("Archived windows end on a Monday")
+        bundle, _ = read("editorial/meta/weeks/"+resume_week.isoformat()+".json")
+        if not bundle:
+            raise ValueError("Archived collection does not exist")
     publish_objects(bundle, read, write)
 
 
@@ -78,6 +84,7 @@ def publish_objects(bundle, read, write):
     else:
         bundle = archived  # Resume interrupted publication using the original collection.
     snap = bundle["weekly"]
+    eligible_months = set()
     for part in bundle["slices"]:
         month = part["windowStart"][:7]
         if not part["decks"]:
@@ -94,11 +101,14 @@ def publish_objects(bundle, read, write):
                 parts.extend(week["slices"])
             monday += timedelta(days=7)
         result = monthly_report(parts, month, snap["minGames"])
+        if not result["decks"]:
+            continue
+        eligible_months.add(month)
         if old != result:
             write(month_key,result,etag)
     index_key = prefix+"index.json"
     old_index, etag = read(index_key)
-    index = sorted(set(old_index or []).union(p["windowStart"][:7] for p in bundle["slices"] if p["decks"]), reverse=True)
+    index = sorted(set(old_index or []).union(eligible_months), reverse=True)
     if old_index != index:
         write(index_key,index,etag)
     head, etag = read(prefix+"latest.json")
