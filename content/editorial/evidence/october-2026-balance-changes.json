@@ -1,0 +1,43 @@
+{
+  "slug": "october-2026-balance-changes",
+  "kind": "balance-changes",
+  "source": {
+    "label": "Supercell · October 19 balance update",
+    "url": "https://supercell.com/en/games/clashroyale/blog/release-notes/october-balance-changes-2026/",
+    "verifiedAt": "2026-11-22"
+  },
+  "title": "Cannon Cart and Dart Goblin after the October balance update",
+  "description": "A guide to the October 19 changes for Mortar and spell-bait lists, with a defensive interaction to practice and a way to check future Ranked results.",
+  "publishedAt": "2026-11-22T00:00:00Z",
+  "facts": {
+    "cart": {
+      "section": "confirmed",
+      "text": "Cannon Cart’s damage fell from 212 to 202 and its mass doubled from 3 to 6. Supercell identified the strength of Mortar defense as the reason for the damage change."
+    },
+    "dart": {
+      "section": "confirmed",
+      "text": "Dart Goblin now deals 143 damage per hit, down from 151. The patch notes connect that adjustment to its role in spell-bait decks."
+    },
+    "dragon": {
+      "section": "confirmed",
+      "text": "Electro Dragon’s first hit now lands after 0.5 seconds, down from 0.7 seconds."
+    },
+    "measure": {
+      "section": "observed",
+      "text": "This report has no matched pre-patch and post-patch samples. A later weekly ranking can show which lists players brought, but it cannot establish how much this update changed their results."
+    },
+    "practice": {
+      "section": "strategy",
+      "text": "When reviewing a Mortar defense, replay a push where Cannon Cart survived. Count how many attacks it made before the attacker reached your Mortar. A marginal defense that depended on the final shot is worth testing again with the same placement."
+    },
+    "bait": {
+      "section": "strategy",
+      "text": "For spell bait, look at a defense where Dart Goblin attacked from safety. If the opponent reached the tower with very little health left, try an earlier placement in a friendly battle. That tests whether an extra attack matters before you spend a deck slot on a replacement."
+    }
+  },
+  "headings": {
+    "confirmed": "What changed on October 19",
+    "observed": "What the sample can tell us",
+    "strategy": "What to test in your next game"
+  }
+}

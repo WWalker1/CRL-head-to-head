@@ -11,6 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!article) return { title: 'Article unavailable', robots: { index: false, follow: false } };
   return {
     title: article.title,
+    robots: { index: process.env.VERCEL_ENV !== 'preview' },
     description: article.description,
     alternates: { canonical: '/editorial/' + slug },
     openGraph: { title: article.title, description: article.description, type: 'article',
@@ -23,6 +24,7 @@ export default async function EditorialArticlePage({ params }: Props) {
   const article = await loadEditorialArticle(slug);
   if (!article) notFound();
   return <main className="min-h-screen bg-gradient-to-b from-violet-50 via-white to-orange-50 px-4 py-10 text-slate-900 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 dark:text-slate-100 sm:px-6 sm:py-14">
+    <script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify({'@context':'https://schema.org','@type':'Article',headline:article.title,datePublished:article.publishedAt,dateModified:article.updatedAt,author:{'@type':'Organization',name:article.author},citation:article.sources.map(s=>s.url)}).replace(/</g,'\\u003c')}}/>
     <article className="mx-auto max-w-3xl rounded-2xl border border-violet-100 bg-white p-5 shadow-sm dark:border-violet-900 dark:bg-slate-900 sm:p-10">
       <Link href="/guides" className="inline-flex min-h-11 items-center font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300">← Strategy guides</Link>
       <p className="mt-5 text-xs font-extrabold uppercase tracking-wider text-violet-700 dark:text-violet-300">{article.kind.replace('-', ' ')}</p>
@@ -38,7 +40,7 @@ export default async function EditorialArticlePage({ params }: Props) {
         <ul className="mt-3 list-inside list-disc space-y-2">{article.sources.map(source => <li key={source.url}>
           <a className="break-words font-semibold text-violet-700 underline dark:text-violet-300" href={source.url} target="_blank" rel="noopener noreferrer">{source.label}</a>
         </li>)}</ul>
-        <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">Published by Rival Royale. Changes to game balance or match conditions may make older advice outdated.</p>
+        <p className="mt-5 text-sm text-slate-500 dark:text-slate-400"><Link className="underline" href="/meta">See the current Ranked deck sample</Link>. Changes to game balance or match conditions may make older advice outdated.</p>
       </section>
     </article>
   </main>;

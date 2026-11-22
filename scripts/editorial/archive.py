@@ -1,5 +1,4 @@
 """Private S3-compatible report archive. Only aggregated rows are persisted."""
-from collections import defaultdict
 from datetime import timedelta
 import json
 import os
@@ -88,6 +87,11 @@ def publish(bundle):
         result = monthly_report(parts, month, snap["minGames"])
         if old != result:
             write(month_key,result,etag)
+    index_key = prefix+"index.json"
+    old_index, etag = read(index_key)
+    index = sorted(set(old_index or []).union(p["windowStart"][:7] for p in bundle["slices"] if p["decks"]), reverse=True)
+    if old_index != index:
+        write(index_key,index,etag)
     head, etag = read(prefix+"latest.json")
     if not head or head["windowEnd"] < snap["windowEnd"]:
         write(prefix+"latest.json",snap,etag)

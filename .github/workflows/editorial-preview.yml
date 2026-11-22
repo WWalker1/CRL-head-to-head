@@ -1,0 +1,51 @@
+name: Editorial preview checks
+on:
+  pull_request:
+    paths:
+      - 'app/meta/**'
+      - 'app/editorial/**'
+      - 'content/editorial/**'
+      - 'lib/editorial-*'
+      - 'components/RankedReport.tsx'
+      - 'scripts/editorial/**'
+      - '.github/workflows/editorial-*.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EDITORIAL_LOCAL_PREVIEW: '1'
+      NEXT_PUBLIC_SUPABASE_URL: https://example.invalid
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: offline-preview-only
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3107
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s scripts/editorial
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test -- --runInBand
+      - run: npm run build
+      - name: Inspect mobile and desktop reports in Chromium
+        run: |
+          npm install --prefix "$RUNNER_TEMP/editorial-browser" playwright@1.56.1
+          "$RUNNER_TEMP/editorial-browser/node_modules/.bin/playwright" install chromium --with-deps
+          npm start -- -p 3107 > "$RUNNER_TEMP/editorial-web.log" 2>&1 &
+          trap 'kill $! 2>/dev/null || true' EXIT
+          curl --retry 15 --retry-delay 1 --retry-connrefused -fsS http://127.0.0.1:3107/meta -o /dev/null
+          NODE_PATH="$RUNNER_TEMP/editorial-browser/node_modules" node scripts/editorial/review.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: editorial-browser-screenshots
+          path: .local/editorial-screenshots/*.png
+          include-hidden-files: true
+          retention-days: 14

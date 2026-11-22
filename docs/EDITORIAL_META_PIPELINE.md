@@ -1,81 +1,44 @@
-# Rival Royale editorial automation (branch-only prototype)
+# Ranked editorial reports
 
-## Scope / safety
+## Development preview
 
-This work adds templates and an opt-in weekly collector. It does **not** change a running Railway job, live Supabase schema, production Vercel settings, production routing, or any existing R2 object. The collector is read-only against the game API by default. R2 writes require the explicit `--publish` flag. The GitHub Actions job will not run its collector unless the repository variable `ENABLE_EDITORIAL_WEEKLY_META=true`. Scheduled GitHub Actions workflows only execute on the default branch, so this feature branch cannot schedule live runs.
+Open /meta, /meta/november-2026 and /editorial/october-2026-balance-changes. The development fallback is a real November 22 collection with 250 successful logs, 5,480 physical matches and 6,501 player appearances. Its twelve displayed lists preserve the original denominator. The November sample and its weekly window coincide. Additional months return 404 until collected. The fallback is available only in development, Vercel Preview or an explicitly enabled local verification build. Preview robots directives discourage indexing.
 
-## Components
+## Run a collection
 
-- `scripts/editorial/weekly_meta.py`: snapshots up to 250 current global Ranked leaderboard players; reads recent battle logs, filters unmodified constructed 1v1 Ranked mode, de-duplicates by physical match and sampled player tag, computes deck usage and observed win rates, outputs JSON locally, and optionally uploads to R2.
-- `scripts/editorial/test_weekly_meta.py`: offline unit tests for mode/time filtering, deck identity, duplicates, and wins.
-- `lib/editorial-meta.ts` + `app/meta/page.tsx`: mobile-first leaderboard report template consuming published JSON. Shows an explicit unpublished state until R2 is connected.
-- `lib/editorial-articles.ts` + `app/editorial/[slug]/page.tsx`: structured text-only article template for monthly meta commentary, balance changes, and strategy. No arbitrary HTML, generated executable code, or raw Markdown execution.
-- `.github/workflows/editorial-meta-weekly.yml`: opt-in Monday 08:00 UTC job; no job execution until approval and configuration.
-
-## Collection methodology
-
-Official battle logs only include recent matches, not the full past week. Therefore results are a **recent-match convenience sample from sampled high-ranked players**, not a census of all top ladder games or an unbiased deck-strength leaderboard. The cohort is selected from a snapshot of global Ranked ranks; opponent ranks vary. The collector filters `pathOfLegend`, mode ID 72000464, collection decks, 8 unique cards, one-on-one decisive games, no modifiers, and a trailing 7-day timestamp window. Verify the mode against the current game patch before enabling publication; new modes must fail closed. It counts one observation per leaderboard player per physical match. If two sampled leaderboard players face each other, there are two player-deck observations (one win and one loss), and the methodology reports that explicitly. Usage = qualifying deck appearances / qualifying appearances; win rate = wins / decisive appearances. A deck with <5 observed games is omitted. Interpret rates cautiously and display sample sizes. The code does **not** independently establish that a deck is the 'best' or that balance changes caused any outcome.
-
-## Local verification
-
-```bash
-python -m unittest discover -s scripts/editorial -p 'test_*.py'
-npm test -- --runInBand
-npx tsc --noEmit
-npm run build
+Use Python 3.12+, an authorized CLASH_ROYALE_API_KEY for the RoyaleAPI proxy, and:
+```sh
+python -m unittest discover -s scripts/editorial
+python scripts/editorial/weekly_meta.py --top 250 --out /tmp/weekly.json --archive-dir /tmp/months
 ```
+One leaderboard request, one catalog request, then at most one log per selected player before retries. Sequential concurrency and a 200 ms inter-log delay limit load. Draws, modified battles, non-collection decks, unknown forms, malformed 1v1 sides and matches outside the half-open UTC window are excluded. IDs incorporate both player tags, time, battle type and mode. A battle between two sampled players contributes one physical match and two deck appearances when both logs contain it. Neither tags nor opponent histories enter report JSON. Exact eight-card identities include active forms 0/1/2. Tower troops are not part of the eight-card identity. Elixir is unavailable for lists with missing or variable card costs. Minimum five appearances to display; usage order takes precedence over win rate. The strongest displayed result requires at least 30 appearances. Repeated players, bounded logs and cohort selection limit inference.
 
-A dry-run collector fetches live recent matches and writes only a local file (requires a valid game API key; the proxy must accept the key):
+## Archive and monthly aggregation
 
-```bash
-CLASH_ROYALE_API_KEY=... python scripts/editorial/weekly_meta.py --top 25 --min-games 2 --out meta-preview.json
+With --publish, the window ends at the most recent Monday 00:00 UTC. Use the scheduled Monday 08:00 UTC collection for timely coverage. A late retry can lose history; never backdate collection time. Collection refuses a sample below 90% leaderboard coverage, excessive log failures, fewer than 100 appearances or no qualifying lists. Each report stores the actual observation dates. The development archive contains no private player data:
+- editorial/meta/weeks/YYYY-MM-DD.json is an immutable weekly snapshot plus complete deck histograms split at UTC calendar boundaries.
+- editorial/meta/latest.json is a chronological pointer containing the latest display report.
+- editorial/meta/months/YYYY-MM.json pools all winning/losing appearances from disjoint weekly slices, including lists below the weekly threshold. Percentages are recalculated from counts.
+- editorial/meta/index.json contains discoverable archive months.
+
+Replaying a finished week reuses its original archive. ETag-conditional writes and create-only archive puts make interrupted runs recoverable and reject conflicting concurrent writes. Retry the same week if a concurrent update failed. The one-off November 22 preview archive is a rolling validation sample, outside the scheduled week archive. Do not mix overlapping samples. More frequent collection would require a private incremental observation store and cross-run deduplication before combining counts.
+
+## Credentials and rollout
+
+The collector permits only rival-royale-editorial-dev. Give its S3 credential Object Read & Write scoped to that one bucket. Set R2_EDITORIAL_BUCKET (repository variable), R2_ACCOUNT_ID, R2_EDITORIAL_ACCESS_KEY_ID and R2_EDITORIAL_SECRET_ACCESS_KEY (secrets). The Next.js reader uses separate bucket-scoped Object Read credentials R2_EDITORIAL_READ_KEY_ID and R2_EDITORIAL_READ_SECRET, plus account ID and bucket. It signs server-side requests and caches precomputed objects for 15 minutes. Keep the bucket private. Never use history credentials. The Actions collector remains gated on ENABLE_EDITORIAL_WEEKLY_META=true; scheduled workflows also require the default branch. The verification workflow needs no credentials and has no schedule.
+
+Production activation requires explicit approval, a new dedicated editorial bucket, a reviewed bucket allowlist change, production read-only credentials, separate protected publisher credentials, an initial accepted dataset and a verified preview of the intended report. Check sitemap, canonical origin, archive and failed-read behavior. Review the first scheduled collection before indexing. Roll back by disabling the editorial workflow and restoring the previous approved report via a reviewed release.
+
+## Add content
+
+Monthly summaries need no React edits. Publishing a valid new week regenerates every affected month, its archive index, and its sitemap entries. For balance coverage, verify the effective date and each change against an official Supercell release, then create a reviewed packet under content/editorial/evidence. Supply its facts, timestamp and outline.schema.json to an AI editor. Ask it to select and order only evidence IDs. It may draft new language for human source verification in the packet before compilation. The compiler rejects unknown or repeated claims, invented fields and sources outside the official hosts. Separate confirmed changes, measured observations and strategies. With no matched pre/post sample, say so explicitly. No paid model call is required.
+```sh
+python scripts/editorial/compile_article.py evidence.json outline.json /tmp/article.json
 ```
+Review the rendered draft, then approve by committing compiler output under content/editorial/approved and registering it in lib/editorial-articles.ts. New individual articles share the server-rendered template. To add a new article type, define its evidence schema, required sections, compiler and tests, extend the registered union and render only validated fields. Metrics belong in the collector, outside generated prose. The approved registry drives sitemap inclusion.
 
-Do not commit `meta-preview.json` or any raw battle logs; delete generated local artifacts after review. Do not run this concurrently with an existing high-throughput collector if it would breach the shared game API budget.
+## Verification and operating cost
 
-## R2 setup (not performed)
+The PR verification workflow runs Python, TypeScript, Jest, a Next.js build and Chromium checks at widths 320, 375, 390, 768 and 1440. Its screenshots include light/dark viewports and complete first-deck crops. Check eight decoded assets, HTTP status, canonical tags and overflow. Downloads expire after 14 days.
 
-Use an isolated bucket/prefix with least-privileged object write credentials. Do **not** give read access to sensitive or user-level match archives. The report is aggregated and intentionally contains no player tags. Configure repository secrets `CLASH_ROYALE_API_KEY`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and repository variable `R2_EDITORIAL_BUCKET`. The publisher writes `editorial/meta/latest.json` and `editorial/meta/YYYY-MM-DD.json` into the configured bucket. Configure Vercel's server environment variable `R2_EDITORIAL_PUBLIC_BASE_URL` to a public-read HTTPS R2 custom domain exposing only editorial objects; do not use an unauthenticated public domain for an existing private gameplay archive. On an existing private bucket, use a separate public bucket or build a narrowly scoped authenticated server-side reader instead.
-
-For a manual upload, install `boto3`, supply the four R2 variables and API key, run `python scripts/editorial/weekly_meta.py --publish`. Only enable `ENABLE_EDITORIAL_WEEKLY_META` after reviewing a real dry-run, API load, and the public domain. Automatic deployment of the actual page code still requires an explicit code merge; **do not merge without approval**.
-
-## Editorial template JSON
-
-Upload a JSON object to `editorial/articles/<slug>.json`, for example:
-
-```json
-{
-  "schemaVersion": 1,
-  "slug": "december-2026-balance-changes",
-  "kind": "balance-changes",
-  "title": "Clash Royale December 2026 Balance Changes: What Changed",
-  "description": "An evidence-based review of the December game adjustments and how they affect common Ranked deck choices.",
-  "author": "Rival Royale Editorial",
-  "publishedAt": "2026-12-02T12:00:00Z",
-  "updatedAt": "2026-12-02T12:00:00Z",
-  "sources": [{"label": "Official Clash Royale release notes", "url": "https://supercell.com/en/games/clashroyale/"}],
-  "sections": [
-    {"heading": "What changed", "paragraphs": ["Replace this placeholder with verified patch facts and citations."]},
-    {"heading": "What we observed", "paragraphs": ["Replace this placeholder with cohort statistics and clear uncertainty."]}
-  ]
-}
-```
-
-**The above is a schema illustration only, not a verified December patch article and must not be published unchanged.** Source links should point to exact relevant official patch pages, and statistical claims should be grounded in dated snapshot IDs. LLM generation may propose headlines/explanations but should never invent card changes, usage percentages, match results, or citations. A human should initially approve balance-change articles. Avoid copying competitor prose/assets; use their navigation/content organization as design reference only.
-
-## Before activation
-
-1. Run the offline tests, TypeScript, full test suite and a preview build.
-2. Check the latest Supercell Ranked mode metadata and exact filtering rules.
-3. Dry-run against 25 players; validate API 429 handling and snapshot integrity.
-4. Review mobile layouts at 320, 375, 768 and 1280 pixels, dark mode, card-image origin and content access.
-5. Create an editorial-only R2 location and public-read URL. Confirm it cannot read unrelated private objects.
-6. Add dashboard/guide navigation links, sitemap entries, and archive policy **only after** the feature is approved.
-7. Decide a minimum useful sample threshold and retention plan; 100 observations is merely a protective initial gate, not statistical assurance.
-8. Keep collection as a separate GitHub Actions job; do not add another Railway cron or overlap existing heavyweight model dataset collection.
-
-## Competitor references (concepts, not copied content)
-
-- RoyaleAPI popular decks: filters for popularity and win-rate dimensions.
-- Deck Shop best decks: recognizable card grids, deck attributes, patch/meta freshness.
-- Rival Royale should differentiate through transparent denominators, provenance, original analysis, and links into its existing friend matchup tools.
+At four to five 250-player runs per month, budget roughly 1,000–1,300 upstream calls before retries, a few dozen object writes and tens of CI minutes. R2 Standard includes 10 GB-month, 1M Class A and 10M Class B operations account-wide; budget $0 marginal while under shared allowances. Beyond these, storage is $0.015/GB-month. Measured private runner minutes and optional AI usage depend on account plan. No always-on worker is needed.

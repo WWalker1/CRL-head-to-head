@@ -49,7 +49,7 @@ def deck_key(cards):
     keys = []
     base = []
     for card in cards:
-        if not isinstance(card, dict) or not isinstance(card.get("id"), int):
+        if not isinstance(card, dict) or type(card.get("id")) is not int:
             return None
         base.append(card["id"])
         # An evolution/hero played in battle affects strategy; track its form.
@@ -169,7 +169,7 @@ def collect(limit, pause, start, end):
     if not isinstance(entries, list) or not entries:
         raise RuntimeError("Leaderboard payload missing items")
     tags = [p["tag"] for p in entries if isinstance(p, dict) and isinstance(p.get("tag"), str)
-            and isinstance(p.get("rank"), int) and p["rank"] <= limit]
+            and isinstance(p.get("rank"), int) and 1 <= p["rank"] <= limit]
     tags = list(dict.fromkeys(tags))
     if not tags:
         raise RuntimeError("No ranked leaderboard player tags")
@@ -229,6 +229,8 @@ def main():
                 if part["decks"]:
                     report = monthly_report([part], month, args.min_games)
                     (args.archive_dir / (month+".json")).write_text(json.dumps(report), encoding="utf-8")
+            months = sorted(p["windowStart"][:7] for p in slices if p["decks"])
+            (args.archive_dir / "index.json").write_text(json.dumps(months), encoding="utf-8")
         if args.publish:
             publish(bundle)
     print(json.dumps({k: snapshot[k] for k in ("sampledPlayers","playerLogsFailed","physicalMatches","sampledPlayerDeckAppearances")}))

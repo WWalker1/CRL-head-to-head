@@ -9,6 +9,7 @@ export const metadata: Metadata = {
 };
 
 const guides = [
+  { href: '/meta', title: 'Weekly Ranked deck report', description: 'Explore eight-card lists and measured results from recent global leaderboard battles.' },
   { href: '/guides/elixir-management', title: 'Elixir management: when to defend, pressure, or wait', description: 'Work through a defensive trade, budget a counterpush, and practice tracking the answer that matters.' },
   { href: '/guides/review-clash-royale-losses', title: 'How to review a loss against a friend', description: 'Find the first costly decision, distinguish a deck problem from a sequencing problem, and test one adjustment.' },
   { href: '/clash-royale-counter-deck-finder', title: 'Build a deck with a plan', description: 'Assign eight card roles, understand the tradeoffs, and prepare for a friend’s recorded deck.' },
