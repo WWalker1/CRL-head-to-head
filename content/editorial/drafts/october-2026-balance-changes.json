@@ -1,0 +1,26 @@
+{
+  "slug": "october-2026-balance-changes",
+  "sections": [
+    {
+      "kind": "confirmed",
+      "ids": [
+        "cart",
+        "dart",
+        "dragon"
+      ]
+    },
+    {
+      "kind": "observed",
+      "ids": [
+        "measure"
+      ]
+    },
+    {
+      "kind": "strategy",
+      "ids": [
+        "practice",
+        "bait"
+      ]
+    }
+  ]
+}

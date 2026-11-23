@@ -1,0 +1,56 @@
+name: Weekly ranked deck editorial snapshot
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Explicitly upload JSON to Cloudflare R2'
+        required: true
+        default: false
+        type: boolean
+  schedule:
+    - cron: '0 8 * * 1' # Monday 08:00 UTC; GitHub scheduled workflows run only from default branch.
+
+permissions:
+  contents: read
+
+concurrency:
+  group: editorial-meta-collection
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    # OFF by default; enable repository variable only after credentials, quality checks,
+    # read-only R2 URL and production publication have been approved.
+    if: ${{ vars.ENABLE_EDITORIAL_WEEKLY_META == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s scripts/editorial
+      - name: Install isolated R2 client
+        run: python -m pip install 'boto3>=1.40,<2'
+      - name: Collect top-player battle logs
+        env:
+          CLASH_ROYALE_API_KEY: ${{ secrets.CLASH_ROYALE_API_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_EDITORIAL_ACCESS_KEY_ID: ${{ secrets.R2_EDITORIAL_ACCESS_KEY_ID }}
+          R2_EDITORIAL_SECRET_ACCESS_KEY: ${{ secrets.R2_EDITORIAL_SECRET_ACCESS_KEY }}
+          R2_EDITORIAL_BUCKET: ${{ vars.R2_EDITORIAL_BUCKET }}
+          PUBLISH_REQUESTED: ${{ github.event_name == 'schedule' || inputs.publish == true }}
+        shell: bash
+        run: |
+          if [ "$PUBLISH_REQUESTED" = "true" ]; then
+            python scripts/editorial/weekly_meta.py --top 250 --min-games 5 --publish --out meta-preview.json
+          else
+            python scripts/editorial/weekly_meta.py --top 250 --min-games 5 --out meta-preview.json
+          fi
+      - name: Save inspection artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ranked-deck-weekly-snapshot
+          path: meta-preview.json
+          retention-days: 14

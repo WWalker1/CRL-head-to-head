@@ -1,0 +1,1 @@
+export default function Loading(){return <main aria-busy="true" className="mx-auto max-w-5xl px-4 py-12"><p role="status">Loading the Ranked report…</p><div className="mt-5 h-48 animate-pulse rounded-2xl bg-violet-100 dark:bg-slate-800"/></main>}
